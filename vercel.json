@@ -3,7 +3,7 @@
   "cleanUrls": true,
   "functions": {
     "api/index.js": {
-      "includeFiles": ["db_fallback_data.json", "database.sqlite"]
+      "includeFiles": "{db_fallback_data.json,database.sqlite}"
     }
   },
   "rewrites": [

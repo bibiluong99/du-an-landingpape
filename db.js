@@ -13,17 +13,22 @@ let fallbackData = {
 };
 
 try {
-  let fallbackFile = path.join(__dirname, 'db_fallback_data.json');
-  if (!fs.existsSync(fallbackFile)) {
-    fallbackFile = path.join(process.cwd(), 'db_fallback_data.json');
-  }
-  if (fs.existsSync(fallbackFile)) {
-    const raw = fs.readFileSync(fallbackFile, 'utf8');
-    fallbackData = JSON.parse(raw);
-    console.log('Đã nạp thành công bộ dữ liệu dự phòng (Fallback Data Store).');
-  }
+  fallbackData = require('./db_fallback_data.json');
+  console.log('Đã nạp thành công bộ dữ liệu dự phòng (Fallback Data Store).');
 } catch (e) {
-  console.warn('Lưu ý đọc db_fallback_data.json:', e.message);
+  try {
+    let fallbackFile = path.join(__dirname, 'db_fallback_data.json');
+    if (!fs.existsSync(fallbackFile)) {
+      fallbackFile = path.join(process.cwd(), 'db_fallback_data.json');
+    }
+    if (fs.existsSync(fallbackFile)) {
+      const raw = fs.readFileSync(fallbackFile, 'utf8');
+      fallbackData = JSON.parse(raw);
+      console.log('Đã nạp thành công bộ dữ liệu dự phòng qua fs.');
+    }
+  } catch (err) {
+    console.warn('Lưu ý đọc db_fallback_data.json:', err.message);
+  }
 }
 
 // Thử khởi tạo SQLite nếu môi trường hỗ trợ
