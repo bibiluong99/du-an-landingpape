@@ -97,24 +97,28 @@ function fallbackQuery(sql, params = []) {
     return fallbackData.settings.map(x => ({ key: x.key, value: x.value }));
   }
 
-  // Categories
-  if (lower.includes('from categories')) {
-    let list = fallbackData.categories.map(c => {
-      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
-      return { ...c, product_count: count };
-    });
-    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
-      list = list.filter(c => !c.parent_id);
-    }
-    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
-      const found = list.find(c => c.id == params[0]);
+  // Users
+  if (lower.includes('from users')) {
+    if (lower.includes('where username = ?')) {
+      const found = fallbackData.users.find(u => u.username === params[0]);
       return found ? [found] : [];
     }
-    return list;
+    if (lower.includes('where id = ?')) {
+      const found = fallbackData.users.find(u => u.id == params[0]);
+      return found ? [found] : [];
+    }
+    return fallbackData.users;
   }
 
-  // Products
-  if (lower.includes('from products')) {
+  // Contacts
+  if (lower.includes('from contacts')) {
+    return [...fallbackData.contacts];
+  }
+
+  // Products (Ưu tiên kiểm tra trước Categories nếu câu truy vấn chính nhắm đến bảng products)
+  const isProductsQuery = lower.includes('from products p') || lower.includes('from products where') || lower.includes('select p.*') || (lower.includes('from products') && !lower.includes('from categories c'));
+
+  if (isProductsQuery) {
     let list = fallbackData.products.map(p => {
       const cat = fallbackData.categories.find(c => c.id === p.category_id);
       return {
@@ -136,10 +140,17 @@ function fallbackQuery(sql, params = []) {
     if (lower.includes('p.is_promo = 1') || lower.includes('is_promo = 1')) {
       list = list.filter(p => p.is_promo === 1 || p.is_promo === '1');
     }
-    if (lower.includes('p.category_id = ?') || lower.includes('category_id = ?')) {
-      const catId = params[0];
-      list = list.filter(p => p.category_id == catId);
+
+    // Lọc theo category_id: Hỗ trợ cả danh mục cha (lấy luôn sản phẩm thuộc danh mục con) và danh mục con
+    if (lower.includes('category_id = ?') || lower.includes('p.category_id = ?')) {
+      const targetCatId = params[0];
+      const childCatIds = fallbackData.categories
+        .filter(c => String(c.parent_id) === String(targetCatId))
+        .map(c => String(c.id));
+      const targetCatIds = [String(targetCatId), ...childCatIds];
+      list = list.filter(p => targetCatIds.includes(String(p.category_id)));
     }
+
     if (lower.includes('like ?')) {
       const term = String(params[0] || '').replace(/%/g, '').toLowerCase();
       if (term) {
@@ -149,6 +160,22 @@ function fallbackQuery(sql, params = []) {
     const limitMatch = lower.match(/limit\s+(\d+)/);
     if (limitMatch) {
       list = list.slice(0, parseInt(limitMatch[1]));
+    }
+    return list;
+  }
+
+  // Categories
+  if (lower.includes('from categories')) {
+    let list = fallbackData.categories.map(c => {
+      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
+      return { ...c, product_count: count };
+    });
+    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
+      list = list.filter(c => !c.parent_id);
+    }
+    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
+      const found = list.find(c => c.id == params[0]);
+      return found ? [found] : [];
     }
     return list;
   }
