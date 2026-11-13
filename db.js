@@ -13,8 +13,21 @@ let fallbackData = {
 };
 
 try {
-  fallbackData = require('./db_fallback_data.json');
-  console.log('Đã nạp thành công bộ dữ liệu dự phòng (Fallback Data Store).');
+  let loaded = false;
+  if (process.env.VERCEL) {
+    const os = require('os');
+    const tmpDir = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
+    const tmpFallback = path.join(tmpDir, 'db_fallback_data.json');
+    if (fs.existsSync(tmpFallback)) {
+      fallbackData = JSON.parse(fs.readFileSync(tmpFallback, 'utf8'));
+      loaded = true;
+      console.log('Đã nạp dữ liệu fallback từ /tmp');
+    }
+  }
+  if (!loaded) {
+    fallbackData = require('./db_fallback_data.json');
+    console.log('Đã nạp thành công bộ dữ liệu dự phòng (Fallback Data Store).');
+  }
 } catch (e) {
   try {
     let fallbackFile = path.join(__dirname, 'db_fallback_data.json');
@@ -84,15 +97,41 @@ try {
 // ==========================================
 // BỘ XỬ LÝ TRUY VẤN DỰ PHÒNG (FALLBACK ENGINE)
 // ==========================================
+function saveFallbackData() {
+  try {
+    const jsonStr = JSON.stringify(fallbackData, null, 2);
+    try {
+      fs.writeFileSync(path.join(__dirname, 'db_fallback_data.json'), jsonStr, 'utf8');
+    } catch (e1) {}
+    if (process.env.VERCEL) {
+      try {
+        const os = require('os');
+        const tmpDir = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
+        fs.writeFileSync(path.join(tmpDir, 'db_fallback_data.json'), jsonStr, 'utf8');
+      } catch (e2) {}
+    }
+  } catch (err) {}
+}
+
 function fallbackQuery(sql, params = []) {
   const s = sql.trim();
   const lower = s.toLowerCase();
 
-  // 0. Xử lý các truy vấn đếm COUNT(*)
-  if (lower.includes('count(')) {
+  // 0. Xử lý các truy vấn đếm COUNT(*) khi câu truy vấn chính là SELECT COUNT(...)
+  const isCountQuery = lower.startsWith('select count(') || lower.startsWith('select count (') || lower.startsWith('select count*') || lower.startsWith('select count (*');
+  if (isCountQuery) {
     let total = 0;
     if (lower.includes('from products')) {
-      total = fallbackData.products.length;
+      if (lower.includes('category_id = ?') || lower.includes('p.category_id = ?')) {
+        const targetCatId = params[0];
+        const childCatIds = fallbackData.categories
+          .filter(c => String(c.parent_id) === String(targetCatId))
+          .map(c => String(c.id));
+        const targetCatIds = [String(targetCatId), ...childCatIds];
+        total = fallbackData.products.filter(p => targetCatIds.includes(String(p.category_id))).length;
+      } else {
+        total = fallbackData.products.length;
+      }
     } else if (lower.includes('from categories')) {
       if (lower.includes('parent_id is null') || lower.includes('parent_id = 0')) {
         total = fallbackData.categories.filter(c => !c.parent_id).length;
@@ -135,24 +174,68 @@ function fallbackQuery(sql, params = []) {
 
   // Contacts
   if (lower.includes('from contacts')) {
-    return [...fallbackData.contacts];
+    let list = [...fallbackData.contacts];
+    if (lower.includes('where id = ?')) {
+      const found = list.find(c => String(c.id) === String(params[0]));
+      return found ? [found] : [];
+    }
+    return list;
   }
 
-  // Categories (Truy vấn danh mục bắt đầu bằng SELECT c.* hoặc FROM categories c)
-  const isCategoriesQuery = lower.startsWith('select c.*') || (lower.includes('from categories c') && !lower.startsWith('select p.*')) || lower.includes('from categories where') || (lower.includes('from categories') && !lower.includes('from products p'));
+  // Categories (Truy vấn danh mục)
+  const isCategoriesQuery =
+    lower.startsWith('select c.*') ||
+    lower.startsWith('select show_in_slider from categories') ||
+    lower.startsWith('select id from categories') ||
+    lower.startsWith('select id, name from categories') ||
+    lower.startsWith('select * from categories') ||
+    (lower.includes('from categories c') && !lower.startsWith('select p.*')) ||
+    (lower.includes('from categories') && !lower.startsWith('select p.*') && !lower.includes('from products p left join') && !lower.includes('from products where') && !lower.includes('from products p where'));
 
   if (isCategoriesQuery) {
     let list = fallbackData.categories.map(c => {
-      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
-      return { ...c, product_count: count };
+      const parent = c.parent_id ? fallbackData.categories.find(p => String(p.id) === String(c.parent_id)) : null;
+      const childIds = !c.parent_id
+        ? fallbackData.categories.filter(ch => String(ch.parent_id) === String(c.id)).map(ch => String(ch.id))
+        : [];
+      const count = fallbackData.products.filter(p =>
+        String(p.category_id) === String(c.id) || (!c.parent_id && childIds.includes(String(p.category_id)))
+      ).length;
+
+      return {
+        ...c,
+        parent_name: parent ? parent.name : null,
+        product_count: count
+      };
     });
+
+    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
+      const found = list.find(c => String(c.id) === String(params[0]));
+      return found ? [found] : [];
+    }
+    if (lower.includes('where slug = ?') || lower.includes('where c.slug = ?')) {
+      const found = list.find(c => c.slug === params[0]);
+      return found ? [found] : [];
+    }
     if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
       list = list.filter(c => !c.parent_id);
     }
-    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
-      const found = list.find(c => c.id == params[0]);
-      return found ? [found] : [];
+    if (lower.includes('c.show_in_slider = 1') || lower.includes('show_in_slider = 1')) {
+      list = list.filter(c => c.show_in_slider === 1 || c.show_in_slider === null || c.show_in_slider === undefined);
     }
+
+    // Sắp xếp: danh mục cha đứng trước kèm các danh mục con theo thứ tự
+    list.sort((a, b) => {
+      const rootA = Number(a.parent_id || a.id);
+      const rootB = Number(b.parent_id || b.id);
+      if (rootA !== rootB) return rootA - rootB;
+      const isChildA = a.parent_id ? 1 : 0;
+      const isChildB = b.parent_id ? 1 : 0;
+      if (isChildA !== isChildB) return isChildA - isChildB;
+      if ((a.sort_order || 0) !== (b.sort_order || 0)) return (a.sort_order || 0) - (b.sort_order || 0);
+      return Number(a.id) - Number(b.id);
+    });
+
     return list;
   }
 
@@ -161,18 +244,18 @@ function fallbackQuery(sql, params = []) {
 
   if (isProductsQuery) {
     let list = fallbackData.products.map(p => {
-      const cat = fallbackData.categories.find(c => c.id === p.category_id);
+      const cat = fallbackData.categories.find(c => String(c.id) === String(p.category_id));
       return {
         ...p,
         category_name: cat ? cat.name : ''
       };
     });
     if (lower.includes('where id = ?') || lower.includes('where p.id = ?')) {
-      const found = list.find(p => p.id == params[0]);
+      const found = list.find(p => String(p.id) === String(params[0]));
       return found ? [found] : [];
     }
     if (lower.includes('where slug = ?') || lower.includes('where p.slug = ?')) {
-      const found = list.find(p => p.slug == params[0]);
+      const found = list.find(p => p.slug === params[0]);
       return found ? [found] : [];
     }
     if (lower.includes('p.is_new = 1') || lower.includes('is_new = 1')) {
@@ -209,11 +292,11 @@ function fallbackQuery(sql, params = []) {
   if (lower.includes('from blogs')) {
     let list = [...fallbackData.blogs];
     if (lower.includes('where id = ?')) {
-      const found = list.find(b => b.id == params[0]);
+      const found = list.find(b => String(b.id) === String(params[0]));
       return found ? [found] : [];
     }
     if (lower.includes('where slug = ?')) {
-      const found = list.find(b => b.slug == params[0]);
+      const found = list.find(b => b.slug === params[0]);
       return found ? [found] : [];
     }
     const limitMatch = lower.match(/limit\s+(\d+)/);
@@ -235,28 +318,253 @@ function fallbackRun(sql, params = []) {
   const s = sql.trim();
   const lower = s.toLowerCase();
 
+  // 1. Categories
+  if (lower.startsWith('delete from categories')) {
+    const catId = params[0];
+    fallbackData.categories = fallbackData.categories.filter(c => String(c.id) !== String(catId));
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update categories set parent_id = null')) {
+    const parentId = params[0];
+    fallbackData.categories.forEach(c => {
+      if (String(c.parent_id) === String(parentId)) {
+        c.parent_id = null;
+      }
+    });
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update categories set show_in_slider = ?')) {
+    const [val, id] = params;
+    const cat = fallbackData.categories.find(c => String(c.id) === String(id));
+    if (cat) cat.show_in_slider = Number(val);
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update categories set name =')) {
+    const [name, description, image, show_in_slider, sort_order, parent_id, id] = params;
+    const cat = fallbackData.categories.find(c => String(c.id) === String(id));
+    if (cat) {
+      cat.name = name;
+      cat.description = description;
+      if (image) cat.image = image;
+      cat.show_in_slider = Number(show_in_slider);
+      cat.sort_order = Number(sort_order);
+      cat.parent_id = parent_id ? Number(parent_id) : null;
+    }
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('insert into categories')) {
+    const [name, slug, description, image, show_in_slider, sort_order, parent_id] = params;
+    const newId = fallbackData.categories.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
+    const newCat = {
+      id: newId,
+      name,
+      slug,
+      description: description || '',
+      image: image || '/images/hd/cat-day-dien.jpg',
+      show_in_slider: Number(show_in_slider) || 0,
+      sort_order: Number(sort_order) || 0,
+      parent_id: parent_id ? Number(parent_id) : null,
+      created_at: new Date().toISOString()
+    };
+    fallbackData.categories.push(newCat);
+    saveFallbackData();
+    return { lastID: newId, changes: 1 };
+  }
+
+  // 2. Products
+  if (lower.startsWith('delete from products')) {
+    const prodId = params[0];
+    fallbackData.products = fallbackData.products.filter(p => String(p.id) !== String(prodId));
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update products set is_promo = ?')) {
+    const [val, id] = params;
+    const p = fallbackData.products.find(x => String(x.id) === String(id));
+    if (p) p.is_promo = Number(val);
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update products set price = ?')) {
+    const [val, id] = params;
+    const p = fallbackData.products.find(x => String(x.id) === String(id));
+    if (p) p.price = Number(val);
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update products set')) {
+    const id = params[params.length - 1];
+    const p = fallbackData.products.find(x => String(x.id) === String(id));
+    if (p) {
+      p.category_id = Number(params[0]);
+      p.name = params[1];
+      p.slug = params[2];
+      p.price = Number(params[3]);
+      p.original_price = Number(params[4]);
+      if (params[5]) p.image = params[5];
+      if (params[6]) p.images = params[6];
+      p.short_desc = params[7];
+      p.description = params[8];
+      p.specs = params[9];
+      p.applications = params[10];
+      p.warranty_policy = params[11];
+      p.is_new = Number(params[12]);
+      p.is_promo = Number(params[13]);
+      p.stock = Number(params[14]);
+    }
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('insert into products')) {
+    const newId = fallbackData.products.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1;
+    const newProd = {
+      id: newId,
+      category_id: Number(params[0]),
+      name: params[1],
+      slug: params[2],
+      price: Number(params[3]),
+      original_price: Number(params[4]),
+      image: params[5],
+      images: params[6],
+      short_desc: params[7],
+      description: params[8],
+      specs: params[9],
+      applications: params[10],
+      warranty_policy: params[11],
+      is_new: Number(params[12]),
+      is_promo: Number(params[13]),
+      stock: Number(params[14]),
+      created_at: new Date().toISOString()
+    };
+    fallbackData.products.unshift(newProd);
+    saveFallbackData();
+    return { lastID: newId, changes: 1 };
+  }
+
+  // 3. Blogs
+  if (lower.startsWith('delete from blogs')) {
+    const blogId = params[0];
+    fallbackData.blogs = fallbackData.blogs.filter(b => String(b.id) !== String(blogId));
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update blogs set')) {
+    const id = params[params.length - 1];
+    const b = fallbackData.blogs.find(x => String(x.id) === String(id));
+    if (b) {
+      b.title = params[0];
+      b.summary = params[1] || '';
+      b.content = params[2];
+      if (params[3]) b.image = params[3];
+      if (params[4]) b.author = params[4];
+      if (params[5]) b.category = params[5];
+    }
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('insert into blogs')) {
+    const newId = fallbackData.blogs.reduce((max, b) => Math.max(max, Number(b.id) || 0), 0) + 1;
+    const newBlog = {
+      id: newId,
+      title: params[0],
+      slug: params[1],
+      summary: params[2] || '',
+      content: params[3],
+      image: params[4] || '',
+      author: params[5] || 'Ban Biên Tập',
+      category: params[6] || 'Tin công ty',
+      created_at: new Date().toISOString()
+    };
+    fallbackData.blogs.unshift(newBlog);
+    saveFallbackData();
+    return { lastID: newId, changes: 1 };
+  }
+
+  // 4. Contacts
+  if (lower.startsWith('delete from contacts')) {
+    const contactId = params[0];
+    fallbackData.contacts = fallbackData.contacts.filter(c => String(c.id) !== String(contactId));
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update contacts set quote_sent = 1')) {
+    const [status, id] = params;
+    const c = fallbackData.contacts.find(x => String(x.id) === String(id));
+    if (c) {
+      c.quote_sent = 1;
+      c.status = status;
+    }
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update contacts set status = ?')) {
+    const [status, id] = params;
+    const c = fallbackData.contacts.find(x => String(x.id) === String(id));
+    if (c) c.status = status;
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
   if (lower.startsWith('insert into contacts')) {
-    const newId = fallbackData.contacts.length + 1;
+    const newId = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
     fallbackData.contacts.unshift({
       id: newId,
       fullname: params[0],
       phone: params[1],
       email: params[2],
       type: params[3],
-      note: params[4] || params[5] || '',
+      product_name: params[4] || '',
+      message: params[5] || '',
       ip_address: '127.0.0.1',
-      status: 'pending',
+      status: 'Mới',
       created_at: new Date().toISOString()
     });
+    saveFallbackData();
     return { lastID: newId, changes: 1 };
   }
 
+  // 5. Users
+  if (lower.startsWith('update users set password = ?')) {
+    const [password, id] = params;
+    const u = fallbackData.users.find(x => String(x.id) === String(id));
+    if (u) u.password = password;
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  // 6. Settings
   if (lower.startsWith('update settings')) {
     const val = params[0];
     const key = params[1];
     const item = fallbackData.settings.find(x => x.key === key);
-    if (item) item.value = val;
-    else fallbackData.settings.push({ key, value: val });
+    if (item) item.value = String(val);
+    else fallbackData.settings.push({ key, value: String(val) });
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('insert into settings')) {
+    const [key, val] = params;
+    const item = fallbackData.settings.find(x => x.key === key);
+    if (item) item.value = String(val);
+    else fallbackData.settings.push({ key, value: String(val) });
+    saveFallbackData();
     return { lastID: 0, changes: 1 };
   }
 
@@ -304,6 +612,7 @@ const run = (sql, params = []) => {
           }
           return resolve(fallbackRun(sql, params));
         }
+        try { fallbackRun(sql, params); } catch (e) {}
         resolve({ lastID: this ? this.lastID : 1, changes: this ? this.changes : 1 });
       });
     });
