@@ -2,12 +2,13 @@
   "version": 2,
   "cleanUrls": true,
   "functions": {
-    "api/*.js": {
+    "api/index.js": {
       "includeFiles": "{db_fallback_data.json,database.sqlite}"
     }
   },
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/products", "destination": "/products.html" },
     { "source": "/product-detail", "destination": "/product-detail.html" },
     { "source": "/about", "destination": "/about.html" },

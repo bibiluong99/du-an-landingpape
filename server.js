@@ -14,6 +14,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Khôi phục URL nguyên bản nếu Vercel rewrite đến /api
+app.use((req, res, next) => {
+  const originalPath = req.headers['x-invoke-path'] || req.headers['x-matched-path'];
+  if (originalPath && originalPath.startsWith('/api') && (!req.url.startsWith('/api/') || req.url === '/api')) {
+    const queryStr = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
+    req.url = originalPath + queryStr;
+  }
+  next();
+});
+
 const os = require('os');
 
 // Tạo thư mục uploads an toàn (hỗ trợ cả máy chủ cục bộ và môi trường Vercel serverless)
