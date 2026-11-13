@@ -16,8 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Khôi phục URL nguyên bản nếu Vercel rewrite đến /api
 app.use((req, res, next) => {
-  const originalPath = req.headers['x-invoke-path'] || req.headers['x-matched-path'];
-  if (originalPath && originalPath.startsWith('/api') && (!req.url.startsWith('/api/') || req.url === '/api')) {
+  const originalPath = req.headers['x-invoke-path'] || req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'];
+  if (originalPath && originalPath.startsWith('/api')) {
     const queryStr = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
     req.url = originalPath + queryStr;
   }
@@ -500,7 +500,20 @@ app.get('/api/categories', async (req, res) => {
 // 3. Danh sách sản phẩm (Chỉ nạp sản phẩm thuộc các danh mục đang BẬT)
 app.get('/api/products', async (req, res) => {
   try {
-    const { type, category_id, search, sort, limit = 50, page = 1 } = req.query;
+    const { type, category_id, search, sort, limit = 50, page = 1, id } = req.query;
+
+    if (id) {
+      const product = await get(`
+        SELECT p.*, c.name as category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+      `, [id]);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm!' });
+      }
+      return res.json({ success: true, data: product });
+    }
 
     let sql = `
       SELECT p.*, c.name as category_name
@@ -632,7 +645,16 @@ app.get('/api/products/:id', async (req, res) => {
 // 5. Danh sách bài viết Blog
 app.get('/api/blogs', async (req, res) => {
   try {
-    const { all, limit, search, category } = req.query;
+    const { all, limit, search, category, id } = req.query;
+
+    if (id) {
+      const blog = await get('SELECT * FROM blogs WHERE id = ?', [id]);
+      if (!blog) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết!' });
+      }
+      return res.json({ success: true, data: blog });
+    }
+
     let sql = 'SELECT * FROM blogs WHERE 1=1';
     const params = [];
 
