@@ -88,6 +88,29 @@ function fallbackQuery(sql, params = []) {
   const s = sql.trim();
   const lower = s.toLowerCase();
 
+  // 0. Xử lý các truy vấn đếm COUNT(*)
+  if (lower.includes('count(')) {
+    let total = 0;
+    if (lower.includes('from products')) {
+      total = fallbackData.products.length;
+    } else if (lower.includes('from categories')) {
+      if (lower.includes('parent_id is null') || lower.includes('parent_id = 0')) {
+        total = fallbackData.categories.filter(c => !c.parent_id).length;
+      } else {
+        total = fallbackData.categories.length;
+      }
+    } else if (lower.includes('from blogs')) {
+      total = fallbackData.blogs.length;
+    } else if (lower.includes('from contacts')) {
+      if (lower.includes('mới') || lower.includes('pending') || lower.includes('new')) {
+        total = fallbackData.contacts.filter(c => c.status === 'Mới' || c.status === 'pending').length;
+      } else {
+        total = fallbackData.contacts.length;
+      }
+    }
+    return [{ total, count: total, c: total }];
+  }
+
   // Settings
   if (lower.includes('from settings')) {
     if (lower.includes('where key = ?')) {
@@ -198,29 +221,6 @@ function fallbackQuery(sql, params = []) {
       list = list.slice(0, parseInt(limitMatch[1]));
     }
     return list;
-  }
-
-  // Users
-  if (lower.includes('from users')) {
-    if (lower.includes('where username = ?')) {
-      const found = fallbackData.users.find(u => u.username === params[0]);
-      return found ? [found] : [];
-    }
-    if (lower.includes('where id = ?')) {
-      const found = fallbackData.users.find(u => u.id == params[0]);
-      return found ? [found] : [];
-    }
-    return fallbackData.users;
-  }
-
-  // Contacts
-  if (lower.includes('from contacts')) {
-    return [...fallbackData.contacts];
-  }
-
-  // Count
-  if (lower.includes('count(*)')) {
-    return [{ c: 1, count: 1 }];
   }
 
   return [];
