@@ -14,10 +14,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Tạo thư mục uploads nếu chưa tồn tại
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Tạo thư mục uploads an toàn (hỗ trợ cả máy chủ cục bộ và môi trường Vercel serverless)
+let uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (process.env.VERCEL) {
+  uploadsDir = path.join('/tmp', 'uploads');
+}
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Lưu ý uploadsDir:', err.message);
 }
 
 // Cấu hình Multer để upload hình ảnh
@@ -43,8 +50,11 @@ const upload = multer({
   }
 });
 
-// Phục vụ thư mục upload file ảnh
-app.use('/uploads', express.static(uploadsDir));
+// Phục vụ thư mục upload file ảnh (hỗ trợ cả thư mục tĩnh và thư mục /tmp trên Vercel)
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+if (process.env.VERCEL) {
+  app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
+}
 
 // Quản lý phiên xác thực (Tokens Store)
 const sessions = new Map();
@@ -91,7 +101,10 @@ const requireAdmin = async (req, res, next) => {
 // Helper phục vụ trang HTML kèm theo Banner & Logo mới nhất trực tiếp từ cơ sở dữ liệu
 async function servePageWithBanner(res, fileName, bannerKey, bannerId) {
   try {
-    const filePath = path.join(__dirname, 'public', fileName);
+    let filePath = path.join(__dirname, 'public', fileName);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(process.cwd(), 'public', fileName);
+    }
     let html = fs.readFileSync(filePath, 'utf8');
 
     // 1. Lấy banner mới nhất từ database
@@ -1390,5 +1403,12 @@ const startServer = async () => {
   });
 };
 
-startServer();
+// Khởi chạy máy chủ cục bộ hoặc export cho Vercel Serverless Function
+if (process.env.VERCEL) {
+  initDB().catch(err => console.error('Lỗi khởi tạo DB trên Vercel:', err));
+} else {
+  startServer();
+}
+
+module.exports = app;
 

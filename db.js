@@ -3,7 +3,27 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const DB_PATH = path.join(__dirname, 'database.sqlite');
+let DB_PATH = path.join(__dirname, 'database.sqlite');
+if (!fs.existsSync(DB_PATH)) {
+  DB_PATH = path.join(process.cwd(), 'database.sqlite');
+}
+
+// Xử lý môi trường Serverless trên Vercel (thư mục gốc là read-only)
+if (process.env.VERCEL) {
+  const tmpDbPath = path.join('/tmp', 'database.sqlite');
+  try {
+    if (!fs.existsSync(tmpDbPath)) {
+      if (fs.existsSync(DB_PATH)) {
+        fs.copyFileSync(DB_PATH, tmpDbPath);
+        console.log('Đã copy database.sqlite sang /tmp để SQLite có quyền đọc ghi trên Vercel.');
+      }
+    }
+    DB_PATH = tmpDbPath;
+  } catch (err) {
+    console.warn('Lưu ý copy database sang /tmp:', err.message);
+  }
+}
+
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Lỗi kết nối cơ sở dữ liệu SQLite:', err.message);
