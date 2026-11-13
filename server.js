@@ -14,19 +14,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Chuẩn hóa req.url trên môi trường Vercel Serverless Function
-app.use((req, res, next) => {
-  if (process.env.VERCEL && !req.url.startsWith('/api')) {
-    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
-  }
-  next();
-});
-
-// Endpoint kiểm tra trạng thái API
-app.get(['/api', '/api/'], (req, res) => {
-  res.json({ success: true, message: 'Điện Việt API đang chạy bình thường trên Vercel' });
-});
-
 const os = require('os');
 
 // Tạo thư mục uploads an toàn (hỗ trợ cả máy chủ cục bộ và môi trường Vercel serverless)
