@@ -1,63 +1,280 @@
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-let DB_PATH = path.join(__dirname, 'database.sqlite');
-if (!fs.existsSync(DB_PATH)) {
-  DB_PATH = path.join(process.cwd(), 'database.sqlite');
+// Nạp dữ liệu dự phòng từ db_fallback_data.json
+let fallbackData = {
+  users: [],
+  categories: [],
+  products: [],
+  blogs: [],
+  settings: [],
+  contacts: []
+};
+
+try {
+  let fallbackFile = path.join(__dirname, 'db_fallback_data.json');
+  if (!fs.existsSync(fallbackFile)) {
+    fallbackFile = path.join(process.cwd(), 'db_fallback_data.json');
+  }
+  if (fs.existsSync(fallbackFile)) {
+    const raw = fs.readFileSync(fallbackFile, 'utf8');
+    fallbackData = JSON.parse(raw);
+    console.log('Đã nạp thành công bộ dữ liệu dự phòng (Fallback Data Store).');
+  }
+} catch (e) {
+  console.warn('Lưu ý đọc db_fallback_data.json:', e.message);
 }
 
-// Xử lý môi trường Serverless trên Vercel (thư mục gốc là read-only)
-if (process.env.VERCEL) {
-  const tmpDbPath = path.join('/tmp', 'database.sqlite');
-  try {
-    if (!fs.existsSync(tmpDbPath)) {
-      if (fs.existsSync(DB_PATH)) {
+// Thử khởi tạo SQLite nếu môi trường hỗ trợ
+let sqlite3 = null;
+let db = null;
+let useFallback = false;
+
+try {
+  sqlite3 = require('sqlite3').verbose();
+  let DB_PATH = path.join(__dirname, 'database.sqlite');
+  if (!fs.existsSync(DB_PATH)) {
+    DB_PATH = path.join(process.cwd(), 'database.sqlite');
+  }
+
+  // Xử lý môi trường Serverless trên Vercel (thư mục gốc là read-only)
+  if (process.env.VERCEL) {
+    const os = require('os');
+    const tmpDir = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    } catch (e) {}
+
+    const tmpDbPath = path.join(tmpDir, 'database.sqlite');
+    try {
+      if (!fs.existsSync(tmpDbPath) && fs.existsSync(DB_PATH)) {
         fs.copyFileSync(DB_PATH, tmpDbPath);
         console.log('Đã copy database.sqlite sang /tmp để SQLite có quyền đọc ghi trên Vercel.');
       }
+      if (fs.existsSync(tmpDbPath)) {
+        DB_PATH = tmpDbPath;
+      }
+    } catch (err) {
+      console.warn('Lưu ý copy database sang /tmp:', err.message);
     }
-    DB_PATH = tmpDbPath;
-  } catch (err) {
-    console.warn('Lưu ý copy database sang /tmp:', err.message);
   }
+
+  const openMode = (sqlite3.OPEN_READWRITE || 0x00000002) | (sqlite3.OPEN_CREATE || 0x00000004);
+  db = new sqlite3.Database(DB_PATH, openMode, (err) => {
+    if (err) {
+      console.warn('Lỗi kết nối SQLite, tự động chuyển sang Fallback Store:', err.message);
+      useFallback = true;
+    } else {
+      console.log('Đã kết nối thành công cơ sở dữ liệu SQLite tại:', DB_PATH);
+    }
+  });
+} catch (err) {
+  console.warn('sqlite3 native module không khả dụng, sử dụng Fallback Store:', err.message);
+  useFallback = true;
 }
 
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) {
-    console.error('Lỗi kết nối cơ sở dữ liệu SQLite:', err.message);
-  } else {
-    console.log('Đã kết nối thành công cơ sở dữ liệu SQLite tại:', DB_PATH);
-  }
-});
+// ==========================================
+// BỘ XỬ LÝ TRUY VẤN DỰ PHÒNG (FALLBACK ENGINE)
+// ==========================================
+function fallbackQuery(sql, params = []) {
+  const s = sql.trim();
+  const lower = s.toLowerCase();
 
-// Helper wrap SQLite callback thành Promise
-const query = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
+  // Settings
+  if (lower.includes('from settings')) {
+    if (lower.includes('where key = ?')) {
+      const found = fallbackData.settings.find(x => x.key === params[0]);
+      return found ? [found] : [];
+    }
+    return fallbackData.settings.map(x => ({ key: x.key, value: x.value }));
+  }
+
+  // Categories
+  if (lower.includes('from categories')) {
+    let list = fallbackData.categories.map(c => {
+      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
+      return { ...c, product_count: count };
     });
-  });
+    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
+      list = list.filter(c => !c.parent_id);
+    }
+    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
+      const found = list.find(c => c.id == params[0]);
+      return found ? [found] : [];
+    }
+    return list;
+  }
+
+  // Products
+  if (lower.includes('from products')) {
+    let list = fallbackData.products.map(p => {
+      const cat = fallbackData.categories.find(c => c.id === p.category_id);
+      return {
+        ...p,
+        category_name: cat ? cat.name : ''
+      };
+    });
+    if (lower.includes('where id = ?') || lower.includes('where p.id = ?')) {
+      const found = list.find(p => p.id == params[0]);
+      return found ? [found] : [];
+    }
+    if (lower.includes('where slug = ?') || lower.includes('where p.slug = ?')) {
+      const found = list.find(p => p.slug == params[0]);
+      return found ? [found] : [];
+    }
+    if (lower.includes('p.is_new = 1') || lower.includes('is_new = 1')) {
+      list = list.filter(p => p.is_new === 1 || p.is_new === '1');
+    }
+    if (lower.includes('p.is_promo = 1') || lower.includes('is_promo = 1')) {
+      list = list.filter(p => p.is_promo === 1 || p.is_promo === '1');
+    }
+    if (lower.includes('p.category_id = ?') || lower.includes('category_id = ?')) {
+      const catId = params[0];
+      list = list.filter(p => p.category_id == catId);
+    }
+    if (lower.includes('like ?')) {
+      const term = String(params[0] || '').replace(/%/g, '').toLowerCase();
+      if (term) {
+        list = list.filter(p => (p.name && p.name.toLowerCase().includes(term)) || (p.short_desc && p.short_desc.toLowerCase().includes(term)));
+      }
+    }
+    const limitMatch = lower.match(/limit\s+(\d+)/);
+    if (limitMatch) {
+      list = list.slice(0, parseInt(limitMatch[1]));
+    }
+    return list;
+  }
+
+  // Blogs
+  if (lower.includes('from blogs')) {
+    let list = [...fallbackData.blogs];
+    if (lower.includes('where id = ?')) {
+      const found = list.find(b => b.id == params[0]);
+      return found ? [found] : [];
+    }
+    if (lower.includes('where slug = ?')) {
+      const found = list.find(b => b.slug == params[0]);
+      return found ? [found] : [];
+    }
+    const limitMatch = lower.match(/limit\s+(\d+)/);
+    if (limitMatch) {
+      list = list.slice(0, parseInt(limitMatch[1]));
+    }
+    return list;
+  }
+
+  // Users
+  if (lower.includes('from users')) {
+    if (lower.includes('where username = ?')) {
+      const found = fallbackData.users.find(u => u.username === params[0]);
+      return found ? [found] : [];
+    }
+    if (lower.includes('where id = ?')) {
+      const found = fallbackData.users.find(u => u.id == params[0]);
+      return found ? [found] : [];
+    }
+    return fallbackData.users;
+  }
+
+  // Contacts
+  if (lower.includes('from contacts')) {
+    return [...fallbackData.contacts];
+  }
+
+  // Count
+  if (lower.includes('count(*)')) {
+    return [{ c: 1, count: 1 }];
+  }
+
+  return [];
+}
+
+function fallbackGet(sql, params = []) {
+  const rows = fallbackQuery(sql, params);
+  return rows && rows.length > 0 ? rows[0] : null;
+}
+
+function fallbackRun(sql, params = []) {
+  const s = sql.trim();
+  const lower = s.toLowerCase();
+
+  if (lower.startsWith('insert into contacts')) {
+    const newId = fallbackData.contacts.length + 1;
+    fallbackData.contacts.unshift({
+      id: newId,
+      fullname: params[0],
+      phone: params[1],
+      email: params[2],
+      type: params[3],
+      note: params[4] || params[5] || '',
+      ip_address: '127.0.0.1',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    });
+    return { lastID: newId, changes: 1 };
+  }
+
+  if (lower.startsWith('update settings')) {
+    const val = params[0];
+    const key = params[1];
+    const item = fallbackData.settings.find(x => x.key === key);
+    if (item) item.value = val;
+    else fallbackData.settings.push({ key, value: val });
+    return { lastID: 0, changes: 1 };
+  }
+
+  return { lastID: 1, changes: 1 };
+}
+
+// Helper wrap SQLite callback thành Promise kèm Fallback an toàn
+const query = (sql, params = []) => {
+  if (!useFallback && db) {
+    return new Promise((resolve) => {
+      db.all(sql, params, (err, rows) => {
+        if (err) {
+          console.warn('SQLite db.all lỗi, dùng Fallback:', err.message);
+          return resolve(fallbackQuery(sql, params));
+        }
+        resolve(rows);
+      });
+    });
+  }
+  return Promise.resolve(fallbackQuery(sql, params));
 };
 
 const get = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
+  if (!useFallback && db) {
+    return new Promise((resolve) => {
+      db.get(sql, params, (err, row) => {
+        if (err) {
+          console.warn('SQLite db.get lỗi, dùng Fallback:', err.message);
+          return resolve(fallbackGet(sql, params));
+        }
+        resolve(row);
+      });
     });
-  });
+  }
+  return Promise.resolve(fallbackGet(sql, params));
 };
 
 const run = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve({ lastID: this.lastID, changes: this.changes });
+  if (!useFallback && db) {
+    return new Promise((resolve) => {
+      db.run(sql, params, function (err) {
+        if (err) {
+          if (!sql.includes('ALTER TABLE')) {
+            console.warn('SQLite db.run lỗi, dùng Fallback:', err.message);
+          }
+          return resolve(fallbackRun(sql, params));
+        }
+        resolve({ lastID: this ? this.lastID : 1, changes: this ? this.changes : 1 });
+      });
     });
-  });
+  }
+  return Promise.resolve(fallbackRun(sql, params));
 };
 
 // Hàm băm mật khẩu chuẩn SHA256 kèm salt
@@ -67,6 +284,10 @@ const hashPassword = (password) => {
 
 // Khởi tạo bảng và dữ liệu mẫu
 const initDB = async () => {
+  if (useFallback || !db) {
+    console.log('Chạy chế độ Fallback Data Store (không cần khởi tạo bảng SQLite)');
+    return;
+  }
   try {
     // 1. Users
     await run(`

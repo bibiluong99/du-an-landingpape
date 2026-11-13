@@ -14,10 +14,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const os = require('os');
+
 // Tạo thư mục uploads an toàn (hỗ trợ cả máy chủ cục bộ và môi trường Vercel serverless)
 let uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (process.env.VERCEL) {
-  uploadsDir = path.join('/tmp', 'uploads');
+  const tmpBase = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
+  uploadsDir = path.join(tmpBase, 'uploads');
 }
 try {
   if (!fs.existsSync(uploadsDir)) {
@@ -105,6 +108,15 @@ async function servePageWithBanner(res, fileName, bannerKey, bannerId) {
     if (!fs.existsSync(filePath)) {
       filePath = path.join(process.cwd(), 'public', fileName);
     }
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(process.cwd(), fileName);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      // Trên môi trường Serverless nếu public/ không nằm trong Lambda bundle, chuyển hướng về URL tĩnh
+      return res.redirect(`/${fileName}`);
+    }
+
     let html = fs.readFileSync(filePath, 'utf8');
 
     // 1. Lấy banner mới nhất từ database
@@ -327,7 +339,12 @@ async function servePageWithBanner(res, fileName, bannerKey, bannerId) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.send(html);
   } catch (err) {
-    res.sendFile(path.join(__dirname, 'public', fileName));
+    console.warn('Lưu ý render trang:', err.message);
+    try {
+      res.sendFile(path.join(__dirname, 'public', fileName));
+    } catch (e) {
+      res.redirect(`/${fileName}`);
+    }
   }
 }
 
@@ -1402,6 +1419,14 @@ const startServer = async () => {
     }
   });
 };
+
+// Global error handling middleware - ngăn chặn mọi lỗi làm sập Serverless Function
+app.use((err, req, res, next) => {
+  console.error('Lỗi xử lý yêu cầu:', err);
+  if (!res.headersSent) {
+    res.status(500).json({ success: false, message: err.message || 'Lỗi máy chủ nội bộ' });
+  }
+});
 
 // Khởi chạy máy chủ cục bộ hoặc export cho Vercel Serverless Function
 if (process.env.VERCEL) {

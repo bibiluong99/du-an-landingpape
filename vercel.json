@@ -1,14 +1,24 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "functions": {
     "api/index.js": {
-      "includeFiles": ["database.sqlite", "public/**", "schema.sql"]
+      "includeFiles": ["db_fallback_data.json", "database.sqlite"]
     }
   },
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
-    }
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/products", "destination": "/products.html" },
+    { "source": "/product-detail", "destination": "/product-detail.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/blogs", "destination": "/blogs.html" },
+    { "source": "/blog-detail", "destination": "/blog-detail.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/huong-dan-bao-gia", "destination": "/huong-dan-bao-gia.html" },
+    { "source": "/dieu-khoan-su-dung", "destination": "/dieu-khoan-su-dung.html" },
+    { "source": "/chinh-sach-bao-hanh", "destination": "/chinh-sach-bao-hanh.html" },
+    { "source": "/chinh-sach-bao-mat", "destination": "/chinh-sach-bao-mat.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/login", "destination": "/login.html" }
   ]
 }
