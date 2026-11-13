@@ -217,7 +217,7 @@ function fallbackQuery(sql, params = []) {
       const found = list.find(c => c.slug === params[0]);
       return found ? [found] : [];
     }
-    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
+    if (lower.includes('parent_only') || lower.includes('where c.parent_id is null') || lower.includes('and c.parent_id is null') || lower.includes('where parent_id is null') || lower.includes('and parent_id is null')) {
       list = list.filter(c => !c.parent_id);
     }
     if (lower.includes('c.show_in_slider = 1') || lower.includes('show_in_slider = 1')) {
