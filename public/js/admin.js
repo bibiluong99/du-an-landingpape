@@ -6,8 +6,9 @@ const token = localStorage.getItem('admin_token');
 
 // Helper Headers có Bearer Token
 function getAuthHeaders(contentType = 'application/json') {
+  const currentToken = localStorage.getItem('admin_token') || token;
   const headers = {
-    'Authorization': `Bearer ${token}`
+    'Authorization': `Bearer ${currentToken}`
   };
   if (contentType) {
     headers['Content-Type'] = contentType;
