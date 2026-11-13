@@ -115,8 +115,26 @@ function fallbackQuery(sql, params = []) {
     return [...fallbackData.contacts];
   }
 
-  // Products (Ưu tiên kiểm tra trước Categories nếu câu truy vấn chính nhắm đến bảng products)
-  const isProductsQuery = lower.includes('from products p') || lower.includes('from products where') || lower.includes('select p.*') || (lower.includes('from products') && !lower.includes('from categories c'));
+  // Categories (Truy vấn danh mục bắt đầu bằng SELECT c.* hoặc FROM categories c)
+  const isCategoriesQuery = lower.startsWith('select c.*') || (lower.includes('from categories c') && !lower.startsWith('select p.*')) || lower.includes('from categories where') || (lower.includes('from categories') && !lower.includes('from products p'));
+
+  if (isCategoriesQuery) {
+    let list = fallbackData.categories.map(c => {
+      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
+      return { ...c, product_count: count };
+    });
+    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
+      list = list.filter(c => !c.parent_id);
+    }
+    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
+      const found = list.find(c => c.id == params[0]);
+      return found ? [found] : [];
+    }
+    return list;
+  }
+
+  // Products
+  const isProductsQuery = lower.startsWith('select p.*') || lower.includes('from products p') || lower.includes('from products where') || lower.includes('from products');
 
   if (isProductsQuery) {
     let list = fallbackData.products.map(p => {
@@ -160,22 +178,6 @@ function fallbackQuery(sql, params = []) {
     const limitMatch = lower.match(/limit\s+(\d+)/);
     if (limitMatch) {
       list = list.slice(0, parseInt(limitMatch[1]));
-    }
-    return list;
-  }
-
-  // Categories
-  if (lower.includes('from categories')) {
-    let list = fallbackData.categories.map(c => {
-      const count = fallbackData.products.filter(p => p.category_id === c.id).length;
-      return { ...c, product_count: count };
-    });
-    if (lower.includes('parent_only') || lower.includes('c.parent_id is null')) {
-      list = list.filter(c => !c.parent_id);
-    }
-    if (lower.includes('where id = ?') || lower.includes('where c.id = ?')) {
-      const found = list.find(c => c.id == params[0]);
-      return found ? [found] : [];
     }
     return list;
   }
