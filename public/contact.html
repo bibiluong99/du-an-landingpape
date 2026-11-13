@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liên hệ với Điện Việt - Kết nối giá trị - Thắp sáng tương lai</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              200: '#fecaca',
+              300: '#fca5a5',
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#c8102e',
+              700: '#b91c1c',
+              800: '#7e0a0b',
+              900: '#6b0809'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .site-container {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    @media (min-width: 640px) {
+      .site-container {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    @media (min-width: 1200px) {
+      .site-container {
+        max-width: 95%;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    @media (min-width: 1440px) {
+      .site-container {
+        max-width: 94%;
+        padding-left: 1.75rem;
+        padding-right: 1.75rem;
+      }
+    }
+    @media (min-width: 1800px) {
+      .site-container {
+        max-width: 93.5%;
+        padding-left: 2.25rem;
+        padding-right: 2.25rem;
+      }
+    }
+    .section-title-bar {
+      width: 5px;
+      height: 22px;
+      background-color: #c8102e;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    /* Toast Thông báo hiển thị ở phía trên và chính giữa màn hình */
+    #toast-container {
+      position: fixed !important;
+      top: 24px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 9999999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 10px !important;
+      pointer-events: none !important;
+      width: auto !important;
+      max-width: 90vw !important;
+    }
+
+    .toast-item {
+      pointer-events: auto !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding: 12px 24px !important;
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border-radius: 9999px !important;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.22), 0 8px 16px -4px rgba(0, 0, 0, 0.12) !important;
+      border: 1.5px solid #e2e8f0 !important;
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+      animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+      transition: all 0.3s ease !important;
+      white-space: nowrap !important;
+    }
+
+    .toast-item.toast-success {
+      border-color: #22c55e !important;
+      background: #f0fdf4 !important;
+      color: #15803d !important;
+    }
+
+    .toast-item.toast-error {
+      border-color: #ef4444 !important;
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+    }
+
+    .toast-item.toast-warning {
+      border-color: #f59e0b !important;
+      background: #fffbeb !important;
+      color: #b45309 !important;
+    }
+
+    .toast-item.toast-info {
+      border-color: #3b82f6 !important;
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+    }
+
+    @keyframes toastSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#fafbfc] text-slate-800 antialiased selection:bg-[#c8102e] selection:text-white">
+
+  <!-- ========================================================
+       1. TOP BAR (FULL WIDTH ĐỎ CHUẨN ĐIỆN VIỆT)
+       ======================================================== -->
+  <div class="w-full bg-[#c8102e] text-white text-xs sm:text-[13px] 2xl:text-[14px] py-2 px-4 sm:px-6 border-b border-[#a10402]">
+    <div class="site-container flex flex-wrap justify-between items-center gap-2">
+      <!-- Left: Cam kết chính hãng 100% | Giao hàng toàn quốc | Hỗ trợ 24/7 -->
+      <div class="flex items-center space-x-3 sm:space-x-5">
+        <span class="flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-circle-check text-white text-xs sm:text-sm"></i>
+          <span>Cam kết chính hãng 100%</span>
+        </span>
+        <span class="text-red-200/60">|</span>
+        <span class="flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-truck text-white text-xs sm:text-sm"></i>
+          <span>Giao hàng toàn quốc</span>
+        </span>
+        <span class="text-red-200/60">|</span>
+        <span class="hidden sm:flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-headset text-white text-xs sm:text-sm"></i>
+          <span>Hỗ trợ 24/7</span>
+        </span>
+      </div>
+
+      <!-- Right: Đăng nhập -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <a href="/login" class="hover:underline font-semibold text-white flex items-center space-x-1.5">
+          <span>Đăng nhập</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       2. MAIN HEADER (LOGO - TÌM KIẾM - HOTLINE - MENU)
+       ======================================================== -->
+  <header class="w-full bg-white border-b border-slate-100 shadow-xs sticky top-0 z-40">
+    <div class="site-container py-2.5 sm:py-3 2xl:py-4">
+      <div class="flex items-center justify-between gap-3 sm:gap-6 lg:gap-8">
+        
+        <!-- Left: Standalone Red Bolt Logo Điện Việt -->
+        <a href="/" class="flex items-center space-x-2.5 sm:space-x-3 shrink-0 group min-w-0">
+          <div class="site-logo-icon text-[#c8102e] text-2xl sm:text-3xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6 group-hover:scale-110 transition duration-300">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <img src="" alt="Điện Việt Logo" class="site-logo-img hidden h-8 sm:h-10 2xl:h-12 w-auto object-contain">
+          <div class="min-w-0">
+            <div id="company-name-header" class="site-company-name text-xl sm:text-2xl 2xl:text-[34px] font-black tracking-tight text-[#0f172a] leading-none">
+              Điện <span class="text-[#c8102e]">Việt</span>
+            </div>
+            <span class="site-company-slogan hidden sm:block text-xs sm:text-[13px] 2xl:text-sm text-slate-500 font-medium tracking-tight mt-1 truncate" id="company-slogan-header">
+              Kết nối giá trị - Thắp sáng tương lai
+            </span>
+          </div>
+        </a>
+
+        <!-- Center: Capsule Search box on top, Nav menu directly below -->
+        <div class="hidden lg:flex flex-1 flex-col items-center max-w-lg 2xl:max-w-xl mx-auto space-y-2 px-2">
+          <!-- Capsule Search bar -->
+          <form action="/products" method="GET" class="w-full relative flex items-center">
+            <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..." class="w-full pl-5 pr-12 py-2 sm:py-2.5 2xl:py-3 rounded-full border border-slate-200 focus:border-[#c8102e] text-sm 2xl:text-base outline-none transition bg-slate-50/50">
+            <button type="submit" class="absolute right-1.5 w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#c8102e] hover:bg-red-700 text-white flex items-center justify-center transition shadow-xs">
+              <i class="fa-solid fa-magnifying-glass text-xs 2xl:text-sm"></i>
+            </button>
+          </form>
+
+          <!-- Horizontal Menu with Active Red Underline on Liên hệ -->
+          <nav class="flex items-center space-x-6 xl:space-x-8 2xl:space-x-10 text-sm sm:text-[15px] 2xl:text-[17px] font-semibold text-slate-700 pt-0.5 whitespace-nowrap">
+            <a href="/" class="hover:text-[#c8102e] transition">Trang chủ</a>
+            <a href="/about" class="hover:text-[#c8102e] transition">Giới thiệu</a>
+            <a href="/products" class="hover:text-[#c8102e] transition">Sản phẩm</a>
+            <a href="/blogs" class="hover:text-[#c8102e] transition">Tin tức</a>
+            <a href="/contact" class="text-[#c8102e] font-bold border-b-2 border-[#c8102e] pb-1">Liên hệ</a>
+          </nav>
+        </div>
+
+        <!-- Right: Hotline & Mobile Controls -->
+        <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <div class="hidden lg:flex items-center space-x-3">
+            <div class="text-[#c8102e] text-3xl 2xl:text-4xl">
+              <i class="fa-solid fa-phone-volume"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] 2xl:text-xs text-slate-400 font-bold uppercase tracking-wider leading-tight">Hotline tư vấn</span>
+              <a href="tel:0764333998" class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#c8102e] tracking-tight hover:underline block leading-tight font-mono mt-0.5" id="header-phone">
+                0764333998
+              </a>
+            </div>
+          </div>
+
+          <a href="tel:0764333998" class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 text-[#c8102e] hover:bg-red-100 flex items-center justify-center transition shadow-2xs" title="Gọi Hotline 0764333998">
+            <i class="fa-solid fa-phone text-sm sm:text-base"></i>
+          </a>
+
+          <button id="mobile-menu-btn" type="button" aria-label="Menu" class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-[#c8102e] flex items-center justify-center transition shadow-2xs focus:outline-none">
+            <i class="fa-solid fa-bars text-lg sm:text-xl"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3.5 space-y-3 shadow-xl">
+      <form action="/products" method="GET" class="w-full relative flex items-center">
+        <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..." class="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-full py-2 pl-4 pr-11 text-xs sm:text-sm focus:outline-none focus:border-[#c8102e]">
+        <button type="submit" class="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#c8102e] text-white flex items-center justify-center">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+      </form>
+      <nav class="space-y-1 text-sm font-semibold text-slate-700">
+        <a href="/" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-house w-5 text-center text-slate-400"></i>
+          <span>Trang chủ</span>
+        </a>
+        <a href="/about" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-circle-info w-5 text-center text-slate-400"></i>
+          <span>Giới thiệu</span>
+        </a>
+        <a href="/products" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center text-slate-400"></i>
+          <span>Sản phẩm</span>
+        </a>
+        <a href="/blogs" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-newspaper w-5 text-center text-slate-400"></i>
+          <span>Tin tức</span>
+        </a>
+        <a href="/contact" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-[#c8102e] bg-red-50">
+          <i class="fa-solid fa-phone w-5 text-center"></i>
+          <span>Liên hệ</span>
+        </a>
+      </nav>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+        <span class="flex items-center space-x-1.5"><i class="fa-solid fa-headset text-[#c8102e]"></i><span>Hotline tư vấn:</span></span>
+        <a href="tel:0764333998" class="font-bold text-[#c8102e] font-mono text-sm hover:underline">0764333998</a>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ========================================================
+       3. HERO BANNER LIÊN HỆ VỚI ĐIỆN VIỆT (CHUẨN HÌNH MẪU)
+       ======================================================== -->
+  <section class="w-full relative overflow-hidden bg-slate-50">
+    <div class="w-full">
+      <img id="page-banner-contact" src="/images/contact-hero-banner.jpg" alt="Liên hệ với Điện Việt - Chúng tôi luôn sẵn sàng hỗ trợ bạn!" class="w-full h-auto block select-none">
+    </div>
+  </section>
+
+
+  <!-- ========================================================
+       4. MAIN CONTACT CONTENT: BỐ CỤC 2 HÀNG CHUẨN MOCKUP
+       ======================================================== -->
+  <main class="site-container py-6 sm:py-8 space-y-6 sm:space-y-8">
+
+    <!-- ========================================================
+         HÀNG 1: THÔNG TIN LIÊN HỆ (TRÁI) & GỬI YÊU CẦU (PHẢI)
+         ======================================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+      <!-- CỘT TRÁI: THÔNG TIN LIÊN HỆ -->
+      <div class="lg:col-span-4 space-y-0">
+        
+        <!-- Header Tab đỏ góc trên -->
+        <div class="inline-block bg-[#c8102e] text-white px-5 py-2.5 rounded-t-2xl font-black text-sm sm:text-base tracking-tight shadow-xs">
+          Thông tin liên hệ
+        </div>
+
+        <!-- Khung nội dung thông tin liên hệ -->
+        <div class="bg-white rounded-2xl rounded-tl-none border border-red-200/90 p-5 sm:p-6 shadow-2xs space-y-4 sm:space-y-5">
+          
+          <!-- 1. Hotline tư vấn -->
+          <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#c8102e] text-white flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-xs">
+              <i class="fa-solid fa-phone"></i>
+            </div>
+            <div>
+              <span class="block text-xs sm:text-[13px] font-bold text-[#0f172a]">Hotline tư vấn</span>
+              <a href="tel:18001234" id="contact-page-phone" class="text-xl sm:text-2xl font-black text-[#c8102e] leading-tight block hover:underline">
+                1800 1234
+              </a>
+              <span class="text-[11px] sm:text-xs text-slate-500 font-medium">(Miễn phí 8h - 22h)</span>
+            </div>
+          </div>
+
+          <!-- 2. Email hỗ trợ -->
+          <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#c8102e] text-white flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-xs">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div>
+              <span class="block text-xs sm:text-[13px] font-bold text-[#0f172a]">Email hỗ trợ</span>
+              <a href="mailto:hotro@dienviet.vn" id="contact-page-email" class="text-sm sm:text-base font-bold text-[#c8102e] hover:underline">
+                hotro@dienviet.vn
+              </a>
+            </div>
+          </div>
+
+          <!-- 3. Địa chỉ -->
+          <div class="flex items-start space-x-3.5">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#c8102e] text-white flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-xs mt-0.5">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div>
+              <span class="block text-xs sm:text-[13px] font-bold text-[#0f172a]">Địa chỉ</span>
+              <p id="contact-page-address" class="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed mt-0.5">
+                Số 123 Nguyễn Văn Cừ, Hà Nội
+              </p>
+            </div>
+          </div>
+
+          <!-- 4. Thời gian làm việc -->
+          <div class="flex items-start space-x-3.5">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#c8102e] text-white flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-xs mt-0.5">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <span class="block text-xs sm:text-[13px] font-bold text-[#0f172a]">Thời gian làm việc</span>
+              <div id="contact-page-hours" class="text-xs sm:text-sm text-slate-700 font-medium leading-tight mt-0.5 space-y-1">
+                <p>Thứ 2 - Thứ 7: 8h00 - 17h30</p>
+                <p>Chủ nhật: 8h00 - 12h00</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phần: Kết nối với chúng tôi -->
+          <div class="pt-3 border-t border-slate-100">
+            <div class="flex items-center mb-3">
+              <span class="section-title-bar"></span>
+              <h4 class="font-black text-sm text-[#0f172a]">Kết nối với chúng tôi</h4>
+            </div>
+            <div class="flex items-center space-x-2.5">
+              <a href="https://facebook.com" target="_blank" class="w-8 h-8 rounded-full bg-[#1877f2] text-white flex items-center justify-center text-xs hover:opacity-90 shadow-2xs transition" title="Facebook">
+                <i class="fa-brands fa-facebook-f"></i>
+              </a>
+              <a href="https://youtube.com" target="_blank" class="w-8 h-8 rounded-full bg-[#ff0000] text-white flex items-center justify-center text-xs hover:opacity-90 shadow-2xs transition" title="YouTube">
+                <i class="fa-brands fa-youtube"></i>
+              </a>
+              <a href="https://zalo.me" target="_blank" class="w-8 h-8 rounded-full bg-[#0068ff] text-white flex items-center justify-center text-[9px] font-black hover:opacity-90 shadow-2xs transition" title="Zalo">
+                Zalo
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- CỘT PHẢI: FORM GỬI YÊU CẦU CHO CHÚNG TÔI -->
+      <div class="lg:col-span-8 space-y-0">
+        
+        <!-- Header Banner đỏ dài với biểu tượng máy bay giấy -->
+        <div class="bg-[#c8102e] text-white px-5 py-3 sm:py-3.5 rounded-t-2xl font-black text-base sm:text-lg flex items-center justify-between shadow-xs">
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-paper-plane text-white text-base"></i>
+            <span>Gửi yêu cầu cho chúng tôi</span>
+          </div>
+          <i class="fa-solid fa-bolt text-red-300/40 text-xl"></i>
+        </div>
+
+        <!-- Khung Form trắng -->
+        <div class="bg-white rounded-b-2xl border border-red-200/90 border-t-0 p-5 sm:p-7 shadow-2xs space-y-4 sm:space-y-5">
+          <!-- Thông báo gửi thành công nổi bật ngay trên form (hiển thị trước text hướng dẫn) -->
+          <div id="contact-success-alert" class="hidden p-4 sm:p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-400 text-emerald-900 shadow-md space-y-2 transition-all duration-300">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2.5 font-black text-sm sm:text-base text-emerald-800">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-xl sm:text-2xl shrink-0"></i>
+                <span>Gửi yêu cầu liên hệ thành công!</span>
+              </div>
+              <button type="button" onclick="document.getElementById('contact-success-alert').classList.add('hidden')" class="text-emerald-500 hover:text-emerald-800 text-base p-1 cursor-pointer" title="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <p class="text-xs sm:text-[13px] text-emerald-700 font-medium pl-8 leading-relaxed">
+              Cảm ơn quý khách đã gửi thông tin. Đội ngũ tư vấn viên của Điện Việt đã tiếp nhận yêu cầu và sẽ liên hệ lại quý khách trong thời gian sớm nhất!
+            </p>
+          </div>
+
+          <p class="text-xs sm:text-sm font-bold text-slate-700">
+            Hãy để lại thông tin, chúng tôi sẽ liên hệ lại bạn sớm nhất!
+          </p>
+
+          <form id="contact-page-form" onsubmit="handleContactSubmit(event)" class="space-y-4">
+            
+            <!-- Hàng 1: Họ và tên & Số điện thoại -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div class="relative flex items-center">
+                <i class="fa-regular fa-user absolute left-4 text-slate-400 text-sm"></i>
+                <input type="text" id="form-fullname" required placeholder="Họ và tên *" class="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 transition">
+              </div>
+
+              <div class="relative flex items-center">
+                <i class="fa-solid fa-phone absolute left-4 text-slate-400 text-sm"></i>
+                <input type="tel" id="form-phone" required placeholder="Số điện thoại *" class="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 transition">
+              </div>
+            </div>
+
+            <!-- Hàng 2: Email (Bắt buộc theo yêu cầu 8) & Loại liên hệ -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div class="relative flex items-center">
+                <i class="fa-regular fa-envelope absolute left-4 text-slate-400 text-sm"></i>
+                <input type="email" id="form-email" required placeholder="Email *" class="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 transition">
+              </div>
+
+              <!-- Custom Dropdown Chọn Loại (Chuẩn UI, không bị lỗi popup trên mobile) -->
+              <div class="relative" id="custom-type-container">
+                <i class="fa-solid fa-circle-notch absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none z-10"></i>
+                
+                <button type="button" id="custom-type-btn" onclick="toggleCustomTypeDropdown(event)" class="w-full pl-11 pr-9 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 text-left cursor-pointer transition flex items-center justify-between group">
+                  <span id="custom-type-label" class="text-slate-500 font-medium truncate select-none">-- Chọn loại --</span>
+                  <i id="custom-type-arrow" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200 shrink-0 pointer-events-none"></i>
+                </button>
+
+                <!-- Hidden native select for form submit and script compatibility -->
+                <select id="form-type" class="sr-only" tabindex="-1" aria-hidden="true">
+                  <option value="" selected>-- Chọn loại --</option>
+                  <option value="Báo giá sản phẩm" data-show-products="true">Báo giá sản phẩm</option>
+                  <option value="Tư vấn kỹ thuật" data-show-products="true">Tư vấn kỹ thuật</option>
+                  <option value="Hủy đơn" data-show-products="false">Hủy đơn</option>
+                  <option value="Đổi trả" data-show-products="false">Đổi trả</option>
+                  <option value="Góp ý / Khiếu nại" data-show-products="false">Góp ý / Khiếu nại</option>
+                </select>
+
+                <!-- Menu danh sách tuỳ chọn (Đồng bộ chuẩn 100% độ rộng container, không bị lệch trên mobile) -->
+                <div id="custom-type-menu" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1.5 max-h-60 overflow-y-auto">
+                </div>
+              </div>
+            </div>
+
+            <!-- Sản phẩm quan tâm (tùy chọn) - Chỉ hiển thị khi chọn loại liên hệ có cấu hình hiển thị sản phẩm -->
+            <div id="product-interest-container" style="display: none;" class="space-y-4 pt-1 transition-all duration-300 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-red-100/90 shadow-2xs">
+              
+              <!-- 1. LOẠI SẢN PHẨM (Hiển thị tất cả các loại sản phẩm ở trang Admin có trạng thái bật) -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2 text-xs sm:text-sm font-bold text-slate-800">
+                    <i class="fa-solid fa-layer-group text-[#c8102e]"></i>
+                    <span>Loại sản phẩm</span>
+                    <span class="text-[11px] text-slate-400 font-normal hidden sm:inline">(Chọn loại để lọc danh sách sản phẩm)</span>
+                  </div>
+                  <button type="button" onclick="clearCategoryFilters()" id="clear-cat-filters-btn" class="hidden text-[11px] text-[#c8102e] hover:underline font-semibold cursor-pointer">
+                    Bỏ chọn loại
+                  </button>
+                </div>
+
+                <!-- Danh sách checkbox các Loại sản phẩm nạp động từ DB (Trạng thái Bật ở Admin) -->
+                <div id="contact-categories-list" class="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
+                  <span class="text-slate-400 text-xs italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải loại sản phẩm...</span>
+                </div>
+              </div>
+
+              <!-- 2. DANH SÁCH SẢN PHẨM (Hiển thị list danh sách sản phẩm và có thể chọn nhiều hơn 1) -->
+              <div class="space-y-2.5 pt-3 border-t border-slate-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div class="flex items-center space-x-2 text-xs sm:text-sm font-bold text-slate-800">
+                    <i class="fa-solid fa-boxes-stacked text-[#c8102e]"></i>
+                    <span>Danh sách sản phẩm</span>
+                    <span class="text-red-500 font-black text-sm">*</span>
+                    <span class="text-[11px] text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">(Bắt buộc chọn ít nhất 1 sản phẩm)</span>
+                  </div>
+                  <div id="contact-selected-count-badge" class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full inline-flex items-center self-start sm:self-auto">
+                    Đã chọn: <span id="contact-selected-count-num" class="mx-1">0</span> sản phẩm
+                  </div>
+                </div>
+
+                <!-- Cảnh báo bắt buộc chọn sản phẩm khi chưa chọn -->
+                <div id="product-required-error" class="hidden p-3 rounded-xl bg-red-50 border border-red-300 text-red-700 text-xs font-bold flex items-center space-x-2 animate-pulse">
+                  <i class="fa-solid fa-triangle-exclamation text-red-500 text-base shrink-0"></i>
+                  <span>Bắt buộc: Quý khách vui lòng tích chọn ít nhất 1 sản phẩm trong danh sách bên dưới trước khi gửi yêu cầu!</span>
+                </div>
+
+                <!-- Ô tìm kiếm sản phẩm nhanh -->
+                <div class="relative flex items-center">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-slate-400 text-xs pointer-events-none"></i>
+                  <input 
+                    type="text" 
+                    id="contact-product-search-input" 
+                    placeholder="Gõ tên sản phẩm để tìm nhanh (VD: Cadivi, Cáp điện, Aptomat...)..." 
+                    class="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-[#c8102e] transition placeholder:text-slate-400"
+                  />
+                  <button type="button" id="contact-clear-search-btn" class="hidden absolute right-2.5 text-slate-400 hover:text-red-500 text-xs p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- Khung hiển thị danh sách sản phẩm cuộn với checkbox chọn nhiều -->
+                <div id="contact-products-scroll-list" class="max-h-56 overflow-y-auto space-y-1 p-2 bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                  <div class="text-center py-6 text-slate-400 text-xs italic">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải danh sách sản phẩm...
+                  </div>
+                </div>
+
+                <!-- Khối hiển thị các sản phẩm đã chọn (Tags/Badges) -->
+                <div id="contact-selected-products-tags" class="hidden pt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                  <!-- Injected tags -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Nội dung liên hệ -->
+            <div class="relative">
+              <div class="absolute left-4 top-3 text-slate-400 text-sm">
+                <i class="fa-solid fa-pen"></i>
+              </div>
+              <textarea id="form-message" required rows="3" placeholder="Nội dung liên hệ *&#10;Nhập nội dung cần hỗ trợ..." class="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 transition"></textarea>
+            </div>
+
+            <!-- Nút gửi yêu cầu màu đỏ ở giữa -->
+            <div class="pt-3 text-center">
+              <button type="submit" id="submit-contact-btn" class="inline-flex items-center justify-center space-x-2 py-3 px-12 rounded-full bg-[#c8102e] hover:bg-red-700 text-white font-black text-sm sm:text-base shadow-xs hover:shadow-md transition active:scale-95">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+                <span>Gửi yêu cầu</span>
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ========================================================
+         HÀNG 2: BẢN ĐỒ VỊ TRÍ (NHÚNG BẢN ĐỒ THỰC) & VÌ SAO NÊN LIÊN HỆ
+         ======================================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 items-stretch">
+
+      <!-- CỘT TRÁI: BẢN ĐỒ VỊ TRÍ GẮN VỊ TRÍ & HIỂN THỊ TRỰC TIẾP -->
+      <div class="relative rounded-2xl overflow-hidden border border-[#fecaca] shadow-2xs bg-white min-h-[290px] sm:min-h-[310px] flex flex-col group">
+        
+        <!-- Nhãn ribbon đỏ Bản đồ vị trí góc trên bên trái -->
+        <div class="absolute top-0 left-0 z-10 bg-[#c8102e] text-white px-4 py-2 rounded-br-2xl font-black text-xs sm:text-sm tracking-tight shadow-md flex items-center space-x-1.5 pointer-events-none">
+          <i class="fa-solid fa-location-dot text-white text-xs sm:text-sm"></i>
+          <span>Bản đồ vị trí</span>
+        </div>
+
+        <!-- Thẻ thông tin địa chỉ góc trái dưới bản đồ -->
+        <div class="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-xs p-2.5 sm:p-3 rounded-xl border border-slate-200 shadow-md text-xs max-w-[240px] sm:max-w-xs pointer-events-auto">
+          <h5 class="font-black text-sm text-[#0f172a] flex items-center space-x-1">
+            <span class="text-[#c8102e]">Điện Việt</span>
+          </h5>
+          <p class="text-slate-600 text-[11px] sm:text-xs leading-tight mt-0.5">Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội</p>
+          <a href="https://maps.google.com/?q=Số+123+Nguyễn+Văn+Cừ+Long+Biên+Hà+Nội" target="_blank" class="text-[#1877f2] font-semibold text-[11px] hover:underline block mt-1">
+            Xem bản đồ lớn hơn <i class="fa-solid fa-arrow-up-right-from-square text-[9px] ml-0.5"></i>
+          </a>
+        </div>
+
+        <!-- Bản đồ tương tác trực tiếp nhúng vị trí Điện Việt -->
+        <iframe 
+          src="https://maps.google.com/maps?q=123+Nguyễn+Văn+Cừ,+Long+Biên,+Hà+Nội&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+          class="w-full flex-1 min-h-[290px] sm:min-h-[310px] border-0" 
+          allowfullscreen="" 
+          loading="lazy" 
+          title="Bản đồ vị trí Công ty TNHH Điện Việt">
+        </iframe>
+
+      </div>
+
+      <!-- CỘT PHẢI: VÌ SAO NÊN LIÊN HỆ VỚI ĐIỆN VIỆT? (TEXT + BACKGROUND + ICON MASCOT) -->
+      <div class="relative bg-[#fdf2f2] border border-[#fecaca] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-row items-center justify-between gap-2 sm:gap-4 overflow-hidden min-h-[290px] sm:min-h-[310px]">
+        
+        <!-- Nội dung text bên trái -->
+        <div class="space-y-4 sm:space-y-5 flex-1 z-10">
+          
+          <!-- Tiêu đề & Icon Bắt tay đỏ to rõ -->
+          <div class="flex items-center space-x-3 text-[#c8102e]">
+            <div class="w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl bg-white shadow-xs border border-red-100 flex items-center justify-center text-xl 2xl:text-2xl shrink-0">
+              <i class="fa-solid fa-handshake"></i>
+            </div>
+            <h3 class="font-black text-base sm:text-lg 2xl:text-xl tracking-tight text-[#c8102e]">
+              Vì sao nên liên hệ với Điện Việt?
+            </h3>
+          </div>
+
+          <!-- 4 Cam kết dạng bullet text với icon dấu check tròn to rõ không mờ -->
+          <ul class="space-y-3 2xl:space-y-3.5 text-xs sm:text-sm 2xl:text-base font-bold text-slate-800">
+            <li class="flex items-center space-x-3">
+              <i class="fa-solid fa-circle-check text-[#c8102e] text-lg 2xl:text-xl shrink-0"></i>
+              <span>Tư vấn chuyên nghiệp, tận tâm</span>
+            </li>
+            <li class="flex items-center space-x-3">
+              <i class="fa-solid fa-circle-check text-[#c8102e] text-lg 2xl:text-xl shrink-0"></i>
+              <span>Hỗ trợ nhanh chóng 24/7</span>
+            </li>
+            <li class="flex items-center space-x-3">
+              <i class="fa-solid fa-circle-check text-[#c8102e] text-lg 2xl:text-xl shrink-0"></i>
+              <span>Giải đáp mọi thắc mắc về sản phẩm & dịch vụ</span>
+            </li>
+            <li class="flex items-center space-x-3">
+              <i class="fa-solid fa-circle-check text-[#c8102e] text-lg 2xl:text-xl shrink-0"></i>
+              <span>Báo giá nhanh, chính xác</span>
+            </li>
+          </ul>
+
+        </div>
+
+        <!-- Mascot người kỹ thuật viên Điện Việt (to rõ, sắc nét, không bị mờ theo yêu cầu 9) -->
+        <div class="w-36 sm:w-48 md:w-56 lg:w-64 shrink-0 flex items-end justify-end self-end -mr-2 -mb-5 sm:-mr-4 sm:-mb-6">
+          <img src="/images/contact-mascot-hd.png" alt="Nhân viên kỹ thuật Điện Việt" class="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- ========================================================
+       5. FOOTER (FULL WIDTH ĐỎ CHUẨN THƯƠNG HIỆU ĐIỆN VIỆT)
+       ======================================================== -->
+  <footer class="w-full bg-[#7e0a0b] text-white pt-10 sm:pt-12 border-t border-red-950 mt-12 sm:mt-16">
+    <div class="site-container pb-8 sm:pb-10">
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-5 xl:gap-6 2xl:gap-8">
+        
+        <!-- Cột 1: Logo, Slogan, Mạng xã hội (3 cols) -->
+        <div class="lg:col-span-3 space-y-3 2xl:space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="footer-logo-icon w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl bg-white text-[#c8102e] flex items-center justify-center text-xl 2xl:text-2xl font-black shadow-xs">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <img src="" alt="Điện Việt Logo" class="footer-logo-img hidden h-10 2xl:h-12 w-auto object-contain bg-white rounded-xl p-1">
+            <div>
+              <span class="site-footer-company-name text-2xl 2xl:text-3xl font-black tracking-tight text-white leading-none">Điện <span class="text-red-200">Việt</span></span>
+              <span class="site-footer-slogan block text-xs 2xl:text-sm text-red-200/90 font-medium tracking-tight mt-1">Kết nối giá trị - Thắp sáng tương lai</span>
+            </div>
+          </div>
+          <!-- Social Icons: Facebook, Youtube, Zalo -->
+          <div class="flex items-center space-x-2.5 pt-2">
+            <a href="https://facebook.com" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#1877f2] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition" title="Facebook">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="https://youtube.com" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#ff0000] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition" title="YouTube">
+              <i class="fa-brands fa-youtube"></i>
+            </a>
+            <a href="https://zalo.me" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#0068ff] flex items-center justify-center text-white text-[9px] 2xl:text-xs font-black hover:opacity-90 transition" title="Zalo">
+              Zalo
+            </a>
+          </div>
+        </div>
+
+        <!-- Cột 2: Thông tin liên hệ (3 cols) -->
+        <div class="lg:col-span-3 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/90">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Thông tin liên hệ</h4>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-phone text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span class="font-bold text-white text-sm sm:text-base 2xl:text-lg" id="footer-phone">1800 1234</span>
+          </div>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-envelope text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span id="footer-email">hotro@dienviet.vn</span>
+          </div>
+          <div class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-location-dot text-red-300 w-4 text-sm 2xl:text-base mt-0.5"></i>
+            <span id="footer-address">Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội</span>
+          </div>
+        </div>
+
+        <!-- Cột 3: Hỗ trợ khách hàng (2 cols) -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Hỗ trợ khách hàng</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/huong-dan-bao-gia" class="hover:text-white transition whitespace-nowrap block">Hướng dẫn báo giá</a></li>
+            <li><a href="/dieu-khoan-su-dung" class="hover:text-white transition whitespace-nowrap block">Điều khoản sử dụng</a></li>
+            <li><a href="/chinh-sach-bao-hanh" class="hover:text-white transition whitespace-nowrap block">Chính sách bảo hành</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 4: Về Điện Việt (2 cols - Đảm bảo "Giới thiệu công ty" không xuống dòng) -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Về Điện Việt</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/about" class="hover:text-white transition whitespace-nowrap block">Giới thiệu công ty</a></li>
+            <li><a href="/contact" class="hover:text-white transition whitespace-nowrap block">Liên hệ</a></li>
+            <li><a href="/blogs" class="hover:text-white transition whitespace-nowrap block">Tin tức</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 5: Bản đồ tương đương với địa chỉ công ty (2 cols) -->
+        <div class="lg:col-span-2" id="map-box">
+          <div class="rounded-xl overflow-hidden border border-red-900/60 shadow-xs h-28 sm:h-32 2xl:h-36 w-full bg-white relative group">
+            <iframe 
+              id="footer-map-iframe"
+              src="https://maps.google.com/maps?q=123+Nguy%E1%BB%85n+V%C4%83n+C%E1%BB%AB,+Long+Bi%C3%AAn,+H%C3%A0+N%E1%BB%99i&t=&z=14&ie=UTF8&iwloc=&output=embed" 
+              class="w-full h-full border-0" 
+              loading="lazy" 
+              allowfullscreen=""
+              title="Bản đồ Điện Việt - Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội">
+            </iframe>
+            <a href="https://maps.google.com/?q=Số+123+Nguyễn+Văn+Cừ+Long+Biên+Hà+Nội" target="_blank" class="absolute bottom-1 right-1 bg-white/95 backdrop-blur-xs text-[10px] text-[#1877f2] font-bold px-1.5 py-0.5 rounded shadow-xs hover:underline flex items-center space-x-1">
+              <span>Xem bản đồ</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Dòng Copyright với màu khác màu footer hiện tại (bg-[#500506]) -->
+    <div class="w-full bg-[#500506] border-t border-red-950/80 py-3.5 sm:py-4">
+      <div class="site-container flex flex-col sm:flex-row items-center justify-between text-xs 2xl:text-sm text-red-200/90 gap-2">
+        <div class="font-medium tracking-wide">
+          @ 2026 Điện Việt
+        </div>
+        <div class="flex items-center space-x-4 text-xs 2xl:text-sm">
+          <a href="/dieu-khoan-su-dung" class="hover:underline text-red-200/90 hover:text-white transition">Điều khoản sử dụng</a>
+          <span class="text-red-400/50">|</span>
+          <a href="/chinh-sach-bao-hanh" class="hover:underline text-red-200/90 hover:text-white transition">Chính sách bảo hành</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/main.js"></script>
+  <script>
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatVND(amount) {
+      if (amount === undefined || amount === null || isNaN(amount)) return 'Liên hệ';
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    // Quản lý dữ liệu Loại sản phẩm & Danh sách sản phẩm trong form liên hệ
+    let contactAllCategories = [];
+    let contactAllProducts = [];
+    let contactSelectedProducts = new Map(); // key: id, value: product object
+    let contactDataLoaded = false;
+
+    // Tải danh mục và danh sách sản phẩm từ máy chủ
+    async function loadContactCategoriesAndProducts() {
+      if (contactDataLoaded) return;
+      try {
+        const [catRes, prodRes] = await Promise.all([
+          fetch('/api/categories?_t=' + Date.now()),
+          fetch('/api/products?limit=200&_t=' + Date.now())
+        ]);
+        const catData = await catRes.json();
+        const prodData = await prodRes.json();
+
+        if (catData.success && Array.isArray(catData.data)) {
+          // Lọc tất cả các loại sản phẩm ở trang Admin có trạng thái Bật
+          contactAllCategories = catData.data.filter(c => c.show_in_slider === 1 || c.show_in_slider === undefined || c.show_in_slider === null);
+          renderContactCategories();
+        }
+
+        if (prodData.success && Array.isArray(prodData.data)) {
+          contactAllProducts = prodData.data;
+          renderContactProducts();
+
+          // Kiểm tra URL nếu có sản phẩm được truyền vào từ trang chi tiết sản phẩm
+          const urlParams = new URLSearchParams(window.location.search);
+          const paramProdId = urlParams.get('product_id') || urlParams.get('id');
+          const paramProdName = urlParams.get('product') || urlParams.get('name');
+          if (paramProdId || paramProdName) {
+            const matchedProd = contactAllProducts.find(p => String(p.id) === String(paramProdId) || (paramProdName && p.name.toLowerCase().includes(paramProdName.toLowerCase())));
+            if (matchedProd) {
+              contactSelectedProducts.set(matchedProd.id, matchedProd);
+              updateSelectedProductsUI();
+              renderContactProducts();
+            }
+          }
+        }
+        contactDataLoaded = true;
+      } catch (err) {
+        console.error('Lỗi khi tải dữ liệu sản phẩm cho form liên hệ:', err);
+      }
+    }
+
+    // Hiển thị danh sách các Loại sản phẩm (Categories)
+    function renderContactCategories() {
+      const container = document.getElementById('contact-categories-list');
+      if (!container) return;
+
+      if (contactAllCategories.length === 0) {
+        container.innerHTML = '<span class="text-slate-400 text-xs italic">Không có loại sản phẩm nào đang bật.</span>';
+        return;
+      }
+
+      container.innerHTML = contactAllCategories.map(cat => `
+        <label class="inline-flex items-center space-x-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-slate-200 hover:border-red-300 transition text-xs font-semibold text-slate-700 select-none shadow-2xs hover:bg-red-50/40">
+          <input 
+            type="checkbox" 
+            name="category_interest" 
+            value="${escapeHtml(cat.name)}" 
+            data-id="${cat.id}" 
+            data-parent-id="${cat.parent_id || ''}"
+            onchange="onCategoryFilterChange()" 
+            class="contact-category-cb w-4 h-4 text-[#c8102e] rounded border-slate-300 focus:ring-red-400 accent-[#c8102e] cursor-pointer"
+          />
+          <span>${escapeHtml(cat.name)}</span>
+        </label>
+      `).join('');
+    }
+
+    // Lấy tập hợp ID danh mục được chọn (bao gồm cả danh mục con của nó)
+    function getCheckedCategoryIds() {
+      const checkedBoxes = document.querySelectorAll('input[name="category_interest"]:checked');
+      const checkedIds = new Set();
+      checkedBoxes.forEach(cb => {
+        const id = parseInt(cb.getAttribute('data-id'), 10);
+        if (!isNaN(id)) {
+          checkedIds.add(id);
+          // Thêm các danh mục con nếu có
+          contactAllCategories.forEach(c => {
+            if (c.parent_id === id) checkedIds.add(c.id);
+          });
+        }
+      });
+      return checkedIds;
+    }
+
+    // Khi tick chọn / bỏ chọn Loại sản phẩm
+    function onCategoryFilterChange() {
+      const clearBtn = document.getElementById('clear-cat-filters-btn');
+      const checkedBoxes = document.querySelectorAll('input[name="category_interest"]:checked');
+      if (clearBtn) {
+        if (checkedBoxes.length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      renderContactProducts();
+    }
+
+    function clearCategoryFilters() {
+      document.querySelectorAll('input[name="category_interest"]').forEach(cb => { cb.checked = false; });
+      onCategoryFilterChange();
+    }
+
+    // Hiển thị danh sách sản phẩm với hỗ trợ tìm kiếm và chọn nhiều
+    function renderContactProducts() {
+      const container = document.getElementById('contact-products-scroll-list');
+      if (!container) return;
+
+      const searchInput = document.getElementById('contact-product-search-input');
+      const kw = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const checkedCatIds = getCheckedCategoryIds();
+
+      // Lọc danh sách sản phẩm
+      const filtered = contactAllProducts.filter(p => {
+        if (checkedCatIds.size > 0) {
+          if (!p.category_id || !checkedCatIds.has(p.category_id)) return false;
+        }
+        if (kw) {
+          const matchName = p.name && p.name.toLowerCase().includes(kw);
+          const matchDesc = p.short_desc && p.short_desc.toLowerCase().includes(kw);
+          const matchCat = p.category_name && p.category_name.toLowerCase().includes(kw);
+          if (!matchName && !matchDesc && !matchCat) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-slate-400 text-xs">
+            <i class="fa-solid fa-box-open text-base mb-1 block text-slate-300"></i>
+            Không tìm thấy sản phẩm phù hợp.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => {
+        const isSelected = contactSelectedProducts.has(p.id);
+        const priceFormatted = p.price ? formatVND(p.price) : 'Liên hệ';
+        return `
+          <label class="flex items-center justify-between p-2 sm:p-2.5 rounded-xl hover:bg-red-50/50 cursor-pointer transition select-none ${isSelected ? 'bg-red-50/80 border border-red-200' : 'border border-transparent hover:border-slate-100'}">
+            <div class="flex items-center space-x-3 min-w-0 flex-1 pr-2">
+              <input 
+                type="checkbox" 
+                class="contact-product-cb w-4 h-4 text-[#c8102e] rounded border-slate-300 focus:ring-red-400 accent-[#c8102e] shrink-0 cursor-pointer" 
+                data-id="${p.id}" 
+                ${isSelected ? 'checked' : ''}
+                onchange="onProductCheckboxChange(${p.id}, this.checked)"
+              />
+              <img 
+                src="${p.image || '/images/prod-cadivi-red.jpg'}" 
+                alt="${escapeHtml(p.name)}" 
+                class="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-lg bg-white border border-slate-200 p-0.5 shrink-0"
+                onerror="this.src='/images/prod-cadivi-red.jpg'"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-xs sm:text-[13px] text-slate-800 truncate leading-snug" title="${escapeHtml(p.name)}">
+                  ${escapeHtml(p.name)}
+                </div>
+                <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center space-x-2 mt-0.5">
+                  <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-medium">${escapeHtml(p.category_name || 'Sản phẩm')}</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs font-black text-[#c8102e] shrink-0">
+              ${priceFormatted}
+            </div>
+          </label>
+        `;
+      }).join('');
+    }
+
+    // Khi tick chọn / bỏ chọn 1 sản phẩm
+    function onProductCheckboxChange(productId, isChecked) {
+      const prod = contactAllProducts.find(p => p.id === productId);
+      if (!prod) return;
+
+      if (isChecked) {
+        contactSelectedProducts.set(productId, prod);
+      } else {
+        contactSelectedProducts.delete(productId);
+      }
+
+      updateSelectedProductsUI();
+    }
+
+    // Bỏ chọn 1 sản phẩm từ thanh tags bên dưới
+    function removeSelectedProduct(productId) {
+      contactSelectedProducts.delete(productId);
+      updateSelectedProductsUI();
+      const cb = document.querySelector(`.contact-product-cb[data-id="${productId}"]`);
+      if (cb) cb.checked = false;
+      renderContactProducts();
+    }
+
+    // Bỏ chọn toàn bộ sản phẩm
+    function clearAllSelectedProducts() {
+      contactSelectedProducts.clear();
+      updateSelectedProductsUI();
+      document.querySelectorAll('.contact-product-cb').forEach(cb => { cb.checked = false; });
+      renderContactProducts();
+    }
+
+    // Cập nhật giao diện số lượng và các tag sản phẩm đã chọn
+    function updateSelectedProductsUI() {
+      const countNum = document.getElementById('contact-selected-count-num');
+      const countBadge = document.getElementById('contact-selected-count-badge');
+      const tagsContainer = document.getElementById('contact-selected-products-tags');
+
+      const count = contactSelectedProducts.size;
+      if (countNum) countNum.textContent = count;
+
+      // Tự động ẩn cảnh báo lỗi khi đã chọn ít nhất 1 sản phẩm
+      const reqError = document.getElementById('product-required-error');
+      if (count > 0 && reqError) {
+        reqError.classList.add('hidden');
+      }
+
+      if (countBadge) {
+        if (count > 0) {
+          countBadge.className = 'text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full inline-flex items-center self-start sm:self-auto';
+        } else {
+          countBadge.className = 'text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full inline-flex items-center self-start sm:self-auto';
+        }
+      }
+
+      if (tagsContainer) {
+        if (count === 0) {
+          tagsContainer.classList.add('hidden');
+          tagsContainer.innerHTML = '';
+        } else {
+          tagsContainer.classList.remove('hidden');
+          let tagsHtml = `<span class="text-[11px] text-slate-500 font-bold self-center mr-1">Đã chọn (${count}):</span>`;
+          contactSelectedProducts.forEach(p => {
+            tagsHtml += `
+              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-red-50 text-[#c8102e] border border-red-200 font-bold text-xs shadow-2xs">
+                <span class="truncate max-w-[180px]">${escapeHtml(p.name)}</span>
+                <button type="button" onclick="removeSelectedProduct(${p.id})" class="text-red-400 hover:text-red-700 ml-0.5 cursor-pointer p-0.5" title="Bỏ chọn">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </span>
+            `;
+          });
+          tagsHtml += `
+            <button type="button" onclick="clearAllSelectedProducts()" class="text-[11px] text-slate-400 hover:text-red-600 font-semibold cursor-pointer ml-1 underline">
+              Xóa tất cả
+            </button>
+          `;
+          tagsContainer.innerHTML = tagsHtml;
+        }
+      }
+    }
+
+    // ==========================================
+    // CUSTOM DROPDOWN CHỌN LOẠI LIÊN HỆ
+    // Khắc phục hoàn toàn lỗi vỡ/lệch popup trên mobile
+    // ==========================================
+    function toggleCustomTypeDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('custom-type-menu');
+      const btn = document.getElementById('custom-type-btn');
+      const arrow = document.getElementById('custom-type-arrow');
+      if (!menu) return;
+      const isOpening = menu.classList.contains('hidden');
+      if (isOpening) {
+        renderCustomTypeOptions();
+        menu.classList.remove('hidden');
+        if (arrow) arrow.classList.add('rotate-180');
+        if (btn) {
+          btn.classList.add('border-[#c8102e]', 'bg-white', 'ring-2', 'ring-red-100');
+          btn.classList.remove('bg-slate-50/40');
+        }
+      } else {
+        closeCustomTypeDropdown();
+      }
+    }
+
+    function closeCustomTypeDropdown() {
+      const menu = document.getElementById('custom-type-menu');
+      const btn = document.getElementById('custom-type-btn');
+      const arrow = document.getElementById('custom-type-arrow');
+      if (menu) menu.classList.add('hidden');
+      if (arrow) arrow.classList.remove('rotate-180');
+      if (btn) {
+        btn.classList.remove('border-[#c8102e]', 'ring-2', 'ring-red-100');
+        btn.classList.add('bg-slate-50/40');
+      }
+    }
+
+    function selectCustomType(value) {
+      const typeSelect = document.getElementById('form-type');
+      if (!typeSelect) return;
+      typeSelect.value = value;
+      typeSelect.dispatchEvent(new Event('change'));
+      syncCustomTypeLabel();
+      closeCustomTypeDropdown();
+    }
+
+    function syncCustomTypeLabel() {
+      const typeSelect = document.getElementById('form-type');
+      const label = document.getElementById('custom-type-label');
+      if (!typeSelect || !label) return;
+      const selectedOpt = typeSelect.selectedOptions ? typeSelect.selectedOptions[0] : null;
+      const text = selectedOpt ? selectedOpt.text : (typeSelect.value || '-- Chọn loại --');
+      label.textContent = text;
+      if (typeSelect.value) {
+        label.className = 'text-slate-900 font-bold truncate select-none';
+      } else {
+        label.className = 'text-slate-500 font-medium truncate select-none';
+      }
+    }
+
+    function renderCustomTypeOptions() {
+      const typeSelect = document.getElementById('form-type');
+      const menu = document.getElementById('custom-type-menu');
+      if (!typeSelect || !menu) return;
+      const currentVal = typeSelect.value || '';
+      const options = Array.from(typeSelect.options);
+      menu.innerHTML = options.map(opt => {
+        const isSelected = opt.value === currentVal;
+        const valSafe = opt.value.replace(/'/g, "\\'");
+        return `
+          <div onclick="selectCustomType('${valSafe}')" class="px-4 py-2.5 text-xs sm:text-sm text-slate-700 hover:bg-red-50 hover:text-[#c8102e] cursor-pointer flex items-center justify-between transition ${isSelected ? 'bg-red-50/80 text-[#c8102e] font-bold' : 'font-medium'}">
+            <span>${opt.text}</span>
+            ${isSelected ? '<i class="fa-solid fa-check text-xs text-[#c8102e]"></i>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('custom-type-container');
+      if (container && !container.contains(e.target)) {
+        closeCustomTypeDropdown();
+      }
+    });
+
+    // Hàm ẩn/hiển thị phần Sản phẩm quan tâm: mặc định chỉ hiển thị cho duy nhất loại báo giá
+    function toggleProductInterest() {
+      const typeSelect = document.getElementById('form-type');
+      const interestContainer = document.getElementById('product-interest-container');
+      if (!typeSelect || !interestContainer) return;
+
+      const selectedOpt = typeSelect.selectedOptions ? typeSelect.selectedOptions[0] : null;
+      const rawVal = (selectedOpt ? selectedOpt.value : typeSelect.value || '').toLowerCase().trim();
+      
+      // Chỉ hiển thị cho duy nhất loại Báo giá sản phẩm
+      const isBaoGia = rawVal.includes('báo giá') || rawVal.includes('bao gia');
+
+      if (isBaoGia) {
+        interestContainer.style.display = 'block';
+        loadContactCategoriesAndProducts();
+      } else {
+        interestContainer.style.display = 'none';
+      }
+    }
+
+    // Tải danh sách loại báo giá cấu hình động từ máy chủ
+    async function loadConfiguredQuoteTypes() {
+      let list = null;
+
+      // 1. Lấy trực tiếp từ /api/settings (luôn có sẵn trên máy chủ)
+      try {
+        const res = await fetch('/api/settings?_t=' + Date.now());
+        const result = await res.json();
+        if (result.success && result.data && result.data.quote_types) {
+          const parsed = typeof result.data.quote_types === 'string'
+            ? JSON.parse(result.data.quote_types)
+            : result.data.quote_types;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            list = parsed;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Dự phòng qua /api/quote-types
+      if (!list) {
+        try {
+          const res = await fetch('/api/quote-types?_t=' + Date.now());
+          const result = await res.json();
+          if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            list = result.data;
+          }
+        } catch (e) {}
+      }
+
+      if (list && list.length > 0) {
+        const typeSelect = document.getElementById('form-type');
+        if (typeSelect) {
+          const currentVal = typeSelect.value;
+          let optionsHtml = `<option value=""${!currentVal ? ' selected' : ''}>-- Chọn loại --</option>\n`;
+          list.forEach((item) => {
+            const name = typeof item === 'string' ? item : item.name;
+            const show = typeof item === 'object' && item.show_products ? 'true' : 'false';
+            const selected = (currentVal && currentVal === name) ? ' selected' : '';
+            optionsHtml += `                  <option value="${name}" data-show-products="${show}"${selected}>${name}</option>\n`;
+          });
+          typeSelect.innerHTML = optionsHtml;
+          toggleProductInterest();
+          syncCustomTypeLabel();
+        }
+      }
+    }
+
+    // Chạy tải cấu hình động ngay lập tức
+    loadConfiguredQuoteTypes();
+    loadContactCategoriesAndProducts();
+
+    // Gắn sự kiện khi tài liệu sẵn sàng
+    function initContactPageEvents() {
+      const typeSelect = document.getElementById('form-type');
+      if (typeSelect) {
+        typeSelect.addEventListener('change', toggleProductInterest);
+      }
+
+      const searchInput = document.getElementById('contact-product-search-input');
+      const clearSearchBtn = document.getElementById('contact-clear-search-btn');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          if (clearSearchBtn) {
+            if (e.target.value.trim()) clearSearchBtn.classList.remove('hidden');
+            else clearSearchBtn.classList.add('hidden');
+          }
+          renderContactProducts();
+        });
+      }
+      if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', () => {
+          if (searchInput) {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            renderContactProducts();
+            searchInput.focus();
+          }
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        loadConfiguredQuoteTypes();
+        initContactPageEvents();
+      });
+    } else {
+      initContactPageEvents();
+    }
+
+    // Xử lý gửi Form liên hệ trên trang Contact
+    async function handleContactSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-contact-btn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Đang gửi...</span>';
+
+      const fullname = document.getElementById('form-fullname').value.trim();
+      const phone = document.getElementById('form-phone').value.trim();
+      const email = document.getElementById('form-email').value.trim();
+      const type = document.getElementById('form-type').value;
+      const message = document.getElementById('form-message').value.trim();
+
+      if (!type) {
+        showContactToast('Vui lòng chọn loại liên hệ!', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        toggleCustomTypeDropdown();
+        return;
+      }
+
+      if (!email) {
+        showContactToast('Vui lòng nhập địa chỉ email của bạn!', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        return;
+      }
+
+      // Chỉ lấy các sản phẩm và loại sản phẩm nếu loại liên hệ có cờ hiển thị sản phẩm
+      let products = '';
+      const selectedOpt = document.getElementById('form-type')?.selectedOptions ? document.getElementById('form-type').selectedOptions[0] : null;
+      let shouldCollectProducts = false;
+      if (selectedOpt) {
+        if (selectedOpt.getAttribute('data-show-products') === 'true') {
+          shouldCollectProducts = true;
+        } else if (selectedOpt.getAttribute('data-show-products') === 'false') {
+          shouldCollectProducts = false;
+        } else {
+          shouldCollectProducts = type.toLowerCase().includes('báo giá') || type.toLowerCase().includes('bao gia');
+        }
+      } else {
+        shouldCollectProducts = type.toLowerCase().includes('báo giá') || type.toLowerCase().includes('bao gia');
+      }
+
+      // RÀNG BUỘC: Nếu loại liên hệ có cấu hình chọn sản phẩm thì bắt buộc phải chọn ít nhất 1 sản phẩm
+      if (shouldCollectProducts) {
+        if (contactSelectedProducts.size === 0) {
+          showContactToast('Vui lòng chọn ít nhất 1 sản phẩm bạn quan tâm trong danh sách bên dưới!', 'warning');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+
+          // Hiển thị cảnh báo lỗi màu đỏ tại danh sách sản phẩm
+          const reqError = document.getElementById('product-required-error');
+          if (reqError) reqError.classList.remove('hidden');
+
+          const interestContainer = document.getElementById('product-interest-container');
+          const scrollList = document.getElementById('contact-products-scroll-list');
+          if (interestContainer) {
+            interestContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            interestContainer.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+            setTimeout(() => {
+              interestContainer.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+            }, 3500);
+          }
+          if (scrollList) {
+            scrollList.classList.add('border-red-400');
+            setTimeout(() => {
+              scrollList.classList.remove('border-red-400');
+            }, 3500);
+          }
+          return;
+        }
+
+        const prodNames = Array.from(contactSelectedProducts.values()).map(p => p.name);
+        const catNames = Array.from(document.querySelectorAll('input[name="category_interest"]:checked')).map(cb => cb.value);
+
+        if (prodNames.length > 0 && catNames.length > 0) {
+          products = `${prodNames.join(', ')} (Loại SP: ${catNames.join(', ')})`;
+        } else if (prodNames.length > 0) {
+          products = prodNames.join(', ');
+        } else if (catNames.length > 0) {
+          products = `Loại sản phẩm: ${catNames.join(', ')}`;
+        }
+      }
+
+      try {
+        const res = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullname,
+            phone,
+            email,
+            type,
+            product_name: products,
+            message
+          })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          const successMsg = result.message || 'Cảm ơn bạn! Yêu cầu liên hệ đã được gửi thành công.';
+          showContactToast(successMsg, 'success');
+
+          // Hiển thị thông báo banner nổi bật ngay phía trên form và cuộn mượt đến
+          const successAlert = document.getElementById('contact-success-alert');
+          if (successAlert) {
+            successAlert.classList.remove('hidden');
+            successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          document.getElementById('contact-page-form').reset();
+          clearAllSelectedProducts();
+          clearCategoryFilters();
+          toggleProductInterest();
+        } else {
+          showContactToast(result.message || 'Có lỗi xảy ra, vui lòng thử lại!', 'error');
+        }
+      } catch (err) {
+        showContactToast('Lỗi kết nối máy chủ, vui lòng thử lại sau!', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function showContactToast(msg, type = 'success') {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `toast-item toast-${type}`;
+      let icon = 'fa-circle-check text-emerald-500';
+      if (type === 'error') icon = 'fa-circle-xmark text-red-500';
+      else if (type === 'warning') icon = 'fa-triangle-exclamation text-amber-500';
+      else if (type === 'info') icon = 'fa-circle-info text-blue-500';
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-lg shrink-0"></i>
+        <span class="flex-1 font-bold text-xs sm:text-sm text-slate-800">${escapeHtml(msg)}</span>
+        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 ml-2 text-xs cursor-pointer p-0.5" title="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px) scale(0.95)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+    window.showToast = showContactToast;
+
+    // Tự động ẩn banner thông báo thành công khi người dùng bắt đầu nhập lại form
+    document.getElementById('contact-page-form')?.addEventListener('input', () => {
+      const successAlert = document.getElementById('contact-success-alert');
+      if (successAlert && !successAlert.classList.contains('hidden')) {
+        successAlert.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
+

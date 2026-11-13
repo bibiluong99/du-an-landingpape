@@ -1,0 +1,478 @@
+/* ========================================================
+   STYLESHEET: RED & WHITE LUXURY MODERN THEME
+   LANDING PAGE, BLOG ARCHIVE & CMS
+   ======================================================== */
+
+:root {
+  --primary-red: #dc2626;
+  --primary-red-hover: #b91c1c;
+  --primary-red-dark: #991b1b;
+  --primary-red-light: #fee2e2;
+  --primary-red-glow: rgba(220, 38, 38, 0.25);
+  --primary-red-soft: #fef2f2;
+  --bg-light: #f8fafc;
+  --card-border: #f1f5f9;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  background-color: #ffffff;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Proportional Fluid Container for 13", 19", 21" screens (~3.5% slim side margins) */
+.site-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+@media (min-width: 640px) {
+  .site-container {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+/* 13-inch laptop (1200px - 1366px): ~3% - 4% margins */
+@media (min-width: 1200px) {
+  .site-container {
+    max-width: 95%;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+/* 19-inch monitor (1440px - 1600px): ~3.5% margins */
+@media (min-width: 1440px) {
+  .site-container {
+    max-width: 94%;
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+}
+/* 21-inch monitor (1800px - 1920px Full HD): ~3.5% margins */
+@media (min-width: 1800px) {
+  .site-container {
+    max-width: 93.5%;
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(254, 226, 226, 0.6);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Red Gradients */
+.bg-gradient-red {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #b91c1c 100%);
+}
+
+.bg-gradient-red-soft {
+  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 50%, #fee2e2 100%);
+}
+
+.text-gradient-red {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 40%, #991b1b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Floating Animation */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+/* Pulse Glow Animation */
+@keyframes redGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.45); }
+}
+
+.glow-red {
+  animation: redGlow 3s infinite;
+}
+
+/* Card Sản Phẩm Hiện Đại (Card Hover Effect) */
+.product-card {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #f1f5f9;
+  background: #ffffff;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  border-color: #fca5a5;
+  box-shadow: 0 20px 35px -10px rgba(220, 38, 38, 0.14), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+}
+
+.product-card .img-wrapper {
+  overflow: hidden;
+  position: relative;
+  background: #f8fafc;
+}
+
+.product-card img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card:hover img {
+  transform: scale(1.08);
+}
+
+/* Quick View Overlay Button on Hover */
+.product-card .quick-view-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-card:hover .quick-view-overlay {
+  opacity: 1;
+}
+
+/* Slider / Carousel 3 Danh Mục (3 Giây Tự Chuyển) */
+.slider-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.slider-track {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.slider-item {
+  flex: 0 0 100%;
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .slider-item {
+    flex: 0 0 50%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .slider-item {
+    flex: 0 0 33.333333%; /* Tối đa 3 danh mục hiển thị đồng thời */
+  }
+}
+
+.category-card {
+  position: relative;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.06);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-card:hover {
+  transform: translateY(-6px);
+  border-color: #dc2626;
+  box-shadow: 0 16px 32px rgba(220, 38, 38, 0.18);
+}
+
+/* Thanh Progress Bar 3 giây cho Slider */
+.slider-timer-bar {
+  height: 3px;
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  width: 0%;
+  border-radius: 2px;
+  transition: width 3s linear;
+}
+
+/* Blog Card Sang Trọng */
+.blog-card {
+  transition: all 0.35s ease;
+  border: 1px solid #f1f5f9;
+}
+
+.blog-card:hover {
+  transform: translateY(-6px);
+  border-color: #fca5a5;
+  box-shadow: 0 20px 30px -10px rgba(220, 38, 38, 0.12);
+}
+
+.blog-card img {
+  transition: transform 0.6s ease;
+}
+
+.blog-card:hover img {
+  transform: scale(1.06);
+}
+
+/* Modal Popup Chi Tiết */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  transform: scale(0.92);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-backdrop.active .modal-content {
+  transform: scale(1);
+}
+
+/* Toast Notifications - Hiển thị phía trên và chính giữa trang */
+#toast-container {
+  position: fixed;
+  top: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  pointer-events: none;
+  width: auto;
+  max-width: 90vw;
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.6rem;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 9999px;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2), 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  border: 1.5px solid #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.toast-success { 
+  border-color: #22c55e;
+  background: #ffffff;
+  color: #15803d;
+}
+
+.toast-error { 
+  border-color: #ef4444;
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.toast-warning { 
+  border-color: #f59e0b;
+  background: #ffffff;
+  color: #b45309;
+}
+
+.toast-info { 
+  border-color: #3b82f6;
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Button Shimmer Effect */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transform: rotate(30deg);
+  transition: transform 0.75s ease;
+}
+
+.btn-shimmer:hover::after {
+  transform: rotate(30deg) translate(50%, 50%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #dc2626;
+}
+
+/* Custom Content HTML & Image Styles for About & Why Choose Us */
+#about-history img, 
+#about-us-desc img, 
+#about-why-desc img,
+#preview-about-history img,
+#preview-about-why img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 0.75rem 0;
+  display: block;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Phông chữ & Định dạng Giấy A4 cho Văn bản Báo giá & Hợp đồng */
+.contract-paper {
+  font-family: 'Times New Roman', 'Liberation Serif', Times, serif;
+  color: #0f172a;
+  line-height: 1.6;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.contract-paper.font-times {
+  font-family: 'Times New Roman', 'Liberation Serif', Times, serif !important;
+}
+
+.contract-paper.font-arial {
+  font-family: Arial, 'Helvetica Neue', Helvetica, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* In và xuất PDF cho Hợp đồng / Báo giá */
+@media print {
+  html, body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #quote-contract-modal,
+  #quote-contract-modal .modal-content,
+  #quote-contract-modal-body,
+  #quote-view-preview {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  #quote-contract-printable,
+  #quote-contract-printable * {
+    visibility: visible !important;
+  }
+
+  #quote-contract-printable {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm 15mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 13pt !important;
+    line-height: 1.5 !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 20mm;
+  }
+}

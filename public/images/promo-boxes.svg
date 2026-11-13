@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="100%" height="100%">
+  <defs>
+    <filter id="boxShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.2"/>
+    </filter>
+    <linearGradient id="boxTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="boxLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="boxRight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Big Bottom Box -->
+  <g filter="url(#boxShadow)">
+    <!-- Top Face -->
+    <polygon points="70,50 110,30 150,50 110,70" fill="url(#boxTop)"/>
+    <!-- Left Face -->
+    <polygon points="70,50 110,70 110,120 70,100" fill="url(#boxLeft)"/>
+    <!-- Right Face -->
+    <polygon points="110,70 150,50 150,100 110,120" fill="url(#boxRight)"/>
+    <!-- Packing Tape -->
+    <polygon points="85,60 100,52 100,115 85,108" fill="#fcd34d" opacity="0.8"/>
+  </g>
+
+  <!-- Smaller Top Box Stacked -->
+  <g filter="url(#boxShadow)">
+    <polygon points="20,40 55,22 90,40 55,58" fill="url(#boxTop)"/>
+    <polygon points="20,40 55,58 55,100 20,82" fill="url(#boxLeft)"/>
+    <polygon points="55,58 90,40 90,82 55,100" fill="url(#boxRight)"/>
+    <polygon points="35,48 48,41 48,96 35,89" fill="#fcd34d" opacity="0.8"/>
+  </g>
+</svg>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chính sách bảo mật - Điện Việt</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              200: '#fecdd3',
+              500: '#c8102e',
+              600: '#a10402',
+              700: '#7e0a0b',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .site-container {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    @media (min-width: 640px) {
+      .site-container {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    @media (min-width: 1200px) {
+      .site-container {
+        max-width: 95%;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    @media (min-width: 1440px) {
+      .site-container {
+        max-width: 94%;
+        padding-left: 1.75rem;
+        padding-right: 1.75rem;
+      }
+    }
+    @media (min-width: 1800px) {
+      .site-container {
+        max-width: 93.5%;
+        padding-left: 2.25rem;
+        padding-right: 2.25rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#fcfcfd] text-slate-800 antialiased selection:bg-[#c8102e] selection:text-white">
+
+  <!-- ========================================================
+       1. TOP BAR
+       ======================================================== -->
+  <div class="w-full bg-[#c8102e] text-white text-xs sm:text-[13px] 2xl:text-[14px] py-2 px-4 sm:px-6 border-b border-[#a10402]">
+    <div class="site-container flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-3 sm:space-x-5">
+        <span class="flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-circle-check text-white text-xs sm:text-sm"></i>
+          <span>Cam kết chính hãng 100%</span>
+        </span>
+        <span class="text-red-200/60">|</span>
+        <span class="flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-truck text-white text-xs sm:text-sm"></i>
+          <span>Giao hàng toàn quốc</span>
+        </span>
+        <span class="text-red-200/60">|</span>
+        <span class="hidden sm:flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-headset text-white text-xs sm:text-sm"></i>
+          <span>Hỗ trợ 24/7</span>
+        </span>
+      </div>
+
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <a href="/login" class="hover:underline font-semibold text-white flex items-center space-x-1.5">
+          <span>Đăng nhập</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       2. MAIN HEADER (LOGO - TÌM KIẾM - HOTLINE - MENU)
+       ======================================================== -->
+  <header class="w-full bg-white border-b border-slate-100 shadow-xs sticky top-0 z-40">
+    <div class="site-container py-2.5 sm:py-3 2xl:py-4">
+      <div class="flex items-center justify-between gap-3 sm:gap-6 lg:gap-8">
+        
+        <!-- Left: Logo Điện Việt -->
+        <a href="/" class="flex items-center space-x-2.5 sm:space-x-3 shrink-0 group min-w-0">
+          <div class="site-logo-icon text-[#c8102e] text-2xl sm:text-3xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6 group-hover:scale-110 transition duration-300">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <img src="" alt="Điện Việt Logo" class="site-logo-img hidden h-8 sm:h-10 2xl:h-12 w-auto object-contain">
+          <div class="min-w-0">
+            <div id="company-name-header" class="site-company-name text-xl sm:text-2xl 2xl:text-[34px] font-black tracking-tight text-[#0f172a] leading-none">
+              Điện <span class="text-[#c8102e]">Việt</span>
+            </div>
+            <span class="site-company-slogan hidden sm:block text-xs sm:text-[13px] 2xl:text-sm text-slate-500 font-medium tracking-tight mt-1 truncate" id="company-slogan-header">
+              Kết nối giá trị - Thắp sáng tương lai
+            </span>
+          </div>
+        </a>
+
+        <!-- Center: Search & Navigation -->
+        <div class="hidden lg:flex flex-1 flex-col items-center max-w-lg 2xl:max-w-xl mx-auto space-y-2 px-2">
+          <!-- Capsule Search bar -->
+          <form action="/products" method="GET" class="w-full relative flex items-center">
+            <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..." class="w-full pl-5 pr-12 py-2 sm:py-2.5 2xl:py-3 rounded-full border border-slate-200 focus:border-[#c8102e] text-sm 2xl:text-base outline-none transition bg-slate-50/50">
+            <button type="submit" class="absolute right-1.5 w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#c8102e] hover:bg-red-700 text-white flex items-center justify-center transition shadow-xs">
+              <i class="fa-solid fa-magnifying-glass text-xs 2xl:text-sm"></i>
+            </button>
+          </form>
+
+          <!-- Nav Menu: Trang chủ | Giới thiệu | Sản phẩm | Tin tức | Liên hệ -->
+          <nav class="flex items-center space-x-6 xl:space-x-8 2xl:space-x-10 text-sm sm:text-[15px] 2xl:text-[17px] font-semibold text-slate-700 pt-0.5 whitespace-nowrap">
+            <a href="/" class="hover:text-[#c8102e] transition">Trang chủ</a>
+            <a href="/about" class="hover:text-[#c8102e] transition">Giới thiệu</a>
+            <a href="/products" class="hover:text-[#c8102e] transition">Sản phẩm</a>
+            <a href="/blogs" class="hover:text-[#c8102e] transition">Tin tức</a>
+            <a href="/contact" class="hover:text-[#c8102e] transition">Liên hệ</a>
+          </nav>
+        </div>
+
+        <!-- Right: Hotline & Mobile Controls -->
+        <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <div class="hidden lg:flex items-center space-x-3">
+            <div class="text-[#c8102e] text-3xl 2xl:text-4xl">
+              <i class="fa-solid fa-phone-volume"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] 2xl:text-xs text-slate-400 font-bold uppercase tracking-wider leading-tight">Hotline tư vấn</span>
+              <a href="tel:0764333998" class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#c8102e] tracking-tight hover:underline block leading-tight font-mono mt-0.5" id="header-phone">
+                0764333998
+              </a>
+            </div>
+          </div>
+
+          <a href="tel:0764333998" class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 text-[#c8102e] hover:bg-red-100 flex items-center justify-center transition shadow-2xs" title="Gọi Hotline 0764333998">
+            <i class="fa-solid fa-phone text-sm sm:text-base"></i>
+          </a>
+
+          <button id="mobile-menu-btn" type="button" aria-label="Menu" class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-[#c8102e] flex items-center justify-center transition shadow-2xs focus:outline-none">
+            <i class="fa-solid fa-bars text-lg sm:text-xl"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Nav Dropdown -->
+    <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3.5 space-y-3 shadow-xl">
+      <form action="/products" method="GET" class="w-full relative flex items-center">
+        <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..." class="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-full py-2 pl-4 pr-11 text-xs sm:text-sm focus:outline-none focus:border-[#c8102e]">
+        <button type="submit" class="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#c8102e] text-white flex items-center justify-center">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+      </form>
+      <nav class="space-y-1 text-sm font-semibold text-slate-700">
+        <a href="/" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-house w-5 text-center text-slate-400"></i>
+          <span>Trang chủ</span>
+        </a>
+        <a href="/about" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-circle-info w-5 text-center text-slate-400"></i>
+          <span>Giới thiệu</span>
+        </a>
+        <a href="/products" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center text-slate-400"></i>
+          <span>Sản phẩm</span>
+        </a>
+        <a href="/blogs" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-newspaper w-5 text-center text-slate-400"></i>
+          <span>Tin tức</span>
+        </a>
+        <a href="/contact" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-phone w-5 text-center text-slate-400"></i>
+          <span>Liên hệ</span>
+        </a>
+      </nav>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+        <span class="flex items-center space-x-1.5"><i class="fa-solid fa-headset text-[#c8102e]"></i><span>Hotline tư vấn:</span></span>
+        <a href="tel:0764333998" class="font-bold text-[#c8102e] font-mono text-sm hover:underline">0764333998</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       3. HERO BANNER FULL-WIDTH
+       ======================================================== -->
+  <section class="w-full relative overflow-hidden bg-gradient-to-r from-[#d0e5fb] via-[#e2f0fe] to-[#fed7aa]/35 border-b border-blue-100">
+    <div class="absolute bottom-0 inset-x-0 h-20 sm:h-28 lg:h-36 opacity-25 pointer-events-none select-none z-0">
+      <svg class="w-full h-full object-cover" viewBox="0 0 1200 120" preserveAspectRatio="none" fill="#1e40af">
+        <path d="M0,120 L0,75 L25,75 L25,50 L50,50 L50,80 L65,80 L65,35 L75,35 L75,25 L85,25 L85,35 L95,35 L95,80 L120,80 L120,65 L135,65 L135,80 L160,80 L160,45 L180,45 L180,80 L200,80 L200,60 L220,60 L220,80 L240,80 L240,15 L250,15 L250,8 L260,15 L260,80 L285,80 L285,50 L310,50 L310,80 L330,80 L330,40 L355,40 L355,80 L380,80 L380,55 L400,55 L400,80 L430,80 L430,30 L445,30 L445,20 L455,20 L455,30 L470,30 L470,80 L490,80 L490,65 L520,65 L520,80 L545,80 L545,45 L575,45 L575,80 L605,80 L605,25 L615,12 L625,25 L625,80 L655,80 L655,60 L685,60 L685,80 L715,80 L715,40 L745,40 L745,80 L775,80 L775,50 L805,50 L805,80 L835,80 L835,20 L845,20 L845,8 L855,8 L855,20 L865,20 L865,80 L895,80 L895,55 L925,55 L925,80 L955,80 L955,35 L985,35 L985,80 L1015,80 L1015,60 L1045,60 L1045,80 L1075,80 L1075,30 L1090,18 L1105,30 L1105,80 L1135,80 L1135,45 L1165,45 L1165,80 L1200,80 L1200,120 Z"/>
+      </svg>
+    </div>
+
+    <div class="site-container relative z-10 flex flex-col md:flex-row items-center justify-between py-6 sm:py-8 lg:py-10">
+      <div class="space-y-1 sm:space-y-2 text-center md:text-left py-2 sm:py-4">
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-[#1e3a8a] tracking-tight leading-tight">
+          Chính sách
+        </h1>
+        <div class="relative inline-block mt-0.5 sm:mt-1">
+          <span class="text-4xl sm:text-6xl lg:text-7xl font-black text-[#c8102e] tracking-tight block">
+            bảo mật
+          </span>
+          <svg class="w-full h-3 sm:h-5 text-[#c8102e] -mt-1 sm:-mt-1.5" viewBox="0 0 380 20" fill="none" preserveAspectRatio="none">
+            <path d="M 5 12 Q 190 23 375 8 Q 190 15 5 12" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="text-base sm:text-xl lg:text-2xl font-bold text-[#1e3a8a] tracking-tight pt-1">
+          Bảo vệ dữ liệu - Tôn trọng quyền riêng tư
+        </p>
+      </div>
+
+      <div class="relative shrink-0 flex items-center justify-center mt-4 md:mt-0">
+        <img 
+          src="/images/quote-guide-hero-girl.png" 
+          alt="Chính sách bảo mật Điện Việt" 
+          class="h-44 sm:h-56 lg:h-64 xl:h-72 w-auto object-contain select-none"
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       4. NỘI DUNG CHÍNH SÁCH BẢO MẬT
+       ======================================================== -->
+  <main class="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-4 sm:space-y-5">
+
+    <!-- Mục 1 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-bullseye"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-1.5">
+          1. Mục đích thu thập thông tin cá nhân
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
+          Điện Việt thu thập thông tin cá nhân của khách hàng nhằm mục đích:
+        </p>
+        <ul class="space-y-1.5 text-xs sm:text-sm text-slate-700">
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Tiếp nhận yêu cầu tư vấn, cung cấp thông tin sản phẩm và lập báo giá chi tiết.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Thực hiện giao hàng, hỗ trợ lắp đặt, bảo hành và chăm sóc khách hàng sau bán hàng.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Giải quyết các tranh chấp, khiếu nại phát sinh liên quan đến việc sử dụng dịch vụ.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mục 2 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-2">
+          2. Phạm vi sử dụng thông tin
+        </h3>
+        <ul class="space-y-1.5 text-xs sm:text-sm text-slate-700">
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Chỉ sử dụng thông tin trong nội bộ doanh nghiệp và các đối tác vận chuyển phục vụ đơn hàng.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Liên hệ trao đổi thông tin trực tiếp với khách hàng theo số điện thoại hoặc email đã cung cấp.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Cung cấp cho cơ quan có thẩm quyền khi có yêu cầu hợp pháp theo quy định của pháp luật Việt Nam.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mục 3 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-1.5">
+          3. Thời gian lưu trữ thông tin
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+          Dữ liệu cá nhân của khách hàng sẽ được lưu trữ an toàn trong suốt thời gian cung cấp dịch vụ hoặc cho đến khi khách hàng có yêu cầu hủy bỏ thông tin qua hotline hoặc email của Điện Việt.
+        </p>
+      </div>
+    </div>
+
+    <!-- Mục 4 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-2">
+          4. Cam kết bảo mật thông tin khách hàng
+        </h3>
+        <ul class="space-y-1.5 text-xs sm:text-sm text-slate-700">
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Không chuyển giao, mua bán hoặc tiết lộ thông tin khách hàng cho bất kỳ bên thứ ba nào khi chưa có sự đồng ý.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Áp dụng các biện pháp mã hóa và an ninh công nghệ hiện đại nhằm ngăn chặn việc xâm nhập hoặc đánh cắp dữ liệu.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mục 5 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-2">
+          5. Quyền của khách hàng đối với thông tin
+        </h3>
+        <ul class="space-y-1.5 text-xs sm:text-sm text-slate-700">
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Khách hàng có toàn quyền kiểm tra, cập nhật, điều chỉnh thông tin cá nhân của mình bất kỳ lúc nào.</span>
+          </li>
+          <li class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-circle-check text-[#c8102e] text-xs sm:text-sm mt-0.5 shrink-0"></i>
+            <span>Có quyền yêu cầu ban quản trị ngừng thu thập hoặc xóa bỏ vĩnh viễn dữ liệu cá nhân đã lưu trữ.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mục 6 -->
+    <div class="bg-[#fff8f8] border border-[#fde8e8] hover:border-red-300 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-sm transition duration-200 flex items-start space-x-4 sm:space-x-5">
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#c8102e] text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-xs">
+        <i class="fa-solid fa-headset"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base sm:text-lg font-bold text-[#c8102e] mb-1.5">
+          6. Thông tin liên hệ hỗ trợ bảo mật
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-3">
+          Mọi thắc mắc hoặc yêu cầu liên quan đến Chính sách bảo mật, quý khách vui lòng liên hệ trực tiếp với chúng tôi qua:
+        </p>
+        <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm font-semibold">
+          <a href="tel:0764333998" class="flex items-center space-x-2 text-slate-800 hover:text-[#c8102e] transition">
+            <i class="fa-solid fa-phone text-[#c8102e]"></i>
+            <span>Hotline: <span class="font-bold font-mono">0764333998</span></span>
+          </a>
+          <a href="mailto:info@dienviet.vn" class="flex items-center space-x-2 text-slate-800 hover:text-[#c8102e] transition">
+            <i class="fa-solid fa-envelope text-[#c8102e]"></i>
+            <span>Email: <span class="font-bold">info@dienviet.vn</span></span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================
+       5. FOOTER
+       ======================================================== -->
+  <footer class="w-full bg-[#8b0000] text-white mt-12 sm:mt-16 pt-10 sm:pt-12 2xl:pt-14 border-t-4 border-[#c8102e]">
+    <div class="site-container pb-10 sm:pb-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 2xl:gap-10">
+        
+        <!-- Cột 1: Thông tin công ty & Logo -->
+        <div class="lg:col-span-3 space-y-3 2xl:space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="footer-logo-icon text-white text-3xl sm:text-4xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <img src="" alt="Điện Việt Logo" class="footer-logo-img hidden h-10 sm:h-12 w-auto object-contain brightness-0 invert">
+            <div>
+              <span class="site-footer-company-name text-xl sm:text-2xl 2xl:text-[28px] font-black tracking-tight text-white block leading-none">
+                Điện <span class="text-red-200">Việt</span>
+              </span>
+              <span class="site-footer-slogan block text-xs 2xl:text-sm text-red-200/80 font-medium tracking-tight mt-1">
+                Kết nối giá trị - Tiếp sáng tương lai
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2.5 pt-2">
+            <a href="https://facebook.com" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#1877f2] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition" title="Facebook">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="https://youtube.com" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#ff0000] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition" title="YouTube">
+              <i class="fa-brands fa-youtube"></i>
+            </a>
+            <a href="https://zalo.me" target="_blank" class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#0068ff] flex items-center justify-center text-white text-[9px] 2xl:text-xs font-black hover:opacity-90 transition" title="Zalo">
+              Zalo
+            </a>
+          </div>
+        </div>
+
+        <!-- Cột 2: Thông tin liên hệ -->
+        <div class="lg:col-span-3 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/90">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Thông tin liên hệ</h4>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-phone text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span class="font-bold text-white text-sm sm:text-base 2xl:text-lg font-mono" id="footer-phone">0764333998</span>
+          </div>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-envelope text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span id="footer-email">info@dienviet.vn</span>
+          </div>
+          <div class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-location-dot text-red-300 w-4 text-sm 2xl:text-base mt-0.5"></i>
+            <span id="footer-address">Số 123 Nguyễn Văn Cừ, Hà Nội</span>
+          </div>
+        </div>
+
+        <!-- Cột 3: Hỗ trợ khách hàng -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Hỗ trợ khách hàng</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/huong-dan-bao-gia" class="hover:text-white transition whitespace-nowrap block">Hướng dẫn báo giá</a></li>
+            <li><a href="/dieu-khoan-su-dung" class="hover:text-white transition whitespace-nowrap block">Điều khoản sử dụng</a></li>
+            <li><a href="/chinh-sach-bao-hanh" class="hover:text-white transition whitespace-nowrap block">Chính sách bảo hành</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 4: Về Điện Việt -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4 class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">Về Điện Việt</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/about" class="hover:text-white transition whitespace-nowrap block">Giới thiệu công ty</a></li>
+            <li><a href="/contact" class="hover:text-white transition whitespace-nowrap block">Liên hệ</a></li>
+            <li><a href="/blogs" class="hover:text-white transition whitespace-nowrap block">Tin tức</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 5: Bản đồ -->
+        <div class="lg:col-span-2" id="map-box">
+          <div class="rounded-xl overflow-hidden border border-red-900/60 shadow-xs h-28 sm:h-32 2xl:h-36 w-full bg-white relative group">
+            <iframe 
+              id="footer-map-iframe"
+              src="https://maps.google.com/maps?q=123+Nguy%E1%BB%85n+V%C4%83n+C%E1%BB%AB,+Long+Bi%C3%AAn,+H%C3%A0+N%E1%BB%99i&t=&z=14&ie=UTF8&iwloc=&output=embed" 
+              class="w-full h-full border-0" 
+              loading="lazy" 
+              allowfullscreen=""
+              title="Bản đồ Điện Việt">
+            </iframe>
+            <a href="https://maps.google.com/?q=Số+123+Nguyễn+Văn+Cừ+Hà+Nội" target="_blank" class="absolute bottom-1 right-1 bg-white/95 backdrop-blur-xs text-[10px] text-[#1877f2] font-bold px-1.5 py-0.5 rounded shadow-xs hover:underline flex items-center space-x-1">
+              <span>Xem bản đồ</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Dòng Copyright chuẩn theo mockup -->
+    <div class="w-full bg-[#500506] border-t border-red-950/80 py-3.5 sm:py-4">
+      <div class="site-container flex flex-col sm:flex-row items-center justify-between text-xs 2xl:text-sm text-red-200/90 gap-2">
+        <div class="font-medium tracking-wide">
+          © 2024 Điện Việt. Tất cả quyền được bảo lưu.
+        </div>
+        <div class="flex items-center space-x-4 text-xs 2xl:text-sm">
+          <a href="/dieu-khoan-su-dung" class="hover:underline text-red-200/90 hover:text-white transition">Điều khoản sử dụng</a>
+          <span class="text-red-400/50">|</span>
+          <a href="/chinh-sach-bao-hanh" class="hover:underline text-red-200/90 hover:text-white transition">Chính sách bảo hành</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/main.js"></script>
+</body>
+</html>
+

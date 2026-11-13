@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240" width="100%" height="100%">
+  <defs>
+    <filter id="pkShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#pkShadow)" transform="translate(50, 40) rotate(-15)">
+    <rect x="0" y="40" width="30" height="70" rx="6" fill="#ef4444"/>
+    <path d="M -5 10 L 35 10 L 35 40 L -5 40 Z" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5"/>
+    <path d="M 5 0 C 5 15 25 15 25 0 L 25 -10 L 5 -10 Z" fill="#cbd5e1"/>
+  </g>
+
+  <g filter="url(#pkShadow)" transform="translate(140, 50)">
+    <rect x="0" y="40" width="30" height="70" rx="6" fill="#2563eb"/>
+    <path d="M 5 40 L 5 20 L 25 20 L 25 40 Z" fill="#cbd5e1"/>
+    <circle cx="15" cy="0" r="18" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5"/>
+    <circle cx="15" cy="0" r="8" fill="#ffffff"/>
+  </g>
+
+  <g filter="url(#pkShadow)" transform="translate(220, 60) rotate(15)">
+    <rect x="0" y="40" width="30" height="70" rx="6" fill="#f59e0b"/>
+    <rect x="8" y="-15" width="14" height="55" rx="3" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5"/>
+  </g>
+
+  <g filter="url(#pkShadow)" transform="translate(80, 150)">
+    <polygon points="15,0 0,40 30,40" fill="#f97316"/>
+    <polygon points="65,0 50,40 80,40" fill="#ef4444"/>
+    <polygon points="115,0 100,40 130,40" fill="#3b82f6"/>
+  </g>
+</svg>

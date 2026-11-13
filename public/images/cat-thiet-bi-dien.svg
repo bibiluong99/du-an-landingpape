@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240" width="100%" height="100%">
+  <defs>
+    <filter id="mcbShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-opacity="0.15"/>
+    </filter>
+    <linearGradient id="whiteBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="toggleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="50%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#mcbShadow)" transform="translate(75, 20)">
+    <rect x="0" y="0" width="150" height="200" rx="12" fill="url(#whiteBody)" stroke="#cbd5e1" stroke-width="2"/>
+    <line x1="75" y1="0" x2="75" y2="200" stroke="#cbd5e1" stroke-width="2"/>
+
+    <circle cx="37" cy="25" r="14" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="113" cy="25" r="14" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="30" y="23" width="14" height="4" fill="#64748b" rx="2"/>
+    <rect x="106" y="23" width="14" height="4" fill="#64748b" rx="2"/>
+
+    <rect x="25" y="70" width="100" height="60" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5"/>
+    <rect x="35" y="80" width="80" height="35" rx="6" fill="url(#toggleGrad)" filter="url(#mcbShadow)"/>
+    <rect x="40" y="85" width="70" height="8" rx="4" fill="#f87171" opacity="0.7"/>
+    <text x="75" y="103" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">I • ON</text>
+
+    <rect x="30" y="140" width="15" height="10" rx="2" fill="#ef4444" stroke="#cbd5e1" stroke-width="1"/>
+    <rect x="105" y="140" width="15" height="10" rx="2" fill="#ef4444" stroke="#cbd5e1" stroke-width="1"/>
+
+    <text x="75" y="152" fill="#0f172a" font-family="Arial, sans-serif" font-size="12" font-weight="900" text-anchor="middle">C63</text>
+    <text x="75" y="165" fill="#64748b" font-family="Arial, sans-serif" font-size="8" font-weight="bold" text-anchor="middle">400V~ 6000A</text>
+    <text x="75" y="175" fill="#dc2626" font-family="Arial, sans-serif" font-size="8" font-weight="bold" text-anchor="middle">ĐIỆN VIỆT</text>
+
+    <circle cx="37" cy="182" r="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="113" cy="182" r="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="31" y="180" width="12" height="4" fill="#64748b" rx="2"/>
+    <rect x="107" y="180" width="12" height="4" fill="#64748b" rx="2"/>
+  </g>
+</svg>

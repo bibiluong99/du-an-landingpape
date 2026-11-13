@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Quản Trị Hệ Thống - ĐIỆN VIỆT CMS</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              800: '#991b1b',
+              900: '#7f1d1d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Toast Thông báo hiển thị ở phía trên và chính giữa màn hình */
+    #toast-container {
+      position: fixed !important;
+      top: 24px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 999999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 10px !important;
+      pointer-events: none !important;
+      width: auto !important;
+      max-width: 90vw !important;
+    }
+
+    .toast-item {
+      pointer-events: auto !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding: 12px 24px !important;
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border-radius: 9999px !important;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.22), 0 8px 16px -4px rgba(0, 0, 0, 0.12) !important;
+      border: 1.5px solid #e2e8f0 !important;
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+      animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+      transition: all 0.3s ease !important;
+      white-space: nowrap !important;
+    }
+
+    .toast-success {
+      border-color: #22c55e !important;
+      background: #ffffff !important;
+      color: #15803d !important;
+    }
+
+    .toast-error {
+      border-color: #ef4444 !important;
+      background: #ffffff !important;
+      color: #b91c1c !important;
+    }
+
+    .toast-warning {
+      border-color: #f59e0b !important;
+      background: #ffffff !important;
+      color: #b45309 !important;
+    }
+
+    .toast-info {
+      border-color: #3b82f6 !important;
+      background: #ffffff !important;
+      color: #1d4ed8 !important;
+    }
+
+    @keyframes toastSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
+
+  <!-- ========================================================
+       SIDEBAR ĐIỀU HƯỚNG ADMIN (ĐỎ & TRẮNG HIỆN ĐẠI)
+       ======================================================== -->
+  <aside id="sidebar" class="w-64 bg-white border-r border-red-100 flex flex-col justify-between shrink-0 transition-all duration-300 z-30">
+    <div>
+      <!-- Brand Logo -->
+      <div class="h-20 flex items-center px-6 border-b border-red-100">
+        <a href="/" target="_blank" class="flex items-center space-x-3 group" title="Xem trang chủ">
+          <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-red-200">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <span class="text-xl font-black tracking-tight text-slate-900">Điện <span class="text-brand-600">Việt</span></span>
+            <span class="block text-[9px] tracking-widest font-bold uppercase text-slate-400">Admin Control</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="p-4 space-y-1 text-sm font-semibold">
+        <!-- Dashboard -->
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl transition nav-item active bg-brand-600 text-white shadow-sm shadow-red-200">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          <span>Tổng Quan Dashboard</span>
+        </button>
+
+        <!-- Quản lý Loại sản phẩm (Danh mục) -->
+        <button onclick="switchTab('categories')" id="nav-categories" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-red-50 transition nav-item">
+          <i class="fa-solid fa-shapes w-5 text-center"></i>
+          <span>Quản Lý Danh Mục</span>
+        </button>
+
+        <!-- Quản lý Sản phẩm -->
+        <button onclick="switchTab('products')" id="nav-products" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-red-50 transition nav-item">
+          <i class="fa-solid fa-box-open w-5 text-center"></i>
+          <span>Quản Lý Sản Phẩm</span>
+        </button>
+
+        <!-- Quản lý Blog -->
+        <button onclick="switchTab('blogs')" id="nav-blogs" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-red-50 transition nav-item">
+          <i class="fa-solid fa-newspaper w-5 text-center"></i>
+          <span>Quản Lý Tin Tức</span>
+        </button>
+
+        <!-- Quản lý Liên hệ -->
+        <button onclick="switchTab('contacts')" id="nav-contacts" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-red-50 transition nav-item">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-comments w-5 text-center"></i>
+            <span>Quản Lý Liên Hệ</span>
+          </div>
+          <span id="badge-new-contacts" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-600 text-white">0</span>
+        </button>
+
+        <!-- Cấu hình Website -->
+        <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-slate-600 hover:text-brand-600 hover:bg-red-50 transition nav-item">
+          <i class="fa-solid fa-gear w-5 text-center"></i>
+          <span>Cấu Hình Website</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom User Info & Logout -->
+    <div class="p-4 border-t border-red-100 bg-slate-50/50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div class="text-left">
+            <span class="block text-xs font-bold text-slate-900" id="admin-fullname">Quản trị viên</span>
+            <span class="block text-[10px] text-emerald-600 font-semibold flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse"></span>Đang hoạt động</span>
+          </div>
+
+        </div>
+
+        <button onclick="logoutAdmin()" class="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-red-50 transition" title="Đăng xuất">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+
+      <div class="mt-2.5">
+        <button onclick="openChangePasswordModal()" class="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-red-50 border border-slate-200 hover:border-brand-300 transition">
+          <i class="fa-solid fa-key text-[10px] text-brand-600"></i>
+          <span>Đổi Mật Khẩu</span>
+        </button>
+      </div>
+
+      <div class="mt-2">
+        <a href="/" target="_blank" class="w-full flex items-center justify-center space-x-1.5 py-2 px-3 rounded-lg text-xs font-bold text-brand-600 bg-red-50 hover:bg-red-100 transition">
+          <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+          <span>Xem Trang Web Client</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- ========================================================
+       MAIN APP CONTENT
+       ======================================================== -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    
+    <!-- Topbar -->
+    <header class="h-20 bg-white border-b border-red-100 px-6 sm:px-8 flex items-center justify-between shrink-0">
+      <div class="flex items-center space-x-3">
+        <button id="toggle-sidebar-btn" class="p-2 rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <h2 id="page-title" class="text-xl font-black text-slate-900">
+          Tổng Quan Dashboard
+        </h2>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- Quick Notification / Status (Đã ẩn theo yêu cầu) -->
+      </div>
+    </header>
+
+    <!-- Scrollable Workspace Body -->
+    <main class="flex-1 overflow-y-auto p-6 sm:p-8">
+      
+      <!-- ====================================================
+           TAB 1: TỔNG QUAN DASHBOARD
+           ==================================================== -->
+      <section id="tab-dashboard" class="tab-content space-y-8">
+        
+        <!-- Metrics 4 Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Total Products -->
+          <div class="bg-white p-6 rounded-2xl border border-red-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng Sản Phẩm</span>
+              <h3 id="stat-products" class="text-3xl font-black text-slate-900 mt-1">0</h3>
+              <span class="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">
+                <i class="fa-solid fa-circle-check mr-1"></i> Lưu trong SQLite
+              </span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-red-50 text-brand-600 flex items-center justify-center text-2xl">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+          </div>
+
+          <!-- Total Categories -->
+          <div class="bg-white p-6 rounded-2xl border border-red-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Danh Mục Sản Phẩm</span>
+              <h3 id="stat-categories" class="text-3xl font-black text-slate-900 mt-1">0</h3>
+              <span class="text-[11px] text-brand-600 font-semibold mt-1 inline-block">
+                <i class="fa-solid fa-layer-group mr-1"></i> Số lượng danh mục cha
+              </span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-red-50 text-brand-600 flex items-center justify-center text-2xl">
+              <i class="fa-solid fa-shapes"></i>
+            </div>
+          </div>
+
+          <!-- Yêu cầu Báo Giá -->
+          <div class="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Yêu Cầu Báo Giá</span>
+              <h3 id="stat-quotes" class="text-3xl font-black text-blue-600 mt-1">0</h3>
+              <span class="text-[11px] text-blue-600 font-semibold mt-1 inline-block">
+                <i class="fa-solid fa-file-invoice mr-1"></i> Khách hỏi mua hàng
+              </span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+          </div>
+
+          <!-- Khiếu Nại & Góp Ý -->
+          <div class="bg-white p-6 rounded-2xl border border-rose-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Khiếu Nại / Góp Ý</span>
+              <h3 id="stat-complaints" class="text-3xl font-black text-rose-600 mt-1">0</h3>
+              <span class="text-[11px] text-rose-600 font-semibold mt-1 inline-block">
+                <i class="fa-solid fa-bell mr-1"></i> Cần xử lý ưu tiên
+              </span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Recent Contacts Section -->
+        <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="font-extrabold text-base text-slate-900">Danh sách liên hệ</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Hiển thị 5 liên hệ gần nhất</p>
+            </div>
+            <button onclick="switchTab('contacts')" class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center cursor-pointer">
+              <span>Xem tất cả phản hồi</span>
+              <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                <tr>
+                  <th class="py-3.5 px-6">Họ Tên</th>
+                  <th class="py-3.5 px-6">Số Điện Thoại</th>
+                  <th class="py-3.5 px-6">Phân Loại</th>
+                  <th class="py-3.5 px-6">Trạng Thái</th>
+                  <th class="py-3.5 px-6">Thời Gian</th>
+                  <th class="py-3.5 px-6 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-recent-contacts" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================
+           TAB 2: QUẢN LÝ LOẠI SẢN PHẨM (DANH MỤC)
+           ==================================================== -->
+      <section id="tab-categories" class="tab-content hidden space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-red-100 shadow-sm">
+          <div>
+            <h3 class="font-black text-lg text-slate-900">Danh Mục Sản Phẩm (Categories)</h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Thiết lập danh mục và cấu hình danh mục nào được phép xuất hiện tại slider 3 giây trên trang chủ.
+            </p>
+          </div>
+          <button onclick="openCategoryModal()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-200 transition flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Thêm Danh Mục Mới</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                <tr>
+                  <th class="py-3.5 px-6">Hình Ảnh</th>
+                  <th class="py-3.5 px-6">Tên Danh Mục</th>
+                  <th class="py-3.5 px-6">Mô Tả</th>
+                  <th class="py-3.5 px-6 text-center">Hiển Thị</th>
+                  <th class="py-3.5 px-6 text-center">Số Sản Phẩm</th>
+                  <th class="py-3.5 px-6 text-center">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="categories-table-body" class="divide-y divide-slate-100">
+                <!-- Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Phân trang Danh mục (10 mục / trang) -->
+          <div id="categories-pagination" class="px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+            <!-- Injected via admin.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================
+           TAB 3: QUẢN LÝ SẢN PHẨM
+           ==================================================== -->
+      <section id="tab-products" class="tab-content hidden space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-red-100 shadow-sm">
+          <div>
+            <h3 class="font-black text-lg text-slate-900">Quản Lý Sản Phẩm</h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Thêm mới, chỉnh sửa giá, cập nhật hình ảnh, gắn nhãn Mới hoặc Khuyến mãi.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button type="button" onclick="openPriceConfigModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition flex items-center space-x-2 cursor-pointer">
+              <i class="fa-solid fa-sliders text-xs"></i>
+              <span>Cấu hình giá</span>
+            </button>
+            <button onclick="openProductModal()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-200 transition flex items-center space-x-2 cursor-pointer">
+              <i class="fa-solid fa-plus"></i>
+              <span>Thêm Sản Phẩm Mới</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-red-100 shadow-sm flex flex-wrap gap-4 items-center">
+          <div class="relative flex-1 min-w-[260px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="admin-product-search" placeholder="Tìm sản phẩm theo tên..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-600">
+          </div>
+          <div class="w-48">
+            <select id="admin-product-cat-filter" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-600 bg-white">
+              <option value="all">-- Tất cả danh mục --</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                <tr>
+                  <th class="py-3.5 px-6">Ảnh</th>
+                  <th class="py-3.5 px-6">Tên Sản Phẩm</th>
+                  <th class="py-3.5 px-6">Danh Mục</th>
+                  <th class="py-3.5 px-6">Giá Bán</th>
+                  <th class="py-3.5 px-6 text-center">Hot</th>
+                  <th class="py-3.5 px-6 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body" class="divide-y divide-slate-100">
+                <!-- Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Phân trang Sản phẩm (10 mục / trang) -->
+          <div id="products-pagination" class="px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+            <!-- Injected via admin.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================
+           TAB 4: QUẢN LÝ BLOG
+           ==================================================== -->
+      <section id="tab-blogs" class="tab-content hidden space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-red-100 shadow-sm">
+          <div>
+            <h3 class="font-black text-lg text-slate-900">Quản Lý Blog / Tin Tức</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tạo mới, chỉnh sửa, xóa bài viết tin tức xuất hiện trên trang chủ.</p>
+          </div>
+          <button onclick="openBlogModal()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-200 transition flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Viết Bài Mới</span>
+          </button>
+        </div>
+
+        <!-- Thanh Tìm Kiếm & Lọc Danh Mục Blog -->
+        <div class="bg-white p-4 rounded-2xl border border-red-100 shadow-sm flex flex-wrap gap-4 items-center">
+          <div class="relative flex-1 min-w-[260px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="admin-blog-search" placeholder="Tìm bài viết theo tiêu đề..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-600">
+          </div>
+          <div class="w-56">
+            <select id="admin-blog-cat-filter" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-brand-600 bg-white">
+              <option value="all">-- Tất cả danh mục --</option>
+              <option value="Tin công ty">Tin công ty</option>
+              <option value="Kiến thức sản phẩm">Kiến thức sản phẩm</option>
+              <option value="Kinh nghiệm sử dụng điện">Kinh nghiệm sử dụng điện</option>
+              <option value="Công nghệ & Xu hướng">Công nghệ & Xu hướng</option>
+              <option value="Tin khuyến mãi">Tin khuyến mãi</option>
+              <option value="Tin tức thị trường">Tin tức thị trường</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                <tr>
+                  <th class="py-3.5 px-6">Ảnh Đại Diện</th>
+                  <th class="py-3.5 px-6">Tiêu Đề</th>
+                  <th class="py-3.5 px-6">Danh Mục</th>
+                  <th class="py-3.5 px-6">Ngày Đăng</th>
+                  <th class="py-3.5 px-6 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="blogs-table-body" class="divide-y divide-slate-100">
+                <!-- Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Phân trang Tin tức (10 mục / trang) -->
+          <div id="blogs-pagination" class="px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+            <!-- Injected via admin.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================
+           TAB 5: QUẢN LÝ LIÊN HỆ & PHẢN HỒI
+           - Tiếp nhận và xem danh sách các phản hồi gửi từ form liên hệ
+           - Phân loại rõ mục Báo giá hay Khiếu nại để tiện xử lý
+           ==================================================== -->
+      <section id="tab-contacts" class="tab-content hidden space-y-6">
+        
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-red-100 shadow-sm">
+          <div>
+            <h3 class="font-black text-lg text-slate-900">Quản Lý Liên hệ</h3>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+            <!-- 4 Tab trạng thái: Tất cả, Mới tiếp nhận, Đang xử lý, Đã hoàn tất -->
+            <div id="contacts-status-tabs" class="inline-flex p-1 bg-slate-100 rounded-xl space-x-1 shrink-0">
+              <button type="button" onclick="filterContactStatus('all')" id="cstatus-all" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-[#c8102e] text-white shadow-xs cursor-pointer">
+                Tất cả
+              </button>
+              <button type="button" onclick="filterContactStatus('Mới')" id="cstatus-Mới" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 cursor-pointer">
+                Mới tiếp nhận
+              </button>
+              <button type="button" onclick="filterContactStatus('Đang xử lý')" id="cstatus-Đang-xử-lý" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 cursor-pointer">
+                Đang xử lý
+              </button>
+              <button type="button" onclick="filterContactStatus('Đã xử lý')" id="cstatus-Đã-xử-lý" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 cursor-pointer">
+                Đã hoàn tất
+              </button>
+            </div>
+
+            <!-- Bộ lọc Loại liên hệ dạng List chọn (dropdown) -->
+            <div class="relative min-w-[210px] shrink-0">
+              <select 
+                id="contact-type-select-filter" 
+                onchange="filterContactType(this.value)"
+                class="w-full pl-3.5 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:border-[#c8102e] transition appearance-none cursor-pointer"
+              >
+                <option value="all">-- Tất cả loại liên hệ --</option>
+              </select>
+              <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                <tr>
+                  <th class="py-3.5 px-5 w-28">ID & Thời Gian</th>
+                  <th class="py-3.5 px-5 w-44">Khách Hàng</th>
+                  <th class="py-3.5 px-5 w-36">Phân Loại</th>
+                  <th class="py-3.5 px-5 w-64">Sản Phẩm Báo Giá</th>
+                  <th class="py-3.5 px-5 min-w-[180px] max-w-xs">Nội Dung Lời Nhắn</th>
+                  <th class="py-3.5 px-5 w-36">Trạng Thái Xử Lý</th>
+                  <th class="py-3.5 px-4 text-center whitespace-nowrap min-w-[96px]">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="contacts-table-body" class="divide-y divide-slate-100">
+                <!-- Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Phân trang Liên hệ & Báo giá (10 mục / trang) -->
+          <div id="contacts-pagination" class="px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+            <!-- Injected via admin.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================
+           TAB 6: CẤU HÌNH WEBSITE (SETTINGS - 3 TABS ĐỘC LẬP)
+           ==================================================== -->
+      <section id="tab-settings" class="tab-content hidden space-y-6">
+        
+        <!-- Header & 3 Sub-tabs Navigation -->
+        <div class="bg-white p-5 rounded-2xl border border-red-100 shadow-sm space-y-4">
+          <div>
+            <h3 class="font-black text-lg text-slate-900">Cấu Hình Website & Hệ Thống</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tùy biến Banner các trang, thông tin doanh nghiệp, kênh kết nối và khu vực giới thiệu.</p>
+          </div>
+
+          <!-- 4 Sub-tabs Nav Buttons -->
+          <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <button type="button" onclick="switchSettingsSubTab('banners')" id="subtab-btn-banners" class="settings-subtab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2 bg-[#c8102e] text-white shadow-xs">
+              <i class="fa-solid fa-image"></i>
+              <span>1. Quản Lý Banner</span>
+            </button>
+            <button type="button" onclick="switchSettingsSubTab('business')" id="subtab-btn-business" class="settings-subtab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-[#c8102e]">
+              <i class="fa-solid fa-building"></i>
+              <span>2. Thông Tin Doanh Nghiệp & Kênh</span>
+            </button>
+            <button type="button" onclick="switchSettingsSubTab('about')" id="subtab-btn-about" class="settings-subtab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-[#c8102e]">
+              <i class="fa-solid fa-file-lines"></i>
+              <span>3. Về chúng tôi</span>
+            </button>
+            <button type="button" onclick="switchSettingsSubTab('quote-types')" id="subtab-btn-quote-types" class="settings-subtab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-[#c8102e]">
+              <i class="fa-solid fa-list-check"></i>
+              <span>4. Cấu hình liên hệ</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             SUB-TAB 1: QUẢN LÝ BANNER CÁC TRANG
+             ==================================================== -->
+        <div id="subtab-content-banners" class="settings-subtab-content bg-white p-6 sm:p-8 rounded-2xl border border-red-100 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <h4 class="font-black text-base text-slate-900 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#c8102e] inline-block"></span>
+                <span>Quản Lý Banner Các Trang (Hero Banners)</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Tải ảnh từ máy tính hoặc dán link URL. Hệ thống tự động lưu và cập nhật ngay lập tức ra Landing page!
+              </p>
+            </div>
+            <div class="flex items-center space-x-2.5 self-start sm:self-auto">
+              <span class="inline text-[11px] font-bold text-[#c8102e] bg-red-50 border border-red-100 px-3 py-1 rounded-full">
+                <i class="fa-solid fa-image mr-1"></i> Khuyến nghị ~ 1920x350px
+              </span>
+            </div>
+          </div>
+
+          <!-- Grid 5 banner cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            
+            <!-- 1. Banner Trang Chủ -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/90 space-y-3 hover:border-red-300 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-house text-[#c8102e]"></i>
+                  <span>1. Banner Trang Chủ</span>
+                </span>
+                <a href="/" target="_blank" class="text-[11px] font-bold text-slate-400 hover:text-[#c8102e] transition" title="Xem trang">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group">
+                <img id="preview-banner-home" src="/images/hero-banner-main.jpg" alt="Banner Trang Chủ" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                  <button type="button" onclick="document.getElementById('file-banner-home').click()" class="px-3 py-1.5 bg-[#c8102e] text-white text-xs font-bold rounded-lg shadow-md hover:bg-red-700 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đổi ảnh
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <input type="file" id="file-banner-home" accept="image/*" class="hidden" onchange="uploadBannerImage(this, 'set-banner-home', 'preview-banner-home')">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-banner-home" placeholder="/images/hero-banner-main.jpg" oninput="document.getElementById('preview-banner-home').src=this.value" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-600">
+                  <button type="button" onclick="document.getElementById('file-banner-home').click()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 rounded-xl text-xs font-bold transition shrink-0" title="Chọn ảnh từ máy tính">
+                    <i class="fa-solid fa-upload"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Banner Trang Giới Thiệu -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/90 space-y-3 hover:border-red-300 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-building text-[#c8102e]"></i>
+                  <span>2. Banner Trang Giới Thiệu</span>
+                </span>
+                <a href="/about" target="_blank" class="text-[11px] font-bold text-slate-400 hover:text-[#c8102e] transition" title="Xem trang">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group">
+                <img id="preview-banner-about" src="/images/about-hero-banner.jpg" alt="Banner Trang Giới Thiệu" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                  <button type="button" onclick="document.getElementById('file-banner-about').click()" class="px-3 py-1.5 bg-[#c8102e] text-white text-xs font-bold rounded-lg shadow-md hover:bg-red-700 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đổi ảnh
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <input type="file" id="file-banner-about" accept="image/*" class="hidden" onchange="uploadBannerImage(this, 'set-banner-about', 'preview-banner-about')">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-banner-about" placeholder="/images/about-hero-banner.jpg" oninput="document.getElementById('preview-banner-about').src=this.value" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-600">
+                  <button type="button" onclick="document.getElementById('file-banner-about').click()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 rounded-xl text-xs font-bold transition shrink-0" title="Chọn ảnh từ máy tính">
+                    <i class="fa-solid fa-upload"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Banner Trang Sản Phẩm -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/90 space-y-3 hover:border-red-300 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-boxes-stacked text-[#c8102e]"></i>
+                  <span>3. Banner Trang Sản Phẩm</span>
+                </span>
+                <a href="/products" target="_blank" class="text-[11px] font-bold text-slate-400 hover:text-[#c8102e] transition" title="Xem trang">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group">
+                <img id="preview-banner-products" src="/images/products-hero-banner.jpg" alt="Banner Trang Sản Phẩm" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                  <button type="button" onclick="document.getElementById('file-banner-products').click()" class="px-3 py-1.5 bg-[#c8102e] text-white text-xs font-bold rounded-lg shadow-md hover:bg-red-700 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đổi ảnh
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <input type="file" id="file-banner-products" accept="image/*" class="hidden" onchange="uploadBannerImage(this, 'set-banner-products', 'preview-banner-products')">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-banner-products" placeholder="/images/products-hero-banner.jpg" oninput="document.getElementById('preview-banner-products').src=this.value" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-600">
+                  <button type="button" onclick="document.getElementById('file-banner-products').click()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 rounded-xl text-xs font-bold transition shrink-0" title="Chọn ảnh từ máy tính">
+                    <i class="fa-solid fa-upload"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Banner Trang Tin Tức -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/90 space-y-3 hover:border-red-300 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-newspaper text-[#c8102e]"></i>
+                  <span>4. Banner Trang Tin Tức</span>
+                </span>
+                <a href="/blogs" target="_blank" class="text-[11px] font-bold text-slate-400 hover:text-[#c8102e] transition" title="Xem trang">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group">
+                <img id="preview-banner-blogs" src="/images/blogs-hero-banner.jpg" alt="Banner Trang Tin Tức" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                  <button type="button" onclick="document.getElementById('file-banner-blogs').click()" class="px-3 py-1.5 bg-[#c8102e] text-white text-xs font-bold rounded-lg shadow-md hover:bg-red-700 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đổi ảnh
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <input type="file" id="file-banner-blogs" accept="image/*" class="hidden" onchange="uploadBannerImage(this, 'set-banner-blogs', 'preview-banner-blogs')">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-banner-blogs" placeholder="/images/blogs-hero-banner.jpg" oninput="document.getElementById('preview-banner-blogs').src=this.value" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-600">
+                  <button type="button" onclick="document.getElementById('file-banner-blogs').click()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 rounded-xl text-xs font-bold transition shrink-0" title="Chọn ảnh từ máy tính">
+                    <i class="fa-solid fa-upload"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Banner Trang Liên Hệ -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/90 space-y-3 hover:border-red-300 transition md:col-span-2 xl:col-span-1">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-phone-volume text-[#c8102e]"></i>
+                  <span>5. Banner Trang Liên Hệ</span>
+                </span>
+                <a href="/contact" target="_blank" class="text-[11px] font-bold text-slate-400 hover:text-[#c8102e] transition" title="Xem trang">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group">
+                <img id="preview-banner-contact" src="/images/contact-hero-banner.jpg" alt="Banner Trang Liên Hệ" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                  <button type="button" onclick="document.getElementById('file-banner-contact').click()" class="px-3 py-1.5 bg-[#c8102e] text-white text-xs font-bold rounded-lg shadow-md hover:bg-red-700 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đổi ảnh
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <input type="file" id="file-banner-contact" accept="image/*" class="hidden" onchange="uploadBannerImage(this, 'set-banner-contact', 'preview-banner-contact')">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-banner-contact" placeholder="/images/contact-hero-banner.jpg" oninput="document.getElementById('preview-banner-contact').src=this.value" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-600">
+                  <button type="button" onclick="document.getElementById('file-banner-contact').click()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 rounded-xl text-xs font-bold transition shrink-0" title="Chọn ảnh từ máy tính">
+                    <i class="fa-solid fa-upload"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Nút Lưu ở chân trang Sub-tab 1: Quản lý Banner (Đã ẩn theo yêu cầu) -->
+          <div class="hidden pt-4 justify-end">
+            <button type="button" onclick="saveBannersOnly()" id="btn-save-banners" class="px-6 py-3 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu thông tin</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             SUB-TAB 2: THÔNG TIN DOANH NGHIỆP & KÊNH LIÊN HỆ (+ UPLOAD LOGO)
+             ==================================================== -->
+        <div id="subtab-content-business" class="settings-subtab-content hidden bg-white p-6 sm:p-8 rounded-2xl border border-red-100 shadow-sm space-y-6">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h4 class="font-black text-base text-slate-900 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#c8102e] inline-block"></span>
+                <span>Thông Tin Doanh Nghiệp, Logo & Kênh Liên Hệ</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">Quản lý Logo thương hiệu, thông tin hotline, email, địa chỉ và các mạng xã hội.</p>
+            </div>
+            <button type="button" onclick="saveBusinessSettings()" id="btn-save-business-top" class="hidden px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu Thông Tin</span>
+            </button>
+          </div>
+
+          <!-- KHỐI 1: UPLOAD LOGO DOANH NGHIỆP -->
+          <div class="bg-red-50/60 p-5 rounded-2xl border border-red-100 space-y-3">
+            <label class="block text-xs font-extrabold uppercase text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-shield-halved text-[#c8102e]"></i>
+              <span>Logo Doanh Nghiệp / Thương Hiệu</span>
+            </label>
+            <div class="flex flex-col sm:flex-row items-center gap-5">
+              <!-- Box hiển thị Logo Preview -->
+              <div class="w-36 h-24 rounded-2xl bg-white border border-slate-200 p-3 flex items-center justify-center overflow-hidden shadow-xs shrink-0 relative">
+                <img id="preview-logo" src="" alt="Logo Doanh Nghiệp" class="max-w-full max-h-full object-contain hidden">
+                <div id="preview-logo-placeholder" class="flex flex-col items-center justify-center text-slate-400 text-center">
+                  <i class="fa-solid fa-shield-halved text-2xl text-red-300 mb-1"></i>
+                  <span class="text-[11px] font-semibold text-slate-500">Chưa có Logo</span>
+                </div>
+              </div>
+
+              <!-- Controls upload Logo -->
+              <div class="flex-1 w-full space-y-2.5">
+                <input type="file" id="file-logo" accept="image/*" class="hidden" onchange="uploadLogoImage(this)">
+                <div class="flex items-center space-x-2">
+                  <input type="text" id="set-logo-url" placeholder="Đường dẫn file logo (VD: /uploads/img-logo.png)" oninput="updateLogoPreview(this.value)" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-white font-mono text-slate-700">
+                  <button type="button" onclick="document.getElementById('file-logo').click()" class="px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-2 shadow-xs shrink-0 cursor-pointer active:scale-95">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Tải Logo Lên</span>
+                  </button>
+                  <button type="button" onclick="clearLogo()" class="px-3.5 py-2.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-[#c8102e] rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-xs shrink-0 cursor-pointer" title="Xóa logo, quay về logo mặc định">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span class="hidden sm:inline">Xóa Logo</span>
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500">
+                  <i class="fa-solid fa-circle-info mr-1 text-[#c8102e]"></i>
+                  Hỗ trợ định dạng PNG, JPG, SVG hoặc WebP. Khuyến nghị dùng file PNG trong suốt hoặc vector SVG.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- KHỐI 2: CÁC TRƯỜNG THÔNG TIN CƠ BẢN -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pt-2">
+            <!-- Tên công ty -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Tên Công Ty / Thương Hiệu</label>
+              <input type="text" id="set-company-name" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Slogan Hero Section -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Câu Slogan Thương Hiệu</label>
+              <input type="text" id="set-company-slogan" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Hotline Điện thoại -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Số Điện Thoại Hotline</label>
+              <input type="text" id="set-phone" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Địa Chỉ Email</label>
+              <input type="email" id="set-email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Địa chỉ trụ sở -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Địa Chỉ Trụ Sở Công Ty</label>
+              <input type="text" id="set-address" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Kênh Zalo -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Đường Dẫn Chat Zalo</label>
+              <input type="text" id="set-zalo" placeholder="https://zalo.me/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Kênh Facebook -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Đường Dẫn Facebook</label>
+              <input type="text" id="set-fb" placeholder="https://facebook.com/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Kênh Shopee -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Đường Dẫn Gian Hàng Shopee</label>
+              <input type="text" id="set-shopee" placeholder="https://shopee.vn/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Google Maps Embed URL -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Mã Nhúng Bản Đồ Google Maps (Iframe Src)</label>
+              <input type="text" id="set-maps" placeholder="https://www.google.com/maps/embed?pb=..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+            </div>
+
+            <!-- Thời Gian Làm Việc (Yêu cầu 7) -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Thời Gian Làm Việc</label>
+              <input type="text" id="set-working-hours" placeholder="VD: Thứ 2 - Thứ 7: 8h00 - 17h30 | Chủ nhật: 8h00 - 12h00" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+              <p class="text-[11px] text-slate-400 mt-1">Hiển thị tại trang liên hệ và thông tin giờ phục vụ khách hàng.</p>
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end">
+            <button type="button" onclick="saveBusinessSettings()" id="btn-save-business" class="px-6 py-3 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu thông tin</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             SUB-TAB 3: KHU VỰC GIỚI THIỆU LỊCH SỬ & GIÁ TRỊ CỐT LÕI
+             ==================================================== -->
+        <div id="subtab-content-about" class="settings-subtab-content hidden bg-white p-6 sm:p-8 rounded-2xl border border-red-100 shadow-sm space-y-6">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h4 class="font-black text-base text-slate-900 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#c8102e] inline-block"></span>
+                <span>Về chúng tôi</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Nội dung cấu hình tại đây sẽ tự động hiển thị trực tiếp ra phần "Về chúng tôi" và "Giá trị cốt lõi" trên Landing page!
+              </p>
+            </div>
+            <button type="button" onclick="saveAboutSettings()" id="btn-save-about-top" class="hidden px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu Nội Dung</span>
+            </button>
+          </div>
+
+          <div class="space-y-5">
+            <!-- 1. Tiêu đề Về chúng tôi / Giới thiệu -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">
+                Tiêu đề "Về chúng tôi" / Doanh nghiệp
+              </label>
+              <input type="text" id="set-about-title" placeholder="Công ty TNHH Điện Việt" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none font-semibold">
+              <p class="text-[11px] text-slate-400 mt-1">Hiển thị tại tiêu đề phần giới thiệu trên trang chủ và trang Giới thiệu.</p>
+            </div>
+
+            <!-- 2. Nội dung Về chúng tôi / Lịch sử phát triển -->
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                <label class="block text-xs font-bold uppercase text-slate-700">
+                  Nội dung "Về chúng tôi" / Lịch sử phát triển
+                </label>
+                <!-- Toolbar chèn ảnh & xem thử popup -->
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <button type="button" onclick="openInsertImageModal('set-about-history')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] text-xs font-bold rounded-xl border border-red-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Chèn hình ảnh</span>
+                  </button>
+                  <button type="button" onclick="openHtmlPreviewModal('set-about-history', 'Nội dung Về chúng tôi / Lịch sử phát triển')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+                    <i class="fa-regular fa-eye"></i>
+                    <span>Xem thử (Popup)</span>
+                  </button>
+                </div>
+              </div>
+              <textarea id="set-about-history" rows="6" placeholder="Nhập nội dung giới thiệu chi tiết (hỗ trợ văn bản thường, xuống dòng hoặc chèn thẻ HTML, hình ảnh)..." class="w-full p-4 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] leading-relaxed font-mono"></textarea>
+              <p class="text-[11px] text-slate-400 mt-1">Hỗ trợ nhập văn bản, mã HTML và thẻ &lt;img&gt;. Bấm "Chèn hình ảnh" để tải ảnh hoặc chọn ảnh có sẵn.</p>
+            </div>
+
+            <!-- Mục Sứ mệnh: ẨN THEO YÊU CẦU 5 -->
+            <div style="display: none;">
+              <input type="hidden" id="set-about-mission">
+            </div>
+
+            <!-- 3. Giá trị cốt lõi -->
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">
+                Nội dung "Giá trị cốt lõi"
+              </label>
+              <textarea id="set-about-values" rows="3" placeholder="Sản phẩm chất lượng • Giá cả cạnh tranh • Dịch vụ tận tâm..." class="w-full p-4 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] leading-relaxed"></textarea>
+              <p class="text-[11px] text-slate-400 mt-1">Hiển thị tại phần Giá trị cốt lõi trên Landing page và trang Giới thiệu.</p>
+            </div>
+
+            <!-- 4. Tại sao nên chọn Điện Việt (Yêu cầu 1) -->
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                <label class="block text-xs font-bold uppercase text-slate-700">
+                  Cấu hình "Tại sao nên chọn Điện Việt"
+                </label>
+                <!-- Toolbar chèn ảnh & xem thử popup -->
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <button type="button" onclick="openInsertImageModal('set-about-why')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] text-xs font-bold rounded-xl border border-red-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Chèn hình ảnh</span>
+                  </button>
+                  <button type="button" onclick="openHtmlPreviewModal('set-about-why', 'Cấu hình Tại sao nên chọn Điện Việt')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+                    <i class="fa-regular fa-eye"></i>
+                    <span>Xem thử (Popup)</span>
+                  </button>
+                </div>
+              </div>
+              <textarea id="set-about-why" rows="4" placeholder="Nhập cam kết / lý do lựa chọn Điện Việt (hỗ trợ văn bản thường hoặc chèn thẻ HTML, hình ảnh)..." class="w-full p-4 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] leading-relaxed font-mono"></textarea>
+              <p class="text-[11px] text-slate-400 mt-1">Hiển thị tại khu vực Tại sao nên chọn Điện Việt trên website. Hỗ trợ HTML và chèn hình ảnh.</p>
+            </div>
+          </div>
+
+          <div class="pt-4 flex justify-end">
+            <button type="button" onclick="saveAboutSettings()" id="btn-save-about" class="px-6 py-3 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu thông tin</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             SUB-TAB 4: CẤU HÌNH LIÊN HỆ (CHO TRANG LIÊN HỆ)
+             ==================================================== -->
+        <div id="subtab-content-quote-types" class="settings-subtab-content hidden bg-white p-6 sm:p-8 rounded-2xl border border-red-100 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <h4 class="font-black text-base text-slate-900 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#c8102e] inline-block"></span>
+                <span>Cấu Hình Danh Sách Loại Liên Hệ</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Quản lý các lựa chọn loại liên hệ hiện thị trong dropdown form liên hệ tại trang Liên hệ và Landing page.
+              </p>
+            </div>
+            <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+              <button type="button" onclick="resetQuoteTypesDefault()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center space-x-1.5 cursor-pointer">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Khôi phục mặc định</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Thanh thêm loại liên hệ mới -->
+          <div class="bg-red-50/50 p-4 sm:p-5 rounded-2xl border border-red-100 space-y-3">
+            <label class="block text-xs font-bold uppercase text-slate-800 flex items-center space-x-2">
+              <i class="fa-solid fa-plus-circle text-[#c8102e]"></i>
+              <span>Thêm loại liên hệ mới</span>
+            </label>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div class="flex-1 relative">
+                <input 
+                  type="text" 
+                  id="new-quote-type-name" 
+                  placeholder="Nhập tên loại liên hệ mới (VD: Báo giá sản phẩm, Tư vấn kỹ thuật, Khiếu nại...)" 
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm focus:border-[#c8102e] outline-none"
+                  onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addQuoteTypeItem(); }"
+                />
+              </div>
+              <label class="hidden items-center space-x-2 text-xs font-medium text-slate-700 cursor-pointer select-none bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-red-200 shrink-0">
+                <input type="checkbox" id="new-quote-type-show-products" class="rounded text-[#c8102e] focus:ring-[#c8102e] w-4 h-4 cursor-pointer">
+                <span class="text-xs font-semibold">Hiện mục "Sản phẩm quan tâm"</span>
+              </label>
+              <button 
+                type="button" 
+                onclick="addQuoteTypeItem()" 
+                class="px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center space-x-2 shrink-0 cursor-pointer active:scale-95"
+              >
+                <i class="fa-solid fa-plus"></i>
+                <span>Thêm vào danh sách</span>
+              </button>
+            </div>
+            <p class="hidden text-[11px] text-slate-400">
+              <i class="fa-solid fa-circle-info mr-1 text-[#c8102e]"></i> 
+              Nếu bật "Hiện mục Sản phẩm quan tâm", khi khách chọn tùy chọn này trên form liên hệ, hệ thống sẽ tự động mở hộp chọn danh mục (Dây điện Cadivi, Thiết bị điện...).
+            </p>
+          </div>
+
+          <!-- Danh sách hiện tại (Có thể chỉnh sửa trực tiếp, sắp xếp thứ tự và xóa) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h5 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                <i class="fa-solid fa-list text-slate-400"></i>
+                <span>Danh sách loại liên hệ đang áp dụng</span>
+              </h5>
+              <span class="text-[11px] text-slate-400">Mục "Báo giá sản phẩm" được cố định mặc định, các loại khác có thể sửa hoặc xóa</span>
+            </div>
+
+            <div id="quote-types-list-container" class="space-y-2.5">
+              <!-- Render động qua loadQuoteTypesSettings() -->
+            </div>
+          </div>
+
+          <!-- Khung Xem Trước (Preview Dropdown) - Đã ẩn theo yêu cầu -->
+          <div style="display: none;" class="hidden">
+            <select id="preview-quote-types-select"></select>
+          </div>
+
+          <!-- Nút Lưu ở chân trang -->
+          <div class="pt-4 flex justify-end">
+            <button type="button" onclick="saveQuoteTypesSettings()" class="px-6 py-3 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu thông tin</span>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: THÊM / SỬA DANH MỤC
+       ======================================================== -->
+  <div id="category-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-content relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8">
+      <button onclick="closeCategoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <h3 id="category-modal-title" class="text-lg font-black text-slate-900 mb-4">Thêm Danh Mục Mới</h3>
+
+      <form id="category-form" class="space-y-4">
+        <input type="hidden" id="cat-id">
+
+        <div id="cat-parent-group" class="hidden">
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Danh Mục Cha</label>
+          <select id="cat-parent-id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none font-medium">
+            <option value="">-- Chọn danh mục cha --</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Danh mục con này sẽ thuộc về danh mục cha đã chọn.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Tên Danh Mục *</label>
+          <input type="text" id="cat-name" required placeholder="Ví dụ: Dây điện dân dụng" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Mô Tả Ngắn</label>
+          <textarea id="cat-desc" rows="2" placeholder="Mô tả ngành hàng..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Hình Ảnh Danh Mục (URL hoặc Tải lên)</label>
+          <div class="flex gap-2">
+            <input type="text" id="cat-image" placeholder="https://..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+            <label class="cursor-pointer px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center">
+              <i class="fa-solid fa-upload mr-1"></i> Tải ảnh
+              <input type="file" id="cat-image-file" class="hidden" accept="image/*" onchange="uploadImage(this, 'cat-image')">
+            </label>
+          </div>
+
+        </div>
+
+        <!-- THIẾT LẬP HIỂN THỊ TẠI TRANG CHỦ LANDING PAGE -->
+        <div class="p-4 bg-red-50/60 rounded-2xl border border-red-100 flex items-center justify-between">
+          <div>
+            <span class="block text-xs font-extrabold text-slate-900">Hiển thị danh mục</span>
+            <span class="block text-[11px] text-slate-500">Bật để danh mục được hiển thị tại trang chủ Landing Page</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cat-slider" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+          </label>
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-3">
+          <button type="button" onclick="closeCategoryModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
+          <button type="submit" id="save-cat-btn" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md">Lưu Danh Mục</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: CẤU HÌNH ĐIỀU CHỈNH GIÁ HÀNG LOẠT
+       ======================================================== -->
+  <div id="price-config-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="modal-content relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-red-100 p-5 sm:p-7 max-h-[94vh] flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-red-50 text-[#c8102e] flex items-center justify-center text-lg font-black shrink-0">
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900 leading-tight">Cấu Hình Giá Bán Sản Phẩm</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tăng hoặc giảm giá hàng loạt theo phần trăm hoặc số tiền cố định</p>
+          </div>
+        </div>
+        <button type="button" onclick="closePriceConfigModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <form id="price-config-form" class="space-y-4 overflow-y-auto pr-1 flex-1" onsubmit="handleBatchPriceAdjustment(event)">
+        
+        <!-- Hàng 1: Danh mục & Hành động điều chỉnh (2 Cột) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          
+          <!-- 1. Danh mục lọc sản phẩm -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Danh mục</label>
+            <select id="price-config-category-id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold focus:border-brand-600 outline-none bg-white cursor-pointer" onchange="handlePriceCategoryChange()">
+              <option value="all">-- Tất cả sản phẩm --</option>
+              <!-- Injected dynamically -->
+            </select>
+          </div>
+
+          <!-- 2. Hành động: Tăng giá / Giảm giá -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Hành động điều chỉnh</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center justify-center space-x-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-300 transition bg-slate-50/50">
+                <input type="radio" name="price-action" value="increase" checked onchange="updatePricePreview()" class="text-emerald-600 focus:ring-0">
+                <span class="text-xs font-bold text-emerald-800"><i class="fa-solid fa-arrow-trend-up mr-1 text-emerald-600"></i> Tăng giá (+)</span>
+              </label>
+              <label class="flex items-center justify-center space-x-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-rose-300 transition bg-slate-50/50">
+                <input type="radio" name="price-action" value="decrease" onchange="updatePricePreview()" class="text-rose-600 focus:ring-0">
+                <span class="text-xs font-bold text-rose-800"><i class="fa-solid fa-arrow-trend-down mr-1 text-rose-600"></i> Giảm giá (-)</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Hàng 2: Hình thức tính giá & Giá trị điều chỉnh (2 Cột cân đối, đẹp mắt) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-end">
+          
+          <!-- 3. Loại điều chỉnh: Phần trăm (%) / Số tiền cố định (VNĐ) -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Hình thức tính giá</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center justify-center space-x-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-red-300 transition bg-slate-50/50">
+                <input type="radio" name="price-type" value="percent" checked onchange="handlePriceTypeChange(this.value)" class="text-brand-600 focus:ring-0">
+                <span class="text-xs font-bold text-slate-800"><i class="fa-solid fa-percent mr-1 text-slate-500"></i> Theo phần trăm (%)</span>
+              </label>
+              <label class="flex items-center justify-center space-x-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-red-300 transition bg-slate-50/50">
+                <input type="radio" name="price-type" value="fixed" onchange="handlePriceTypeChange(this.value)" class="text-brand-600 focus:ring-0">
+                <span class="text-xs font-bold text-slate-800"><i class="fa-solid fa-coins mr-1 text-slate-500"></i> Cố định (VNĐ)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ô nhập giá trị điều chỉnh -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Mức điều chỉnh</label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="price-config-value" 
+                required 
+                min="0.1" 
+                step="any"
+                value="0"
+                placeholder="0" 
+                class="w-full pl-3.5 pr-14 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-900 focus:border-brand-600 outline-none transition"
+                oninput="handlePriceValueInput(this)"
+              >
+              <span id="price-config-unit-label" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 select-none">
+                %
+              </span>
+            </div>
+            <!-- Dòng thông báo lỗi khi nhập phần trăm > 100% -->
+            <p id="price-config-error" class="hidden text-[11px] text-rose-600 font-bold mt-1.5 flex items-center">
+              <i class="fa-solid fa-circle-exclamation mr-1.5 text-rose-500"></i>
+              <span id="price-config-error-text">Mức điều chỉnh theo phần trăm tối đa là 100%!</span>
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Checkbox làm tròn ẩn theo yêu cầu -->
+        <input type="checkbox" id="price-config-round" checked class="hidden" onchange="updatePricePreview()">
+
+        <!-- 5. Hộp tóm tắt thay đổi (Alert box) -->
+        <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 text-xs space-y-1">
+          <div class="flex items-center space-x-1.5 font-bold text-amber-900">
+            <i class="fa-solid fa-circle-info text-amber-600"></i>
+            <span>Tóm tắt thay đổi:</span>
+          </div>
+          <p id="price-config-preview-text" class="text-amber-800 leading-relaxed font-medium">
+            Tất cả sản phẩm sẽ được <strong>Tăng 10%</strong> giá bán.
+          </p>
+        </div>
+
+        <!-- 6. BẢNG DANH SÁCH SẢN PHẨM ÁP DỤNG & SO SÁNH GIÁ CŨ VÀ MỚI -->
+        <div class="space-y-2 pt-1">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-bold uppercase text-slate-700">Danh sách sản phẩm</label>
+              <span id="price-config-item-count" class="px-2.5 py-0.5 bg-red-50 text-[#c8102e] border border-red-200 text-[11px] font-black rounded-full">0 sản phẩm</span>
+            </div>
+            
+            <!-- Nút Chọn tất cả theo yêu cầu -->
+            <label class="inline-flex items-center space-x-1.5 cursor-pointer text-xs font-bold text-slate-700 hover:text-[#c8102e] transition select-none">
+              <input type="checkbox" id="price-config-select-all" checked onchange="toggleSelectAllPriceProducts(this.checked)" class="w-4 h-4 text-brand-600 rounded cursor-pointer">
+              <span>Chọn tất cả</span>
+            </label>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/30 shadow-2xs">
+            <div class="max-h-72 sm:max-h-96 overflow-y-auto custom-scrollbar overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse min-w-[700px]">
+                <thead class="bg-slate-100/95 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-200 backdrop-blur-xs">
+                  <tr>
+                    <th class="py-3 px-3 w-10 text-center">
+                      <input type="checkbox" id="price-config-header-check" checked onchange="toggleSelectAllPriceProducts(this.checked)" class="w-4 h-4 text-brand-600 rounded cursor-pointer" title="Chọn / Bỏ chọn tất cả">
+                    </th>
+                    <th class="py-3 px-4 min-w-[280px]">Sản phẩm</th>
+                    <th class="py-3 px-4 hidden sm:table-cell whitespace-nowrap">Danh mục</th>
+                    <th class="py-3 px-4 text-right whitespace-nowrap">Giá cũ</th>
+                    <th class="py-3 px-3 text-center w-8">➔</th>
+                    <th class="py-3 px-4 text-left whitespace-nowrap min-w-[150px]">Giá mới</th>
+                  </tr>
+                </thead>
+                <tbody id="price-config-preview-tbody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Render động qua JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nút hành động -->
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 shrink-0">
+          <button type="button" onclick="closePriceConfigModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer">
+            Hủy
+          </button>
+          <button type="submit" id="btn-submit-price-config" class="px-6 py-2.5 rounded-xl bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-200 transition flex items-center space-x-2 cursor-pointer">
+            <i class="fa-solid fa-check"></i>
+            <span>Áp dụng giá mới (<span id="price-config-submit-count">0</span>)</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: THÊM / SỬA SẢN PHẨM
+       ======================================================== -->
+  <div id="product-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-content relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <button onclick="closeProductModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <h3 id="product-modal-title" class="text-lg font-black text-slate-900 mb-4">Thêm Sản Phẩm Mới</h3>
+
+      <form id="product-form" class="space-y-4">
+        <input type="hidden" id="prod-id">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Tên sản phẩm -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Tên Sản Phẩm *</label>
+            <input type="text" id="prod-name" required placeholder="Nhập tên sản phẩm..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+          </div>
+
+          <!-- Danh mục -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Loại / Danh Mục *</label>
+            <select id="prod-cat" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none bg-white">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <!-- Giá gốc niêm yết (Đã ẩn) -->
+          <div class="hidden">
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Giá gốc</label>
+            <input type="number" id="prod-orig-price" placeholder="Để trống nếu không giảm giá" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+          </div>
+
+          <!-- Giá bán -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Giá bán *</label>
+            <input type="number" id="prod-price" required placeholder="Ví dụ: 1500000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+          </div>
+
+        </div>
+
+        <!-- Gắn nhãn HOT -->
+        <div class="p-3 bg-red-50/50 rounded-2xl border border-red-100 flex items-center justify-between">
+          <label class="flex items-center space-x-2.5 cursor-pointer">
+            <input type="checkbox" id="prod-is-promo" class="w-4 h-4 text-brand-600 rounded">
+            <span class="text-xs font-bold text-slate-800">Gắn nhãn: Sản Phẩm Hot (Bật / Tắt)</span>
+          </label>
+          <input type="checkbox" id="prod-is-new" class="hidden">
+        </div>
+
+        <!-- Hình ảnh sản phẩm (Hỗ trợ tải lên nhiều ảnh) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold uppercase text-slate-700">
+              Hình Ảnh Sản Phẩm <span class="text-slate-400 font-normal lowercase">(có thể tải lên nhiều ảnh)</span>
+            </label>
+            <span class="text-[11px] text-slate-400 font-medium">Ảnh đầu tiên sẽ là ảnh chính</span>
+          </div>
+
+          <!-- Hidden inputs to hold main image & JSON string of all images -->
+          <input type="hidden" id="prod-image">
+          <input type="hidden" id="prod-images">
+
+          <!-- Upload Actions Bar -->
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <label class="cursor-pointer px-4 py-2 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl flex items-center shadow-xs transition transform active:scale-95">
+              <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Tải Lên Nhiều Ảnh
+              <input type="file" id="prod-images-file" class="hidden" multiple accept="image/*" onchange="uploadMultipleProductImages(this)">
+            </label>
+
+            <!-- URL input for manual image link adding (Đã ẩn) -->
+            <div class="hidden flex-1 min-w-[220px] flex gap-1.5">
+              <input type="text" id="prod-add-url-input" placeholder="Hoặc dán URL ảnh https://..." class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+              <button type="button" onclick="addProductImageFromUrl()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                <i class="fa-solid fa-plus mr-1"></i> Thêm
+              </button>
+            </div>
+          </div>
+
+          <!-- Gallery Preview Grid -->
+          <div id="product-images-grid" class="flex flex-wrap gap-2.5 p-3 bg-slate-50/80 rounded-2xl border border-slate-200 min-h-[90px] items-center">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Mô tả ngắn -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Mô Tả Ngắn</label>
+          <textarea id="prod-short-desc" rows="3" placeholder="Nhập tóm tắt mô tả ngắn (có thể nhập 1 đoạn hoặc nhiều dòng, mỗi dòng sẽ hiển thị như một điểm nổi bật có dấu tích đỏ)..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none resize-y"></textarea>
+        </div>
+
+        <!-- Mô tả chi tiết -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Mô Tả Chi Tiết Sản Phẩm</label>
+          <textarea id="prod-desc" rows="3" placeholder="Nội dung giới thiệu chi tiết sản phẩm..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+        </div>
+
+        <!-- Thông số kỹ thuật (Specs) -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Thông Số Kỹ Thuật (JSON hoặc Văn Bản)</label>
+          <textarea id="prod-specs" rows="3" placeholder='{"Tiêu chuẩn": "TCVN 6610", "Điện áp": "450/750V", "Ruột dẫn": "Đồng nguyên chất"}' class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none font-mono"></textarea>
+          <span class="text-[10px] text-slate-400">Có thể nhập dạng JSON {"Khóa": "Giá trị"} hoặc chữ thông thường</span>
+        </div>
+
+        <!-- Ứng dụng thực tế -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Ứng Dụng Thực Tế (Gạch đầu dòng hoặc Văn bản)</label>
+          <textarea id="prod-applications" rows="3" placeholder="Nhập các ứng dụng thực tế (mỗi dòng một ý gạch đầu dòng, hoặc đoạn văn)..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+          <span class="text-[10px] text-slate-400">Có thể nhập nhiều dòng, mỗi dòng sẽ hiển thị như một điểm gạch đầu dòng ở trang chi tiết</span>
+        </div>
+
+        <!-- Chính sách bảo hành -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Chính Sách Bảo Hành & Đổi Trả</label>
+          <textarea id="prod-warranty" rows="3" placeholder="Nhập chính sách bảo hành, đổi trả, hỗ trợ kỹ thuật..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+          <span class="text-[10px] text-slate-400">Có thể nhập chi tiết bảo hành (VD: Bảo hành 12 tháng, đổi mới 7 ngày...)</span>
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-3">
+          <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
+          <button type="submit" id="save-prod-btn" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md">Lưu Sản Phẩm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: THÊM / SỬA BLOG
+       ======================================================== -->
+  <div id="blog-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-content relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <button onclick="closeBlogModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <h3 id="blog-modal-title" class="text-lg font-black text-slate-900 mb-4">Viết Bài Tin Tức Mới</h3>
+
+      <form id="blog-form" class="space-y-4">
+        <input type="hidden" id="blog-id">
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Tiêu Đề Bài Viết *</label>
+          <input type="text" id="blog-title" required placeholder="Nhập tiêu đề..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Danh Mục Tin Tức</label>
+          <select id="blog-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+            <option value="Tin công ty">Tin công ty</option>
+            <option value="Kiến thức sản phẩm">Kiến thức sản phẩm</option>
+            <option value="Kinh nghiệm sử dụng điện">Kinh nghiệm sử dụng điện</option>
+            <option value="Công nghệ & Xu hướng">Công nghệ & Xu hướng</option>
+            <option value="Tin khuyến mãi">Tin khuyến mãi</option>
+            <option value="Tin tức thị trường">Tin tức thị trường</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Ảnh Đại Diện (URL hoặc Tải lên)</label>
+          <div class="flex gap-2">
+            <input type="text" id="blog-image" placeholder="https://..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+            <label class="cursor-pointer px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center">
+              <i class="fa-solid fa-upload mr-1"></i> Tải ảnh
+              <input type="file" id="blog-image-file" class="hidden" accept="image/*" onchange="uploadImage(this, 'blog-image')">
+            </label>
+          </div>
+
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Tóm Tắt Ngắn</label>
+          <textarea id="blog-summary" rows="2" placeholder="Tóm tắt nội dung bài viết..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nội Dung Bài Viết (HTML hoặc Text) *</label>
+          <textarea id="blog-content" rows="6" required placeholder="<p>Nội dung chi tiết...</p>" class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none"></textarea>
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-3">
+          <button type="button" onclick="closeBlogModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
+          <button type="submit" id="save-blog-btn" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md">Lưu Bài Viết</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: XEM CHI TIẾT LIÊN HỆ
+       ======================================================== -->
+  <div id="contact-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-content relative bg-white w-full max-w-2xl lg:max-w-3xl rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8 max-h-[92vh] overflow-y-auto">
+      <button onclick="closeContactDetailModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition cursor-pointer" title="Đóng">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+
+      <h3 class="text-xl font-black text-slate-900 mb-1 flex items-center space-x-2.5">
+        <i class="fa-solid fa-clipboard-user text-[#c8102e]"></i>
+        <span>Chi Tiết Phản Hồi Khách Hàng</span>
+      </h3>
+      <div id="contact-modal-body" class="space-y-4 pt-4 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: BÁO GIÁ & HỢP ĐỒNG MUA BÁN
+       ======================================================== -->
+  <div id="quote-contract-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="modal-content relative bg-white w-full max-w-5xl xl:max-w-6xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[95vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg font-bold shrink-0">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900" id="quote-modal-title">Lập Báo Giá & Hợp Đồng Mua Bán</h3>
+            <p class="text-xs text-slate-500 font-medium" id="quote-modal-subtitle">Soạn thảo, chỉnh sửa danh sách sản phẩm và xem trước văn bản</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+          <!-- Phông chữ mặc định Times New Roman (Đã ẩn theo yêu cầu) -->
+          <div class="hidden">
+            <button type="button" onclick="setQuoteContractFont('times')" id="btn-font-times"></button>
+            <button type="button" onclick="setQuoteContractFont('arial')" id="btn-font-arial"></button>
+          </div>
+
+          <!-- Chuyển Tab Chỉnh sửa / Xem trước -->
+          <div class="bg-slate-200/80 p-1 rounded-xl flex items-center space-x-1 text-xs font-bold">
+            <button type="button" onclick="switchQuoteTab('edit')" id="btn-quote-tab-edit" class="px-3.5 py-1.5 rounded-lg transition bg-white text-slate-900 shadow-2xs cursor-pointer flex items-center space-x-1.5">
+              <i class="fa-solid fa-pen-to-square text-[#c8102e]"></i>
+              <span>Chỉnh sửa</span>
+            </button>
+            <button type="button" onclick="switchQuoteTab('preview')" id="btn-quote-tab-preview" class="px-3.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 cursor-pointer flex items-center space-x-1.5">
+              <i class="fa-solid fa-eye text-blue-600"></i>
+              <span>Xem trước (A4)</span>
+            </button>
+          </div>
+
+          <!-- Nút Xuất Word -->
+          <button type="button" onclick="exportQuoteToWord()" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs" title="Tải văn bản về dạng file Microsoft Word .doc">
+            <i class="fa-solid fa-file-word text-sm"></i>
+            <span class="hidden sm:inline">Tải file Word (.doc)</span>
+          </button>
+
+          <!-- Nút In / PDF -->
+          <button type="button" onclick="printQuoteContract()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition flex items-center space-x-1.5 cursor-pointer shadow-2xs" title="In hoặc lưu dạng PDF">
+            <i class="fa-solid fa-print text-sm"></i>
+            <span class="hidden sm:inline">In / PDF</span>
+          </button>
+
+          <!-- Nút Sao chép (Đã ẩn theo yêu cầu) -->
+          <button type="button" onclick="copyQuoteContractText()" id="btn-quote-copy" class="hidden px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-2xs" title="Sao chép nội dung văn bản">
+            <i class="fa-solid fa-copy text-sm"></i>
+            <span class="hidden sm:inline">Sao chép</span>
+          </button>
+
+          <!-- Nút Đóng -->
+          <button type="button" onclick="closeQuoteContractModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" title="Đóng">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="overflow-y-auto flex-1 p-4 sm:p-6 custom-scrollbar bg-slate-100/60" id="quote-contract-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: ĐỔI MẬT KHẨU ADMIN
+       ======================================================== -->
+  <div id="change-password-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-content relative bg-white w-full max-w-md rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8">
+      <button type="button" onclick="closeChangePasswordModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-key"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900">Đổi Mật Khẩu Quản Trị</h3>
+          <p class="text-[11px] text-slate-500">Cập nhật mật khẩu bảo mật cho tài khoản của bạn</p>
+        </div>
+      </div>
+
+      <form id="change-password-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Mật khẩu hiện tại *</label>
+          <input type="password" id="current-password" required placeholder="Nhập mật khẩu hiện tại" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Mật khẩu mới (tối thiểu 6 ký tự) *</label>
+          <input type="password" id="new-password" required minlength="6" placeholder="Nhập mật khẩu mới" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Xác nhận mật khẩu mới *</label>
+          <input type="password" id="confirm-password" required minlength="6" placeholder="Nhập lại mật khẩu mới" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-brand-600 outline-none">
+        </div>
+
+        <div id="change-password-error" class="hidden text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200 font-semibold"></div>
+
+        <div class="pt-3 flex justify-end space-x-3">
+          <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">Hủy</button>
+          <button type="submit" id="save-password-btn" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition">Đổi Mật Khẩu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL: CHÈN HÌNH ẢNH VÀO NỘI DUNG (UPLOAD / THƯ VIỆN / URL)
+       ======================================================== -->
+  <div id="insert-image-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="modal-content relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-red-100 p-5 sm:p-7 max-h-[92vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4 shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-red-50 text-[#c8102e] flex items-center justify-center text-base font-bold shadow-2xs">
+            <i class="fa-solid fa-image"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Chèn Hình Ảnh Vào Bài Viết</h3>
+            <p class="text-[11px] text-slate-500">Tải ảnh mới từ máy tính, chọn ảnh sẵn có hoặc nhập link ảnh</p>
+          </div>
+
+        </div>
+        <button type="button" onclick="closeInsertImageModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-[#c8102e] flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center space-x-2 border-b border-slate-200 mb-4 shrink-0 text-xs font-bold">
+        <button type="button" onclick="switchInsertImageTab('upload')" id="tab-btn-img-upload" class="px-4 py-2 border-b-2 border-[#c8102e] text-[#c8102e] flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>1. Tải ảnh từ máy tính</span>
+        </button>
+        <button type="button" onclick="switchInsertImageTab('gallery')" id="tab-btn-img-gallery" class="px-4 py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-solid fa-images"></i>
+          <span>2. Thư viện ảnh sẵn có</span>
+        </button>
+        <button type="button" onclick="switchInsertImageTab('url')" id="tab-btn-img-url" class="px-4 py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-solid fa-link"></i>
+          <span>3. Nhập link ảnh (URL)</span>
+        </button>
+      </div>
+
+      <!-- Tab Contents (Scrollable) -->
+      <div class="overflow-y-auto flex-1 pr-1 custom-scrollbar space-y-4">
+        
+        <!-- Tab 1: Upload từ máy tính -->
+        <div id="tab-content-img-upload" class="space-y-4">
+          <div class="border-2 border-dashed border-red-200 hover:border-[#c8102e] rounded-2xl p-6 text-center bg-red-50/40 hover:bg-red-50/70 transition cursor-pointer" onclick="document.getElementById('modal-file-upload-input').click()">
+            <input type="file" id="modal-file-upload-input" accept="image/*" class="hidden" onchange="handleModalFileSelect(this)">
+            <div class="w-12 h-12 rounded-2xl bg-white text-[#c8102e] flex items-center justify-center text-xl mx-auto mb-3 shadow-xs border border-red-100">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-800">Nhấp để chọn ảnh từ máy tính của bạn</p>
+            <p class="text-[11px] text-slate-400 mt-1">Hỗ trợ định dạng JPG, PNG, WebP, SVG hoặc GIF (Tối đa 10MB)</p>
+          </div>
+
+          <!-- Preview ảnh vừa chọn -->
+          <div id="modal-upload-preview-box" class="hidden p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center space-x-4">
+            <img id="modal-upload-preview-img" src="" alt="Preview" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-2xs">
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-slate-800 truncate" id="modal-upload-file-name">file.jpg</p>
+              <p class="text-[11px] text-emerald-600 font-semibold mt-0.5"><i class="fa-solid fa-circle-check"></i> Đã sẵn sàng tải lên</p>
+            </div>
+            <button type="button" onclick="clearModalUploadFile()" class="text-xs text-red-600 hover:text-red-700 font-bold px-2 py-1">Xóa</button>
+          </div>
+
+        </div>
+
+        <!-- Tab 2: Thư viện ảnh hệ thống -->
+        <div id="tab-content-img-gallery" class="hidden space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-xs text-slate-500 font-medium">Bấm chọn ảnh bất kỳ trong thư viện để chèn:</p>
+            <button type="button" onclick="loadMediaLibrary()" class="text-xs text-[#c8102e] hover:underline font-bold flex items-center space-x-1">
+              <i class="fa-solid fa-rotate-right"></i>
+              <span>Làm mới</span>
+            </button>
+          </div>
+          
+          <div id="media-library-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-64 overflow-y-auto p-1">
+            <!-- Injected via admin.js -->
+            <div class="col-span-full py-8 text-center text-xs text-slate-400">Đang tải danh sách ảnh...</div>
+          </div>
+
+        </div>
+
+        <!-- Tab 3: Nhập link ảnh trực tiếp -->
+        <div id="tab-content-img-url" class="hidden space-y-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Đường dẫn ảnh (URL hoặc đường dẫn nội bộ)</label>
+            <input type="text" id="modal-img-url-input" oninput="handleModalUrlInput(this.value)" placeholder="Ví dụ: /images/kho-dien-viet.jpg hoặc https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+          </div>
+          <div id="modal-url-preview-box" class="hidden p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center space-x-4">
+            <img id="modal-url-preview-img" src="" alt="URL Preview" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-2xs" onerror="this.src='/images/about-warehouse.jpg'">
+            <div class="text-xs text-slate-600">
+              <p class="font-bold text-slate-800">Ảnh xem trước từ link</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Đảm bảo đường dẫn chính xác và có thể truy cập được</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Thông tin bổ sung cho thẻ <img> -->
+        <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Mô tả ảnh (Alt text)</label>
+            <input type="text" id="modal-img-alt" placeholder="VD: Tổng kho và văn phòng Công ty TNHH Điện Việt" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Kiểu hiển thị (CSS Class)</label>
+            <select id="modal-img-class" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#c8102e] outline-none bg-white">
+              <option value="rounded-xl my-3 max-w-full h-auto shadow-xs">Mặc định (Bo góc, co giãn full width, đổ bóng)</option>
+              <option value="company-img">Chuẩn khung giới thiệu (class="company-img")</option>
+              <option value="rounded-2xl max-w-full h-auto shadow-md">Ảnh lớn nổi bật (Bo góc tròn 2xl, bóng đậm)</option>
+              <option value="w-full h-48 sm:h-64 object-cover rounded-xl shadow-xs">Ảnh bìa ngang (Height cố định 180-240px)</option>
+            </select>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0 mt-4">
+        <button type="button" onclick="closeInsertImageModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer">
+          Hủy bỏ
+        </button>
+        <button type="button" onclick="confirmInsertImageToTextarea()" class="px-6 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Chèn vào nội dung</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: XEM THỬ NỘI DUNG (LIVE PREVIEW POPUP CHUYÊN NGHIỆP)
+       ======================================================== -->
+  <div id="preview-html-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="modal-content relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-red-100 p-5 sm:p-8 max-h-[92vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4 shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-red-50 text-[#c8102e] flex items-center justify-center text-base font-bold shadow-2xs">
+            <i class="fa-regular fa-eye"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900" id="preview-html-modal-title">Xem Thử Nội Dung (Live Preview Popup)</h3>
+            <p class="text-[11px] text-slate-500">Mô phỏng 100% hiển thị thực tế trên website của khách hàng</p>
+          </div>
+
+        </div>
+        <button type="button" onclick="closeHtmlPreviewModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-[#c8102e] flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Preview Render Body -->
+      <div class="overflow-y-auto flex-1 p-4 bg-slate-50/60 rounded-2xl border border-slate-200 custom-scrollbar" id="preview-html-modal-body">
+        <!-- Rendered HTML Content -->
+      </div>
+
+      <!-- Footer -->
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0 mt-4">
+        <span class="text-[11px] text-slate-400 italic">Nội dung hiển thị theo đúng định dạng HTML, hình ảnh và kiểu CSS của bạn</span>
+        <button type="button" onclick="closeHtmlPreviewModal()" class="px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer active:scale-95">
+          Đóng cửa sổ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container (Hiển thị ở phía trên và chính giữa trang) -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/admin.js?v=20261113_print_and_percent_error"></script>
+</body>
+</html>
+

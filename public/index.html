@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Điện Việt - Kết Nối Giá Trị, Thắp Sáng Tương Lai</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              200: '#fecaca',
+              300: '#fca5a5',
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#c8102e',
+              700: '#b91c1c',
+              800: '#7e0a0b',
+              900: '#6b0809'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html,
+    body {
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Proportional fluid container matching the mockup's slim ~3.5% margins across 13", 19", 21" */
+    .site-container {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .site-container {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+
+    /* 13-inch laptop (1200px - 1366px): ~3% - 4% margins */
+    @media (min-width: 1200px) {
+      .site-container {
+        max-width: 95%;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+
+    /* 19-inch monitor (1440px - 1600px): ~3.5% margins */
+    @media (min-width: 1440px) {
+      .site-container {
+        max-width: 94%;
+        padding-left: 1.75rem;
+        padding-right: 1.75rem;
+      }
+    }
+
+    /* 21-inch monitor (1800px - 1920px Full HD): ~3.5% margins, no massive empty voids */
+    @media (min-width: 1800px) {
+      .site-container {
+        max-width: 93.5%;
+        padding-left: 2.25rem;
+        padding-right: 2.25rem;
+      }
+    }
+
+    .section-title-bar {
+      width: 5px;
+      height: 24px;
+      background-color: #c8102e;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-right: 12px;
+    }
+
+    @media (min-width: 1800px) {
+      .section-title-bar {
+        width: 6px;
+        height: 28px;
+        margin-right: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-[#fafbfc] text-slate-800 antialiased selection:bg-[#c8102e] selection:text-white">
+
+  <!-- ========================================================
+       1. TOP BAR (FULL WIDTH ĐỎ CHUẨN ĐIỆN VIỆT)
+       ======================================================== -->
+  <div
+    class="w-full bg-[#c8102e] text-white text-xs sm:text-[13px] 2xl:text-[14px] py-2 px-4 sm:px-6 border-b border-[#a10402]">
+    <div class="site-container flex flex-wrap justify-between items-center gap-2">
+      <!-- Left: Cam kết chính hãng 100% | Giao hàng toàn quốc | Hỗ trợ 24/7 -->
+      <div class="flex items-center space-x-3 sm:space-x-5">
+        <span class="flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-circle-check text-white text-xs sm:text-sm"></i>
+          <span>Cam kết chính hãng 100%</span>
+        </span>
+        <span class="text-red-200/60">|</span>
+        <a href="/products" class="flex items-center space-x-1.5 font-medium hover:underline text-white">
+          <i class="fa-solid fa-truck text-white text-xs sm:text-sm"></i>
+          <span>Giao hàng toàn quốc</span>
+        </a>
+        <span class="text-red-200/60">|</span>
+        <span class="hidden sm:flex items-center space-x-1.5 font-medium">
+          <i class="fa-solid fa-headset text-white text-xs sm:text-sm"></i>
+          <span>Hỗ trợ 24/7</span>
+        </span>
+      </div>
+
+      <!-- Right: Đăng nhập -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <a href="/login" class="hover:underline font-semibold text-white flex items-center space-x-1.5">
+          <span>Đăng nhập</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       2. MAIN HEADER (LOGO - TÌM KIẾM - HOTLINE - MENU)
+       ======================================================== -->
+  <header class="w-full bg-white border-b border-slate-100 shadow-xs sticky top-0 z-40">
+    <div class="site-container py-2.5 sm:py-3 2xl:py-4">
+      <div class="flex items-center justify-between gap-3 sm:gap-6 lg:gap-8">
+
+        <!-- Left: Standalone Red Bolt Logo Điện Việt matching mockup exactly -->
+        <a href="/" class="flex items-center space-x-2.5 sm:space-x-3 shrink-0 group min-w-0">
+          <div
+            class="site-logo-icon text-[#c8102e] text-2xl sm:text-3xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6 group-hover:scale-110 transition duration-300">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <img src="" alt="Điện Việt Logo" class="site-logo-img hidden h-8 sm:h-10 2xl:h-12 w-auto object-contain">
+          <div class="min-w-0">
+            <div id="company-name-header"
+              class="site-company-name text-xl sm:text-2xl 2xl:text-[34px] font-black tracking-tight text-[#0f172a] leading-none">
+              Điện <span class="text-[#c8102e]">Việt</span>
+            </div>
+            <span
+              class="site-company-slogan hidden sm:block text-xs sm:text-[13px] 2xl:text-sm text-slate-500 font-medium tracking-tight mt-1 truncate"
+              id="company-slogan-header">
+              Kết nối giá trị - Thắp sáng tương lai
+            </span>
+          </div>
+        </a>
+
+        <!-- Center: Capsule Search box on top, Nav menu directly below -->
+        <div class="hidden lg:flex flex-1 flex-col items-center max-w-lg 2xl:max-w-xl mx-auto space-y-2 px-2">
+          <!-- Capsule Search bar -->
+          <form action="/products" method="GET" class="w-full relative flex items-center">
+            <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..."
+              class="w-full pl-5 pr-12 py-2 sm:py-2.5 2xl:py-3 rounded-full border border-slate-200 focus:border-[#c8102e] text-sm 2xl:text-base outline-none transition bg-slate-50/50">
+            <button type="submit"
+              class="absolute right-1.5 w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#c8102e] hover:bg-red-700 text-white flex items-center justify-center transition shadow-xs">
+              <i class="fa-solid fa-magnifying-glass text-xs 2xl:text-sm"></i>
+            </button>
+          </form>
+
+          <!-- Horizontal Menu centered below search bar -->
+          <nav
+            class="flex items-center space-x-6 xl:space-x-8 2xl:space-x-10 text-sm sm:text-[15px] 2xl:text-[17px] font-semibold text-slate-700 pt-0.5 whitespace-nowrap">
+            <a href="/" class="text-[#c8102e] font-bold">Trang chủ</a>
+            <a href="/about" class="hover:text-[#c8102e] transition">Giới thiệu</a>
+            <a href="/products" class="hover:text-[#c8102e] transition">Sản phẩm</a>
+            <a href="/blogs" class="hover:text-[#c8102e] transition">Tin tức</a>
+            <a href="/contact" class="hover:text-[#c8102e] transition">Liên hệ</a>
+          </nav>
+        </div>
+
+        <!-- Right: Hotline & Mobile Controls -->
+        <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <!-- Desktop Hotline (Hiện từ màn hình lg trở lên) -->
+          <div class="hidden lg:flex items-center space-x-3">
+            <div class="text-[#c8102e] text-3xl 2xl:text-4xl">
+              <i class="fa-solid fa-phone-volume"></i>
+            </div>
+            <div>
+              <span
+                class="block text-[11px] 2xl:text-xs text-slate-400 font-bold uppercase tracking-wider leading-tight">Hotline
+                tư vấn</span>
+              <a href="tel:0764333998"
+                class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#c8102e] tracking-tight hover:underline block leading-tight font-mono mt-0.5"
+                id="header-phone">
+                0764333998
+              </a>
+            </div>
+          </div>
+
+          <!-- Mobile Call Button (Hiện trên mobile < lg) -->
+          <a href="tel:0764333998"
+            class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 text-[#c8102e] hover:bg-red-100 flex items-center justify-center transition shadow-2xs"
+            title="Gọi Hotline 0764333998">
+            <i class="fa-solid fa-phone text-sm sm:text-base"></i>
+          </a>
+
+          <!-- Mobile Hamburger Menu Button (Luôn luôn hiển thị rõ ràng trên mobile/tablet < lg) -->
+          <button id="mobile-menu-btn" type="button" aria-label="Menu"
+            class="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-[#c8102e] flex items-center justify-center transition shadow-2xs focus:outline-none">
+            <i class="fa-solid fa-bars text-lg sm:text-xl"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3.5 space-y-3 shadow-xl">
+      <form action="/products" method="GET" class="w-full relative flex items-center">
+        <input type="text" name="search" placeholder="Tìm kiếm sản phẩm..."
+          class="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-full py-2 pl-4 pr-11 text-xs sm:text-sm focus:outline-none focus:border-[#c8102e]">
+        <button type="submit"
+          class="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#c8102e] text-white flex items-center justify-center">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+      </form>
+      <nav class="space-y-1 text-sm font-semibold text-slate-700">
+        <a href="/" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-[#c8102e] bg-red-50">
+          <i class="fa-solid fa-house w-5 text-center"></i>
+          <span>Trang chủ</span>
+        </a>
+        <a href="/about"
+          class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-circle-info w-5 text-center text-slate-400"></i>
+          <span>Giới thiệu</span>
+        </a>
+        <a href="/products"
+          class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center text-slate-400"></i>
+          <span>Sản phẩm</span>
+        </a>
+        <a href="/blogs"
+          class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-newspaper w-5 text-center text-slate-400"></i>
+          <span>Tin tức</span>
+        </a>
+        <a href="/contact"
+          class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl hover:bg-red-50 hover:text-[#c8102e] transition">
+          <i class="fa-solid fa-phone w-5 text-center text-slate-400"></i>
+          <span>Liên hệ</span>
+        </a>
+      </nav>
+      <div
+        class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+        <span class="flex items-center space-x-1.5"><i class="fa-solid fa-headset text-[#c8102e]"></i><span>Hotline tư
+            vấn:</span></span>
+        <a href="tel:0764333998" class="font-bold text-[#c8102e] font-mono text-sm hover:underline">0764333998</a>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ========================================================
+       3. HERO BANNER CHÍNH (THEO HÌNH ẢNH USER ĐÃ GỬI)
+       ======================================================== -->
+  <section id="hero" class="w-full relative overflow-hidden bg-[#e8f1fc]">
+    <div class="w-full relative">
+      <a href="#bestseller-section" class="block w-full cursor-pointer">
+        <img id="page-banner-home" src="/images/hero-banner-main.jpg?v=3"
+          alt="Điện Việt - Dây điện - Cáp điện - Chất lượng tạo nên giá trị!" class="w-full h-auto block select-none">
+      </a>
+
+      <!-- 3 Carousel indicator dots at bottom center -->
+      <div
+        class="absolute bottom-2 sm:bottom-3 2xl:bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 sm:space-x-2 z-10 pointer-events-none">
+        <span class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white/70 shadow-xs"></span>
+        <span class="w-6 sm:w-8 h-2 sm:h-2.5 rounded-full bg-white shadow-md"></span>
+        <span class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white/70 shadow-xs"></span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ========================================================
+       MAIN CONTENT: RỘNG RÃI, LỀ 2 BÊN CHUẨN XÁC THEO MOCKUP
+       ======================================================== -->
+  <main class="site-container py-8 sm:py-10 space-y-10 sm:space-y-12">
+
+    <!-- ========================================================
+         4. DANH MỤC SẢN PHẨM (6 DANH MỤC GRID)
+         ======================================================== -->
+    <section id="categories">
+      <div class="flex items-center justify-between mb-4 sm:mb-5 2xl:mb-6">
+        <div class="flex items-center">
+          <span class="section-title-bar"></span>
+          <h2 class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#0f172a] tracking-tight">Danh mục sản phẩm
+          </h2>
+        </div>
+        <a href="/products"
+          class="text-sm sm:text-base 2xl:text-lg font-bold text-slate-600 hover:text-[#c8102e] transition flex items-center space-x-1.5">
+          <span>Xem tất cả</span>
+          <i class="fa-solid fa-arrow-right text-xs 2xl:text-sm"></i>
+        </a>
+      </div>
+
+      <!-- Category Grid: 6 cards in 1 row on desktop (13", 19", 21") -->
+      <div id="category-grid"
+        class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5 xl:gap-4 2xl:gap-5">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         5. HAI BANNER CAM KẾT & GIAO HÀNG (PROMO HIGHLIGHTS)
+         ======================================================== -->
+    <section>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 2xl:gap-6">
+
+        <!-- Left Banner: Sản phẩm chính hãng 100% (Hình mới) -->
+        <a href="/products"
+          class="block w-full rounded-2xl overflow-hidden shadow-xs hover:shadow-lg hover:scale-[1.01] transition-all duration-300 group border border-red-200/80">
+          <img src="/images/promo-chinh-hang-100.jpg?v=6" alt="Sản phẩm chính hãng 100%"
+            class="w-full h-auto object-cover rounded-2xl block">
+        </a>
+
+        <!-- Right Banner: Giao hàng toàn quốc (Chuyển đến trang sản phẩm) -->
+        <a href="/products"
+          class="block w-full rounded-2xl overflow-hidden shadow-xs hover:shadow-lg hover:scale-[1.01] transition-all duration-300 group border border-orange-200/80">
+          <img src="/images/promo-giao-hang-toan-quoc.jpg?v=3" alt="Giao hàng toàn quốc"
+            class="w-full h-auto object-cover rounded-2xl block">
+        </a>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         6. SẢN PHẨM BÁN CHẠY (BESTSELLERS - 5 SẢN PHẨM)
+         ======================================================== -->
+    <section id="bestseller-section">
+      <div class="flex items-center justify-between mb-4 sm:mb-5 2xl:mb-6">
+        <div class="flex items-center">
+          <span class="section-title-bar"></span>
+          <h2 class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#0f172a] tracking-tight">Sản phẩm bán chạy
+          </h2>
+        </div>
+        <a href="/products"
+          class="text-sm sm:text-base 2xl:text-lg font-bold text-slate-600 hover:text-[#c8102e] transition flex items-center space-x-1.5">
+          <span>Xem tất cả</span>
+          <i class="fa-solid fa-arrow-right text-xs 2xl:text-sm"></i>
+        </a>
+      </div>
+
+      <!-- 5 Sản Phẩm Bán Chạy in 1 row on desktop (13", 19", 21") -->
+      <div id="bestseller-grid"
+        class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5 xl:gap-4 2xl:gap-5">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         7. THANH 4 DỊCH VỤ CAM KẾT (TRUST BADGES CHUẨN ĐẸP CẢ MOBILE & DESKTOP)
+         ======================================================== -->
+    <section>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 text-[#991b1b]">
+
+        <!-- Item 1: Cam kết chính hãng -->
+        <div
+          class="bg-gradient-to-br from-[#fff8f8] via-[#fffefe] to-[#fef2f2] border border-[#fecaca] hover:border-red-300 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3.5 shadow-2xs hover:shadow-xs transition duration-200">
+          <div
+            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-2xs">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-slate-900">Cam kết</span>
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-[#c8102e]">chính
+              hãng</span>
+          </div>
+        </div>
+
+        <!-- Item 2: Tư vấn chuyên nghiệp 24/7 -->
+        <div
+          class="bg-gradient-to-br from-[#fff8f8] via-[#fffefe] to-[#fef2f2] border border-[#fecaca] hover:border-red-300 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3.5 shadow-2xs hover:shadow-xs transition duration-200">
+          <div
+            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-2xs">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-slate-900">Tư vấn chuyên
+              nghiệp</span>
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-[#c8102e]">24/7</span>
+          </div>
+        </div>
+
+        <!-- Item 3: Giao hàng nhanh trên toàn quốc -->
+        <a href="/products"
+          class="bg-gradient-to-br from-[#fff8f8] via-[#fffefe] to-[#fef2f2] border border-[#fecaca] hover:border-red-300 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3.5 shadow-2xs hover:shadow-xs transition duration-200 cursor-pointer">
+          <div
+            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-2xs">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-slate-900">Giao hàng
+              nhanh</span>
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-[#c8102e]">trên toàn
+              quốc</span>
+          </div>
+        </a>
+
+        <!-- Item 4: Đổi trả linh hoạt trong 7 ngày -->
+        <div
+          class="bg-gradient-to-br from-[#fff8f8] via-[#fffefe] to-[#fef2f2] border border-[#fecaca] hover:border-red-300 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3.5 shadow-2xs hover:shadow-xs transition duration-200">
+          <div
+            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-2xs">
+            <i class="fa-solid fa-rotate-left"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-slate-900">Đổi trả linh
+              hoạt</span>
+            <span class="text-xs sm:text-sm xl:text-[15px] font-bold leading-tight block text-[#c8102e]">trong 7
+              ngày</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         8. VỀ CHÚNG TÔI & GIÁ TRỊ CỐT LÕI (LOAD TỪ ADMIN SETTINGS)
+         ======================================================== -->
+    <section id="about">
+      <div class="flex items-center mb-4 sm:mb-5 2xl:mb-6">
+        <span class="section-title-bar"></span>
+        <h2 class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#0f172a] tracking-tight">Về chúng tôi</h2>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 2xl:gap-6 items-stretch">
+        <!-- Showroom Building Photo (approx 4 cols) -->
+        <a href="/about"
+          class="lg:col-span-4 rounded-2xl overflow-hidden border border-[#fecaca]/80 shadow-xs relative min-h-[190px] sm:min-h-[210px] block group"
+          title="Xem trang giới thiệu Điện Việt">
+          <img src="/images/company-building-hd.jpg" alt="Trụ sở Công ty TNHH Điện Việt"
+            class="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition duration-300">
+        </a>
+
+        <!-- Khung gộp thành 1 với nền blush-pink & cách nhau bằng gạch phân cách | (8 cols) -->
+        <div
+          class="lg:col-span-8 bg-[#fdf2f0] rounded-2xl p-5 sm:p-6 2xl:p-7 border border-[#fecaca] shadow-xs flex flex-col lg:flex-row items-stretch justify-between gap-6 lg:gap-8">
+
+          <!-- Phần bên trái: Thông tin công ty / Về chúng tôi -->
+          <div class="flex-1 flex flex-col justify-start space-y-2 sm:space-y-2.5">
+            <div>
+              <h3 class="text-lg sm:text-xl 2xl:text-2xl font-black text-[#0f172a]" id="about-title">Công ty TNHH Điện
+                Việt</h3>
+              <p class="text-xs sm:text-sm xl:text-base 2xl:text-lg text-slate-700 leading-relaxed mt-2 2xl:mt-2.5 whitespace-pre-line line-clamp-4 overflow-hidden"
+                id="about-history"
+                style="display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
+                Với hơn 10 năm kinh nghiệm trong lĩnh vực thiết bị điện, Điện Việt cam kết mang đến cho khách hàng những
+                sản phẩm chất lượng, giải pháp tối ưu và dịch vụ chuyên nghiệp nhất.
+              </p>
+            </div>
+            <!-- Text Tìm hiểu thêm gạch dưới, chữ màu đỏ căn phải dưới dòng thứ 4: Di chuyển đến trang Giới thiệu (/about) -->
+            <div class="flex justify-end pt-0.5">
+              <a href="/about"
+                class="text-xs sm:text-sm font-bold text-[#c8102e] hover:text-red-700 underline underline-offset-4 transition inline-flex items-center space-x-1 cursor-pointer">
+                <span>Tìm hiểu thêm</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Gạch phân cách | ở giữa 2 phần -->
+          <div class="hidden lg:block w-[1.5px] bg-[#fca5a5]/80 self-stretch my-1 shrink-0"></div>
+
+          <!-- Phần bên phải: Giá trị cốt lõi -->
+          <div class="lg:w-[40%] xl:w-[36%] flex flex-col justify-start space-y-3 sm:space-y-3.5 py-0.5">
+            <div>
+              <div class="flex items-center space-x-2 text-[#c8102e] mb-1.5">
+                <i class="fa-solid fa-gem text-base"></i>
+                <h4 class="text-sm sm:text-base 2xl:text-lg font-black tracking-tight uppercase">Giá trị cốt lõi</h4>
+              </div>
+              <!-- Ẩn nội dung trường Giá trị cốt lõi theo yêu cầu -->
+              <p class="hidden" id="about-values"></p>
+            </div>
+
+            <!-- 3 Điểm mạnh cốt lõi -->
+            <div class="space-y-2 pt-0.5" id="about-values-badges">
+              <div class="flex items-center space-x-3 2xl:space-x-3.5">
+                <div
+                  class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-white text-[#c8102e] flex items-center justify-center text-xs 2xl:text-sm shrink-0 shadow-xs border border-red-100">
+                  <i class="fa-solid fa-shield-heart"></i>
+                </div>
+                <span class="text-xs sm:text-sm 2xl:text-base font-bold text-[#0f172a]">Sản phẩm chất lượng</span>
+              </div>
+
+              <div class="flex items-center space-x-3 2xl:space-x-3.5">
+                <div
+                  class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-white text-[#c8102e] flex items-center justify-center text-xs 2xl:text-sm shrink-0 shadow-xs border border-red-100">
+                  <i class="fa-solid fa-tag"></i>
+                </div>
+                <span class="text-xs sm:text-sm 2xl:text-base font-bold text-[#0f172a]">Giá cả cạnh tranh</span>
+              </div>
+
+              <div class="flex items-center space-x-3 2xl:space-x-3.5">
+                <div
+                  class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-white text-[#c8102e] flex items-center justify-center text-xs 2xl:text-sm shrink-0 shadow-xs border border-red-100">
+                  <i class="fa-solid fa-location-dot"></i>
+                </div>
+                <span class="text-xs sm:text-sm 2xl:text-base font-bold text-[#0f172a]">Dịch vụ tận tâm</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         9. TIN TỨC & KIẾN THỨC
+         ======================================================== -->
+    <section id="news">
+      <div class="flex items-center justify-between mb-4 sm:mb-5 2xl:mb-6">
+        <div class="flex items-center">
+          <span class="section-title-bar"></span>
+          <h2 class="text-xl sm:text-2xl 2xl:text-[28px] font-black text-[#0f172a] tracking-tight">Tin tức & Kiến thức
+          </h2>
+        </div>
+        <a href="/blogs"
+          class="text-sm sm:text-base 2xl:text-lg font-bold text-slate-600 hover:text-[#c8102e] transition flex items-center space-x-1.5">
+          <span>Xem tất cả</span>
+          <i class="fa-solid fa-arrow-right text-xs 2xl:text-sm"></i>
+        </a>
+      </div>
+
+      <!-- Blog Grid (3 columns) -->
+      <div id="blog-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 2xl:gap-6">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ========================================================
+       10. FOOTER (FULL WIDTH ĐỎ CHUẨN THƯƠNG HIỆU ĐIỆN VIỆT)
+       ======================================================== -->
+  <footer class="w-full bg-[#7e0a0b] text-white pt-10 sm:pt-12 border-t border-red-950">
+    <div class="site-container pb-8 sm:pb-10">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-5 xl:gap-6 2xl:gap-8">
+
+        <!-- Cột 1: Logo, Slogan, Mạng xã hội (3 cols) -->
+        <div class="lg:col-span-3 space-y-3 2xl:space-y-4">
+          <div class="flex items-center space-x-3">
+            <div
+              class="footer-logo-icon w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl bg-white text-[#c8102e] flex items-center justify-center text-xl 2xl:text-2xl font-black shadow-xs">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <img src="" alt="Điện Việt Logo"
+              class="footer-logo-img hidden h-10 2xl:h-12 w-auto object-contain bg-white rounded-xl p-1">
+            <div>
+              <span
+                class="site-footer-company-name text-2xl 2xl:text-3xl font-black tracking-tight text-white leading-none">Điện
+                <span class="text-red-200">Việt</span></span>
+              <span
+                class="site-footer-slogan block text-xs 2xl:text-sm text-red-200/90 font-medium tracking-tight mt-1">Kết
+                nối giá trị - Thắp sáng tương lai</span>
+            </div>
+          </div>
+          <!-- Social Icons: Facebook, Youtube, Zalo -->
+          <div class="flex items-center space-x-2.5 pt-2">
+            <a href="https://facebook.com" target="_blank"
+              class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#1877f2] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition"
+              title="Facebook">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="https://youtube.com" target="_blank"
+              class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#ff0000] flex items-center justify-center text-white text-xs 2xl:text-sm hover:opacity-90 transition"
+              title="YouTube">
+              <i class="fa-brands fa-youtube"></i>
+            </a>
+            <a href="https://zalo.me" target="_blank"
+              class="w-8 h-8 2xl:w-9 2xl:h-9 rounded-full bg-[#0068ff] flex items-center justify-center text-white text-[9px] 2xl:text-xs font-black hover:opacity-90 transition"
+              title="Zalo">
+              Zalo
+            </a>
+          </div>
+        </div>
+
+        <!-- Cột 2: Thông tin liên hệ (3 cols) -->
+        <div class="lg:col-span-3 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/90">
+          <h4
+            class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">
+            Thông tin liên hệ</h4>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-phone text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span class="font-bold text-white text-sm sm:text-base 2xl:text-lg" id="footer-phone">1800 1234</span>
+          </div>
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-envelope text-red-300 w-4 text-sm 2xl:text-base"></i>
+            <span id="footer-email">hotro@dienviet.vn</span>
+          </div>
+          <div class="flex items-start space-x-2.5">
+            <i class="fa-solid fa-location-dot text-red-300 w-4 text-sm 2xl:text-base mt-0.5"></i>
+            <span id="footer-address">Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội</span>
+          </div>
+        </div>
+
+        <!-- Cột 3: Hỗ trợ khách hàng (2 cols) -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4
+            class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">
+            Hỗ trợ khách hàng</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/huong-dan-bao-gia" class="hover:text-white transition whitespace-nowrap block">Hướng dẫn báo
+                giá</a></li>
+            <li><a href="/dieu-khoan-su-dung" class="hover:text-white transition whitespace-nowrap block">Điều khoản sử
+                dụng</a></li>
+            <li><a href="/chinh-sach-bao-hanh" class="hover:text-white transition whitespace-nowrap block">Chính sách
+                bảo hành</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 4: Về Điện Việt (2 cols - Đảm bảo "Giới thiệu công ty" không xuống dòng) -->
+        <div class="lg:col-span-2 space-y-2 2xl:space-y-2.5 text-xs sm:text-sm 2xl:text-base text-red-100/80">
+          <h4
+            class="text-sm sm:text-base 2xl:text-lg font-bold text-white uppercase tracking-wider mb-3 whitespace-nowrap">
+            Về Điện Việt</h4>
+          <ul class="space-y-1.5 2xl:space-y-2 text-xs sm:text-sm 2xl:text-base">
+            <li><a href="/about" class="hover:text-white transition whitespace-nowrap block">Giới thiệu công ty</a></li>
+            <li><a href="/contact" class="hover:text-white transition whitespace-nowrap block">Liên hệ</a></li>
+            <li><a href="/blogs" class="hover:text-white transition whitespace-nowrap block">Tin tức</a></li>
+          </ul>
+        </div>
+
+        <!-- Cột 5: Bản đồ tương đương với địa chỉ công ty (2 cols) -->
+        <div class="lg:col-span-2" id="map-box">
+          <div
+            class="rounded-xl overflow-hidden border border-red-900/60 shadow-xs h-28 sm:h-32 2xl:h-36 w-full bg-white relative group">
+            <iframe id="footer-map-iframe"
+              src="https://maps.google.com/maps?q=123+Nguy%E1%BB%85n+V%C4%83n+C%E1%BB%AB,+Long+Bi%C3%AAn,+H%C3%A0+N%E1%BB%99i&t=&z=14&ie=UTF8&iwloc=&output=embed"
+              class="w-full h-full border-0" loading="lazy" allowfullscreen=""
+              title="Bản đồ Điện Việt - Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội">
+            </iframe>
+            <a href="https://maps.google.com/?q=Số+123+Nguyễn+Văn+Cừ+Long+Biên+Hà+Nội" target="_blank"
+              class="absolute bottom-1 right-1 bg-white/95 backdrop-blur-xs text-[10px] text-[#1877f2] font-bold px-1.5 py-0.5 rounded shadow-xs hover:underline flex items-center space-x-1">
+              <span>Xem bản đồ</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Dòng Copyright với màu khác màu footer hiện tại (bg-[#500506]) -->
+    <div class="w-full bg-[#500506] border-t border-red-950/80 py-3.5 sm:py-4">
+      <div
+        class="site-container flex flex-col sm:flex-row items-center justify-between text-xs 2xl:text-sm text-red-200/90 gap-2">
+        <div class="font-medium tracking-wide">
+          @ 2026 Điện Việt
+        </div>
+        <div class="flex items-center space-x-4 text-xs 2xl:text-sm">
+          <a href="/dieu-khoan-su-dung" class="hover:underline text-red-200/90 hover:text-white transition">Điều khoản
+            sử dụng</a>
+          <span class="text-red-400/50">|</span>
+          <a href="/chinh-sach-bao-hanh" class="hover:underline text-red-200/90 hover:text-white transition">Chính sách
+            bảo hành</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ========================================================
+       MODAL: CHI TIẾT SẢN PHẨM & FORM BÁO GIÁ
+       ======================================================== -->
+  <div id="product-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      class="modal-content relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <button id="close-modal-btn"
+        class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+
+      <div id="modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL: FORM LIÊN HỆ & YÊU CẦU BÁO GIÁ TRỰC TIẾP
+       ======================================================== -->
+  <div id="contact-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      class="modal-content relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-red-100 p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <button onclick="closeContactModal()"
+        class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-black text-[#0f172a]">Liên Hệ & Yêu Cầu Báo Giá</h3>
+          <p class="text-xs text-slate-500">Điện Việt sẽ phản hồi và gửi bảng giá chiết khấu trong thời gian sớm nhất
+          </p>
+        </div>
+      </div>
+
+      <form id="contact-form" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Họ và tên *</label>
+            <input type="text" id="contact-fullname" required placeholder="Nguyễn Văn A"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#c8102e] outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Số điện thoại *</label>
+            <input type="tel" id="contact-phone-input" required placeholder="0988 123 456"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#c8102e] outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Email</label>
+          <input type="email" id="contact-email-input" placeholder="email@example.com"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#c8102e] outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Loại yêu cầu</label>
+          <div id="contact-modal-type-group" class="flex items-center space-x-6 flex-wrap gap-y-2">
+            <label
+              class="inline-flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-slate-700">
+              <input type="radio" name="contact-type" value="Báo giá" checked
+                class="text-[#c8102e] focus:ring-[#c8102e] w-4 h-4">
+              <span>Báo giá sản phẩm</span>
+            </label>
+            <label
+              class="inline-flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-slate-700">
+              <input type="radio" name="contact-type" value="Khiếu nại"
+                class="text-[#c8102e] focus:ring-[#c8102e] w-4 h-4">
+              <span>Khiếu nại / Góp ý</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Bộ chọn sản phẩm báo giá -->
+        <div id="quote-product-container" class="space-y-2">
+          <label class="block text-xs font-bold uppercase text-slate-700">
+            Sản phẩm cần báo giá
+          </label>
+
+          <div id="selected-product-box"
+            class="hidden p-3 bg-red-50/80 rounded-xl border border-red-200 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <img id="selected-product-img" src="" alt="Sản phẩm"
+                class="w-10 h-10 object-contain rounded-lg bg-white border border-red-100 p-0.5">
+              <div>
+                <span class="text-[10px] text-[#c8102e] font-extrabold uppercase">Đã chọn:</span>
+                <h4 id="selected-product-name" class="font-bold text-xs sm:text-sm text-[#0f172a] leading-tight"></h4>
+              </div>
+            </div>
+            <button type="button" onclick="clearSelectedQuoteProduct()"
+              class="text-slate-400 hover:text-red-600 p-1 text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <input type="hidden" id="contact-product-name" name="product_name">
+
+          <div class="relative" id="quote-product-picker">
+            <div class="relative flex items-center">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-slate-400 text-xs"></i>
+              <input type="text" id="quote-product-search" placeholder="Gõ tên để tìm sản phẩm..."
+                class="w-full pl-9 pr-9 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#c8102e] outline-none">
+              <button type="button" id="toggle-product-dropdown-btn"
+                class="absolute right-3 text-slate-400 hover:text-[#c8102e]">
+                <i class="fa-solid fa-chevron-down text-xs transition" id="quote-dropdown-icon"></i>
+              </button>
+            </div>
+
+            <div id="quote-product-dropdown"
+              class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-red-100 rounded-xl shadow-xl max-h-48 overflow-y-auto z-30 divide-y divide-slate-100 text-xs">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nội dung lời nhắn *</label>
+          <textarea id="contact-message" rows="3" required
+            placeholder="Nhập số lượng, quy cách hoặc yêu cầu chi tiết..."
+            class="w-full p-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#c8102e] outline-none"></textarea>
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-3">
+          <button type="button" onclick="closeContactModal()"
+            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition">
+            Hủy
+          </button>
+          <button type="submit" id="contact-submit-btn"
+            class="px-6 py-2.5 rounded-xl bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2">
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+            <span>Gửi Yêu Cầu Báo Giá</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL POPUP: VỀ CHÚNG TÔI (KHI NHẤN "TÌM HIỂU THÊM")
+       ======================================================== -->
+  <div id="about-modal-popup"
+    class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 hidden bg-black/60 backdrop-blur-xs">
+    <div
+      class="modal-content relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-red-100 p-5 sm:p-8 max-h-[92vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3.5 sm:pb-4 border-b border-slate-100 shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div
+            class="w-9 h-9 rounded-xl bg-red-50 text-[#c8102e] flex items-center justify-center text-base font-bold shadow-2xs">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-black text-[#0f172a]" id="about-modal-title">Về Chúng Tôi – Công ty
+              TNHH Điện Việt</h3>
+            <p class="text-[11px] sm:text-xs text-slate-500">Giới thiệu chi tiết về doanh nghiệp, năng lực và cam kết
+            </p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAboutPopupModal()"
+          class="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-[#c8102e] flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Nội dung chi tiết cuộn được -->
+      <div
+        class="overflow-y-auto flex-1 p-3 sm:p-5 bg-slate-50/50 rounded-2xl border border-slate-100 custom-scrollbar my-3"
+        id="about-modal-body">
+        <!-- Injected via main.js -->
+      </div>
+
+      <!-- Footer -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+        <a href="/about"
+          class="text-xs sm:text-sm font-bold text-[#c8102e] hover:underline flex items-center space-x-1.5">
+          <span>Xem trang Giới thiệu đầy đủ</span>
+          <i class="fa-solid fa-arrow-right text-[11px]"></i>
+        </a>
+        <button type="button" onclick="closeAboutPopupModal()"
+          class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+          Đóng cửa sổ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/main.js?v=2"></script>
+</body>
+
+</html>
