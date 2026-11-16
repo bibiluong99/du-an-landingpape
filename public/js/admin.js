@@ -2412,16 +2412,10 @@ async function openQuoteProductPickerModal() {
     ensureCategoriesLoaded()
   ]);
 
-  // Cập nhật dropdown danh mục
+  // Cập nhật dropdown danh mục theo phân cấp cha/con (optgroup)
   const catSelect = document.getElementById('quote-product-picker-category');
   if (catSelect) {
-    let catOptions = '<option value="">Tất cả danh mục</option>';
-    if (Array.isArray(categoriesCache)) {
-      categoriesCache.forEach(c => {
-        catOptions += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
-      });
-    }
-    catSelect.innerHTML = catOptions;
+    catSelect.innerHTML = buildCategoryDropdownHtml(true, 'Tất cả danh mục');
   }
 
   const searchInput = document.getElementById('quote-product-picker-search');
@@ -2443,12 +2437,19 @@ function filterQuoteProductPicker() {
   if (!listEl) return;
 
   const keyword = (document.getElementById('quote-product-picker-search')?.value || '').toLowerCase().trim();
-  const categoryId = document.getElementById('quote-product-picker-category')?.value || '';
+  const categoryId = document.getElementById('quote-product-picker-category')?.value || 'all';
 
   let list = Array.isArray(productsCache) ? productsCache : [];
 
-  if (categoryId) {
-    list = list.filter(p => String(p.category_id) === String(categoryId));
+  if (categoryId && categoryId !== 'all') {
+    const childCatIds = categoriesCache
+      .filter(c => String(c.parent_id) === String(categoryId))
+      .map(c => String(c.id));
+
+    list = list.filter(p => {
+      const pCat = String(p.category_id);
+      return pCat === String(categoryId) || childCatIds.includes(pCat);
+    });
   }
   if (keyword) {
     list = list.filter(p => (p.name || '').toLowerCase().includes(keyword));
@@ -2470,8 +2471,14 @@ function filterQuoteProductPicker() {
 
   listEl.innerHTML = list.map(p => {
     const isSelected = currentQuoteContract && currentQuoteContract.items.some(it => it.name.trim().toLowerCase() === (p.name || '').trim().toLowerCase());
-    const cat = Array.isArray(categoriesCache) ? categoriesCache.find(c => c.id === p.category_id) : null;
-    const catName = cat ? cat.name : (p.category_name || '');
+    const cat = Array.isArray(categoriesCache) ? categoriesCache.find(c => String(c.id) === String(p.category_id)) : null;
+    let catName = cat ? cat.name : (p.category_name || '');
+    if (cat && cat.parent_id) {
+      const parentCat = categoriesCache.find(c => String(c.id) === String(cat.parent_id));
+      if (parentCat) {
+        catName = `${parentCat.name} › ${cat.name}`;
+      }
+    }
 
     return `
       <div class="p-3 bg-white hover:bg-red-50/40 rounded-2xl border border-slate-200 hover:border-red-200 transition flex items-center justify-between gap-3 shadow-2xs">
