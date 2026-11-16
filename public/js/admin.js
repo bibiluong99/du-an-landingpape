@@ -56,6 +56,7 @@ function showToast(message, type = 'success') {
 let categoriesCache = [];
 let productsCache = [];
 let contactsCache = [];
+let websiteSettingsCache = null;
 let currentContactTypeFilter = 'all';
 let currentContactStatusFilter = 'all';
 
@@ -89,6 +90,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Khởi tạo Dashboard ban đầu
   loadDashboard();
+  loadSettings();
+  ensureProductsLoaded();
+  ensureCategoriesLoaded();
 
   // Setup sidebar mobile toggle
   const toggleBtn = document.getElementById('toggle-sidebar-btn');
@@ -763,6 +767,34 @@ async function loadProducts() {
   } catch (err) {
     console.error('Lỗi khi tải sản phẩm:', err);
   }
+}
+
+async function ensureProductsLoaded() {
+  if (Array.isArray(productsCache) && productsCache.length > 0) return productsCache;
+  try {
+    const res = await fetch('/api/admin/products', { headers: getAuthHeaders() });
+    const result = await res.json();
+    if (result.success && Array.isArray(result.data)) {
+      productsCache = result.data;
+    }
+  } catch (e) {
+    console.error('Lỗi nạp sản phẩm:', e);
+  }
+  return productsCache || [];
+}
+
+async function ensureCategoriesLoaded() {
+  if (Array.isArray(categoriesCache) && categoriesCache.length > 0) return categoriesCache;
+  try {
+    const res = await fetch('/api/admin/categories', { headers: getAuthHeaders() });
+    const result = await res.json();
+    if (result.success && Array.isArray(result.data)) {
+      categoriesCache = result.data;
+    }
+  } catch (e) {
+    console.error('Lỗi nạp danh mục:', e);
+  }
+  return categoriesCache || [];
 }
 
 window.changeProductsPage = function(page) {
@@ -2291,14 +2323,14 @@ function openQuoteContractModal(contactId) {
   const dateStr = `ngày ${String(now.getDate()).padStart(2, '0')} tháng ${String(now.getMonth() + 1).padStart(2, '0')} năm ${now.getFullYear()}`;
   const quoteNum = `BG-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${c.id}`;
 
-  const logoUrl = document.getElementById('set-logo-url')?.value 
-    || document.getElementById('preview-logo')?.src 
-    || '/uploads/img-1794390284769-958980201.png';
+  const logoUrl = (websiteSettingsCache?.logo_url && !websiteSettingsCache.logo_url.includes('/admin'))
+    ? websiteSettingsCache.logo_url
+    : (document.getElementById('set-logo-url')?.value?.trim() || '/uploads/img-1794390284769-958980201.png');
 
-  const companyName = cleanVietnameseText(document.getElementById('set-company-name')?.value || 'CÔNG TY TNHH ĐIỆN VIỆT');
-  const companyAddr = cleanVietnameseText(document.getElementById('set-address')?.value || 'Số 123 Nguyễn Văn Cừ, Hà Nội');
-  const companyPhone = cleanVietnameseText(document.getElementById('set-phone')?.value || '0764333998');
-  const companyEmail = cleanVietnameseText(document.getElementById('set-email')?.value || 'hotro@dienviet.vn');
+  const companyName = cleanVietnameseText(websiteSettingsCache?.company_name || document.getElementById('set-company-name')?.value || 'CÔNG TY TNHH ĐIỆN VIỆT');
+  const companyAddr = cleanVietnameseText(websiteSettingsCache?.address || document.getElementById('set-address')?.value || 'Số 123 Nguyễn Văn Cừ, Hà Nội');
+  const companyPhone = cleanVietnameseText(websiteSettingsCache?.phone || document.getElementById('set-phone')?.value || '0764333998');
+  const companyEmail = cleanVietnameseText(websiteSettingsCache?.email || document.getElementById('set-email')?.value || 'hotro@dienviet.vn');
 
   // Thiết lập state báo giá
   currentQuoteContract = {
@@ -2362,6 +2394,171 @@ function toggleQuoteShowTotal(checked) {
 function closeQuoteContractModal() {
   const modal = document.getElementById('quote-contract-modal');
   if (modal) modal.classList.remove('active');
+}
+
+// ========================================================
+// CHỌN SẢN PHẨM VÀO BẢNG BÁO GIÁ
+// ========================================================
+async function openQuoteProductPickerModal() {
+  syncQuoteEditInputsToState();
+  const modal = document.getElementById('quote-product-picker-modal');
+  if (!modal) return;
+
+  modal.classList.remove('hidden');
+
+  // Nạp danh sách sản phẩm và danh mục nếu chưa có
+  await Promise.all([
+    ensureProductsLoaded(),
+    ensureCategoriesLoaded()
+  ]);
+
+  // Cập nhật dropdown danh mục
+  const catSelect = document.getElementById('quote-product-picker-category');
+  if (catSelect) {
+    let catOptions = '<option value="">Tất cả danh mục</option>';
+    if (Array.isArray(categoriesCache)) {
+      categoriesCache.forEach(c => {
+        catOptions += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+      });
+    }
+    catSelect.innerHTML = catOptions;
+  }
+
+  const searchInput = document.getElementById('quote-product-picker-search');
+  if (searchInput) {
+    searchInput.value = '';
+    setTimeout(() => searchInput.focus(), 100);
+  }
+
+  filterQuoteProductPicker();
+}
+
+function closeQuoteProductPickerModal() {
+  const modal = document.getElementById('quote-product-picker-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function filterQuoteProductPicker() {
+  const listEl = document.getElementById('quote-product-picker-list');
+  if (!listEl) return;
+
+  const keyword = (document.getElementById('quote-product-picker-search')?.value || '').toLowerCase().trim();
+  const categoryId = document.getElementById('quote-product-picker-category')?.value || '';
+
+  let list = Array.isArray(productsCache) ? productsCache : [];
+
+  if (categoryId) {
+    list = list.filter(p => String(p.category_id) === String(categoryId));
+  }
+  if (keyword) {
+    list = list.filter(p => (p.name || '').toLowerCase().includes(keyword));
+  }
+
+  if (list.length === 0) {
+    listEl.innerHTML = `
+      <div class="text-center py-12 text-slate-400">
+        <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300"></i>
+        <p class="text-xs font-semibold">Không tìm thấy sản phẩm phù hợp!</p>
+        <button type="button" onclick="addBlankQuoteItemAndClosePicker()" class="mt-3 px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 font-bold text-xs rounded-xl transition inline-flex items-center space-x-1 cursor-pointer">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Tự nhập hạng mục mới</span>
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = list.map(p => {
+    const isSelected = currentQuoteContract && currentQuoteContract.items.some(it => it.name.trim().toLowerCase() === (p.name || '').trim().toLowerCase());
+    const cat = Array.isArray(categoriesCache) ? categoriesCache.find(c => c.id === p.category_id) : null;
+    const catName = cat ? cat.name : (p.category_name || '');
+
+    return `
+      <div class="p-3 bg-white hover:bg-red-50/40 rounded-2xl border border-slate-200 hover:border-red-200 transition flex items-center justify-between gap-3 shadow-2xs">
+        <div class="flex items-center space-x-3 min-w-0 flex-1">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+            ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-400 text-sm"></i>`}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-xs sm:text-sm text-slate-800 truncate" title="${escapeHtml(p.name)}">
+              ${escapeHtml(p.name)}
+            </div>
+            <div class="flex items-center space-x-2 mt-0.5 text-[11px] text-slate-500">
+              ${catName ? `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">${escapeHtml(catName)}</span>` : ''}
+              <span>ĐVT: <strong class="text-slate-700">${escapeHtml(p.unit || 'Cái')}</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="font-bold text-xs sm:text-sm font-mono text-[#c8102e] mb-1">
+            ${formatVND(p.price || 0)}
+          </div>
+          <button 
+            type="button" 
+            onclick="selectProductForQuote(${p.id}, this)" 
+            class="px-3.5 py-1.5 ${isSelected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#c8102e] hover:bg-red-700 text-white'} font-bold text-xs rounded-xl shadow-2xs transition flex items-center space-x-1 cursor-pointer active:scale-95"
+          >
+            <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-plus'} text-[11px]"></i>
+            <span>${isSelected ? 'Đã thêm (+1)' : 'Chọn'}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectProductForQuote(productId, btnEl) {
+  if (!currentQuoteContract) return;
+  const p = productsCache.find(x => x.id === productId);
+  if (!p) return;
+
+  syncQuoteEditInputsToState();
+
+  const existing = currentQuoteContract.items.find(it => it.name.trim().toLowerCase() === (p.name || '').trim().toLowerCase());
+  if (existing) {
+    existing.quantity += 1;
+    showToast(`Đã tăng số lượng "${p.name}" lên ${existing.quantity}!`, 'success');
+  } else {
+    if (currentQuoteContract.items.length === 1 && !currentQuoteContract.items[0].name.trim()) {
+      currentQuoteContract.items[0] = {
+        id: Date.now(),
+        name: cleanVietnameseText(p.name),
+        unit: cleanVietnameseText(p.unit || 'Cái'),
+        quantity: 1,
+        price: p.price || 0
+      };
+    } else {
+      currentQuoteContract.items.push({
+        id: Date.now(),
+        name: cleanVietnameseText(p.name),
+        unit: cleanVietnameseText(p.unit || 'Cái'),
+        quantity: 1,
+        price: p.price || 0
+      });
+    }
+    showToast(`Đã thêm "${p.name}" vào bảng báo giá!`, 'success');
+  }
+
+  renderQuoteContractModal();
+
+  if (btnEl) {
+    btnEl.className = 'px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl shadow-2xs transition flex items-center space-x-1 cursor-pointer active:scale-95';
+    btnEl.innerHTML = '<i class="fa-solid fa-check text-[11px]"></i><span>Đã thêm (+1)</span>';
+  }
+}
+
+function addBlankQuoteItemAndClosePicker() {
+  if (!currentQuoteContract) return;
+  syncQuoteEditInputsToState();
+  currentQuoteContract.items.push({
+    id: Date.now(),
+    name: '',
+    unit: 'Cái',
+    quantity: 1,
+    price: 0
+  });
+  closeQuoteProductPickerModal();
+  renderQuoteContractModal();
 }
 
 async function submitSendQuoteContract() {
@@ -2652,11 +2849,7 @@ function renderQuoteContractModal() {
             <p class="text-[11px] text-slate-400 mt-0.5">Thêm bớt hạng mục, điều chỉnh đơn vị tính, số lượng, đơn giá và ghi chú từng dòng.</p>
           </div>
           <div class="flex items-center space-x-2">
-            <button type="button" onclick="loadSampleCncQuoteItems()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1 cursor-pointer shrink-0" title="Nạp nhanh 5 dòng hạng mục mẫu gia công CNC theo yêu cầu">
-              <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
-              <span>Nạp mẫu CNC</span>
-            </button>
-            <button type="button" onclick="addQuoteContractItem()" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 font-bold text-xs rounded-xl transition flex items-center space-x-1.5 cursor-pointer shrink-0">
+            <button type="button" onclick="openQuoteProductPickerModal()" class="px-4 py-2 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer shrink-0">
               <i class="fa-solid fa-plus text-xs"></i>
               <span>Thêm hạng mục</span>
             </button>
@@ -2747,33 +2940,16 @@ function renderQuoteContractModal() {
         </div>
       </div>
 
-      <!-- KHỐI 3: GHI CHÚ BÁO GIÁ & TÙY CHỌN -->
+      <!-- KHỐI 3: GHI CHÚ BÁO GIÁ -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
         <span class="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center space-x-2 pb-2 border-b border-slate-100">
           <i class="fa-solid fa-comment-dots text-[#c8102e]"></i>
-          <span>3. Ghi Chú & Tùy Chọn Báo Giá</span>
+          <span>3. Ghi Chú Báo Giá</span>
         </span>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div class="sm:col-span-2">
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nội dung Ghi chú (mỗi dòng một ý):</label>
-            <textarea id="qc-quote-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')}</textarea>
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Lời cảm ơn cuối bảng:</label>
-            <input type="text" id="qc-thank-you" value="${escapeHtml(q.thankYouText || 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none font-bold text-slate-800">
-          </div>
-          <div class="flex items-center pt-2">
-            <div class="p-3 bg-red-50/60 rounded-xl border border-red-100 flex items-center justify-between w-full">
-              <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
-                <i class="fa-solid fa-calculator text-[#c8102e]"></i>
-                <span>Tổng cộng bảng báo giá:</span>
-              </span>
-              <span class="text-sm font-black font-mono text-[#c8102e]" id="qc-calc-grand-total">
-                ${formatVND(q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0))}
-              </span>
-            </div>
-          </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nội dung Ghi chú (mỗi dòng một ý):</label>
+          <textarea id="qc-quote-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')}</textarea>
         </div>
       </div>
 
@@ -2812,14 +2988,17 @@ function renderQuotePreviewHtml() {
   const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
   const grandTotal = subtotal + vatAmount;
 
-  const logoSrc = q.sellerLogo || '/uploads/img-1794390284769-958980201.png';
+  let logoSrc = q.sellerLogo;
+  if (!logoSrc || logoSrc.includes('/admin') || logoSrc === window.location.href) {
+    logoSrc = websiteSettingsCache?.logo_url || '/uploads/img-1794390284769-958980201.png';
+  }
 
   container.innerHTML = `
     <!-- KHỐI 1: HEADER LOGO + THÔNG TIN ĐƠN VỊ -->
     <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #334155; margin-bottom: 24px; padding-bottom: 14px;">
       <tr>
         <td style="width: 25%; vertical-align: middle; padding: 4px 14px 14px 0; text-align: center;">
-          <img src="${logoSrc}" alt="Logo" style="max-height: 80px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto;" />
+          <img src="${logoSrc}" onerror="this.onerror=null; this.src='/uploads/img-1794390284769-958980201.png';" alt="Logo" style="max-height: 80px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto;" />
         </td>
         <td style="width: 75%; vertical-align: middle; padding: 4px 0 14px 16px; border-left: 2px solid #e2e8f0;">
           <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; color: #0f172a; margin-bottom: 5px; letter-spacing: 0.3px;">
@@ -3027,7 +3206,11 @@ function exportQuoteToWord() {
   const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
   const grandTotal = subtotal + vatAmount;
 
-  const logoSrc = q.sellerLogo ? (q.sellerLogo.startsWith('http') ? q.sellerLogo : window.location.origin + q.sellerLogo) : (window.location.origin + '/images/hd/logo.png');
+  let rawLogo = q.sellerLogo;
+  if (!rawLogo || rawLogo.includes('/admin')) {
+    rawLogo = websiteSettingsCache?.logo_url || '/uploads/img-1794390284769-958980201.png';
+  }
+  const logoSrc = rawLogo.startsWith('http') ? rawLogo : (window.location.origin + rawLogo);
 
   const docHtml = `
     <!-- PHẦN 1: HEADER LOGO + ĐƠN VỊ BÁO GIÁ -->
@@ -3264,6 +3447,7 @@ async function loadSettings() {
     if (!result.success) return;
 
     const s = result.data;
+    websiteSettingsCache = s;
     if (s.company_name && document.getElementById('set-company-name')) document.getElementById('set-company-name').value = s.company_name;
     if (s.company_slogan && document.getElementById('set-company-slogan')) document.getElementById('set-company-slogan').value = s.company_slogan;
     if (s.phone && document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone;
@@ -4572,6 +4756,11 @@ window.addQuoteContractItem = addQuoteContractItem;
 window.removeQuoteContractItem = removeQuoteContractItem;
 window.updateQuoteItem = updateQuoteItem;
 window.copyQuoteContractText = copyQuoteContractText;
+window.openQuoteProductPickerModal = openQuoteProductPickerModal;
+window.closeQuoteProductPickerModal = closeQuoteProductPickerModal;
+window.filterQuoteProductPicker = filterQuoteProductPicker;
+window.selectProductForQuote = selectProductForQuote;
+window.addBlankQuoteItemAndClosePicker = addBlankQuoteItemAndClosePicker;
 window.changeCategoriesPage = changeCategoriesPage;
 window.changeProductsPage = changeProductsPage;
 window.changeBlogsPage = changeBlogsPage;

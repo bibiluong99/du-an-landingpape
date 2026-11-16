@@ -1635,6 +1635,77 @@
 
 
   <!-- ========================================================
+       MODAL: CHỌN SẢN PHẨM VÀO BÁO GIÁ
+       ======================================================== -->
+  <div id="quote-product-picker-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden border border-slate-100 animate-scale-up">
+      <!-- Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-red-100 text-[#c8102e] flex items-center justify-center text-lg font-bold shrink-0">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Chọn Sản Phẩm Vào Báo Giá</h3>
+            <p class="text-xs text-slate-500 font-medium">Tìm kiếm và chọn sản phẩm để thêm vào bảng báo giá</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeQuoteProductPickerModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" title="Đóng">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="p-4 border-b border-slate-100 bg-white grid grid-cols-1 sm:grid-cols-12 gap-3 shrink-0">
+        <div class="sm:col-span-7 relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input 
+            type="text" 
+            id="quote-product-picker-search" 
+            oninput="filterQuoteProductPicker()" 
+            placeholder="Tìm theo tên sản phẩm..." 
+            class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-slate-50 focus:bg-white"
+          />
+        </div>
+        <div class="sm:col-span-5">
+          <select 
+            id="quote-product-picker-category" 
+            onchange="filterQuoteProductPicker()" 
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#c8102e] bg-slate-50 focus:bg-white font-medium text-slate-700"
+          >
+            <option value="">Tất cả danh mục</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- List of Products (Scrollable) -->
+      <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/50 space-y-2.5" id="quote-product-picker-list">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
+        <button 
+          type="button" 
+          onclick="addBlankQuoteItemAndClosePicker()" 
+          class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center space-x-1.5 cursor-pointer"
+        >
+          <i class="fa-solid fa-pen-to-square text-xs"></i>
+          <span>Tự nhập hạng mục mới</span>
+        </button>
+        <button 
+          type="button" 
+          onclick="closeQuoteProductPickerModal()" 
+          class="px-6 py-2 rounded-xl bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+        >
+          Hoàn tất
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
        MODAL: ĐỔI MẬT KHẨU ADMIN
        ======================================================== -->
   <div id="change-password-modal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1851,7 +1922,7 @@
   <div id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/js/admin.js?v=20261116_quote_thanh_tien_tong_cong"></script>
+  <script src="/js/admin.js?v=20261116_quote_product_picker_and_clean"></script>
 </body>
 </html>
 
