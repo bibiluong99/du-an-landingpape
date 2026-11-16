@@ -2506,7 +2506,7 @@ function filterQuoteProductPicker() {
             class="px-3.5 py-1.5 ${isSelected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#c8102e] hover:bg-red-700 text-white'} font-bold text-xs rounded-xl shadow-2xs transition flex items-center space-x-1 cursor-pointer active:scale-95"
           >
             <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-plus'} text-[11px]"></i>
-            <span>${isSelected ? 'Đã thêm (+1)' : 'Chọn'}</span>
+            <span>${isSelected ? 'Đã thêm' : 'Chọn'}</span>
           </button>
         </div>
       </div>
@@ -2550,7 +2550,7 @@ function selectProductForQuote(productId, btnEl) {
 
   if (btnEl) {
     btnEl.className = 'px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl shadow-2xs transition flex items-center space-x-1 cursor-pointer active:scale-95';
-    btnEl.innerHTML = '<i class="fa-solid fa-check text-[11px]"></i><span>Đã thêm (+1)</span>';
+    btnEl.innerHTML = '<i class="fa-solid fa-check text-[11px]"></i><span>Đã thêm</span>';
   }
 }
 
