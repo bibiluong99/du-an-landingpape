@@ -2096,7 +2096,7 @@ function viewContactDetail(id) {
             id="btn-quote-contact-${c.id}"
             onclick="openQuoteContractModal(${c.id})" 
             class="px-5 py-2.5 bg-[#c8102e] hover:bg-red-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer active:scale-95"
-            title="Tạo báo giá và hợp đồng mua bán cho khách hàng này"
+            title="Lập bảng báo giá cho khách hàng này"
           >
             <i class="fa-solid fa-file-invoice-dollar"></i>
             <span>Báo giá</span>
@@ -2117,7 +2117,7 @@ function closeContactDetailModal() {
 }
 
 // ========================================================
-// 7.1 CHỨC NĂNG BÁO GIÁ & HỢP ĐỒNG MUA BÁN
+// 7.1 CHỨC NĂNG LẬP BÁO GIÁ
 // ========================================================
 let currentQuoteContract = null;
 let currentQuoteTab = 'edit';
@@ -2258,7 +2258,7 @@ function openQuoteContractModal(contactId) {
 
   const productNames = rawStr ? rawStr.split(',').map(s => cleanVietnameseText(s)).filter(Boolean) : [];
 
-  // Tạo danh sách sản phẩm khởi tạo khớp với sản phẩm user đã chọn
+  // Tạo danh sách hạng mục khởi tạo khớp với sản phẩm user đã chọn
   let initialItems = [];
   if (productNames.length > 0) {
     initialItems = productNames.map((name, idx) => {
@@ -2268,58 +2268,62 @@ function openQuoteContractModal(contactId) {
           || productsCache.find(p => p.name.trim().toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(p.name.trim().toLowerCase()));
       }
       const isWire = name.toLowerCase().includes('dây') || name.toLowerCase().includes('cáp');
-      const defaultUnit = matched?.unit || (isWire ? 'Mét' : 'Cái');
-      const defaultPrice = matched ? (matched.price || 0) : (isWire ? 48000 : 150000);
+      const isSheet = name.toLowerCase().includes('tấm') || name.toLowerCase().includes('cnc') || name.toLowerCase().includes('mdf');
+      const defaultUnit = matched?.unit || (isSheet ? 'Tấm' : (isWire ? 'Mét' : 'Cái'));
+      const defaultPrice = matched ? (matched.price || 0) : (isSheet ? 60000 : (isWire ? 48000 : 150000));
 
       return {
         id: idx + 1,
         name: cleanVietnameseText(matched?.name || name),
         unit: cleanVietnameseText(defaultUnit),
         quantity: 1,
-        price: defaultPrice
+        price: defaultPrice,
+        note: ''
       };
     });
   } else {
     initialItems = [
-      { id: 1, name: 'Sản phẩm / Dịch vụ cung cấp', unit: 'Cái', quantity: 1, price: 0 }
+      { id: 1, name: 'Sản phẩm / Dịch vụ cung cấp', unit: 'Tấm', quantity: 1, price: 0, note: '' }
     ];
   }
 
   const now = new Date();
   const dateStr = `ngày ${String(now.getDate()).padStart(2, '0')} tháng ${String(now.getMonth() + 1).padStart(2, '0')} năm ${now.getFullYear()}`;
-  const contractNum = `21042BT/HD/HĐKT`;
+  const quoteNum = `BG-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${c.id}`;
 
-  // Thiết lập state
+  const logoUrl = document.getElementById('set-logo-url')?.value 
+    || document.getElementById('preview-logo')?.src 
+    || '/uploads/img-1794390284769-958980201.png';
+
+  const companyName = cleanVietnameseText(document.getElementById('set-company-name')?.value || 'CÔNG TY TNHH ĐIỆN VIỆT');
+  const companyAddr = cleanVietnameseText(document.getElementById('set-address')?.value || 'Số 123 Nguyễn Văn Cừ, Hà Nội');
+  const companyPhone = cleanVietnameseText(document.getElementById('set-phone')?.value || '0764333998');
+  const companyEmail = cleanVietnameseText(document.getElementById('set-email')?.value || 'hotro@dienviet.vn');
+
+  // Thiết lập state báo giá
   currentQuoteContract = {
     contactId: c.id,
-    contractNo: contractNum,
+    contractNo: quoteNum,
     contractDate: dateStr,
-    contractSubject: categoryNote ? `Cung cấp ${categoryNote}` : 'Cung cấp thiết bị và vật tư ngành điện',
-    // Bên A (Bán hàng)
-    sellerCompany: cleanVietnameseText(document.getElementById('set-company-name')?.value || 'CÔNG TY TNHH ĐIỆN VIỆT'),
-    sellerRep: 'Ông Nguyễn Văn A',
-    sellerPosition: 'Giám Đốc',
-    sellerAddress: cleanVietnameseText(document.getElementById('set-address')?.value || 'Số 123 Nguyễn Văn Cừ, Quận Long Biên, Hà Nội'),
-    sellerTax: '0108999888',
-    sellerPhone: cleanVietnameseText(document.getElementById('set-phone')?.value || '0764333998'),
-    sellerBank: '8333883333 - Ngân Hàng ACB',
-    // Bên B (Mua hàng)
-    buyerRep: cleanVietnameseText(c.fullname || ''),
-    buyerPosition: 'Đại diện / Khách hàng',
+    contractSubject: categoryNote ? `Báo giá ${categoryNote}` : 'Báo giá dịch vụ / sản phẩm',
+    // Đơn vị báo giá
+    sellerCompany: companyName,
+    sellerLogo: logoUrl,
+    sellerAddress: companyAddr,
+    sellerPhone: companyPhone,
+    sellerEmail: companyEmail,
+    sellerRep: 'Giám Đốc',
+    // Khách hàng (Kính gửi)
+    buyerRep: cleanVietnameseText(c.fullname || 'Quý khách hàng'),
     buyerAddress: cleanVietnameseText(c.address || ''),
-    buyerTax: '',
     buyerPhone: cleanVietnameseText(c.phone || ''),
     buyerEmail: cleanVietnameseText(c.email || ''),
-    buyerBank: '',
-    // Sản phẩm
+    // Hạng mục báo giá (items)
     items: initialItems,
     vatPercent: 10,
-    // Điều khoản
-    deliveryTime: '07 - 10 ngày làm việc kể từ ngày ký hợp đồng.',
-    paymentMethod: 'Chuyển khoản / Tiền mặt',
-    paymentTerms: 'Thanh toán 30% khi đặt hàng, 70% còn lại sau khi lắp đặt xong và nghiệm thu bàn giao.',
-    deliveryLocation: 'Hỗ trợ vận chuyển tận nơi theo địa chỉ Bên B yêu cầu.',
-    warrantyTerms: 'Bên A chịu trách nhiệm hoàn toàn về số lượng và chất lượng sản phẩm theo đúng thông số đã thỏa thuận. Hàng mới 100% và có đầy đủ chứng chỉ hàng hoá (CO/CQ).'
+    quoteNotes: `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`,
+    thankYouText: 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!',
+    showTotal: false
   };
 
   currentQuoteTab = 'edit';
@@ -2327,6 +2331,31 @@ function openQuoteContractModal(contactId) {
 
   const modal = document.getElementById('quote-contract-modal');
   if (modal) modal.classList.add('active');
+}
+
+function loadSampleCncQuoteItems() {
+  if (!currentQuoteContract) return;
+  syncQuoteEditInputsToState();
+  currentQuoteContract.contractSubject = 'Báo giá dịch vụ gia công CNC';
+  currentQuoteContract.items = [
+    { id: 1, name: 'Cắt CNC tấm độ dày từ 12-18mm (ván MDF, MFC, HDF, PVC)', unit: 'Tấm', quantity: 1, price: 60000, note: 'Chi phí chưa bao gồm bốc tách, ra file cnc' },
+    { id: 2, name: 'Cắt CNC tấm độ dày từ 6-9mm (ván MDF, MFC, HDF, PVC)', unit: 'Tấm', quantity: 1, price: 50000, note: '' },
+    { id: 3, name: 'Cắt CNC tấm Plywood', unit: 'Tấm', quantity: 1, price: 85000, note: '' },
+    { id: 4, name: 'Gia công khoan cam', unit: 'Tấm', quantity: 1, price: 10000, note: '' },
+    { id: 5, name: 'Gia công dán cạnh 18mm PVC', unit: 'm dài', quantity: 1, price: 4000, note: '' }
+  ];
+  currentQuoteContract.quoteNotes = `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`;
+  currentQuoteContract.thankYouText = 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!';
+  renderQuoteContractModal();
+  showToast('Đã nạp 5 hạng mục mẫu gia công CNC theo yêu cầu!', 'success');
+}
+
+function toggleQuoteShowTotal(checked) {
+  if (!currentQuoteContract) return;
+  currentQuoteContract.showTotal = !!checked;
+  if (currentQuoteTab === 'preview') {
+    renderQuotePreviewHtml();
+  }
 }
 
 function closeQuoteContractModal() {
@@ -2353,7 +2382,6 @@ async function submitSendQuoteContract() {
 
     const result = await res.json();
     if (result.success) {
-      // Cập nhật trạng thái trong contactsCache
       const contact = contactsCache.find(x => x.id === contactId);
       if (contact) {
         contact.quote_sent = 1;
@@ -2363,21 +2391,14 @@ async function submitSendQuoteContract() {
       }
 
       showToast('Gửi báo giá thành công!', 'success');
-
-      // Đóng modal báo giá & hợp đồng
       closeQuoteContractModal();
-
-      // Cập nhật lại giao diện modal chi tiết liên hệ (chuyển nút thành "Đã gửi báo giá" và disable)
       viewContactDetail(contactId);
-
-      // Render lại bảng danh sách liên hệ để đồng bộ trạng thái mới
       renderContactsTable();
     } else {
       showToast(result.message || 'Không thể gửi báo giá!', 'error');
     }
   } catch (err) {
     console.error('Lỗi khi gửi báo giá:', err);
-    // Vẫn cập nhật cache phía client
     const contact = contactsCache.find(x => x.id === contactId);
     if (contact) {
       contact.quote_sent = 1;
@@ -2397,29 +2418,25 @@ function syncQuoteEditInputsToState() {
   if (document.getElementById('qc-contract-no')) {
     currentQuoteContract.contractNo = getVal('qc-contract-no') || currentQuoteContract.contractNo;
     currentQuoteContract.contractDate = getVal('qc-contract-date') || currentQuoteContract.contractDate;
-    currentQuoteContract.contractSubject = getVal('qc-contract-subject') || currentQuoteContract.contractSubject;
 
     currentQuoteContract.sellerCompany = getVal('qc-seller-company') || currentQuoteContract.sellerCompany;
-    currentQuoteContract.sellerRep = getVal('qc-seller-rep') || currentQuoteContract.sellerRep;
-    currentQuoteContract.sellerPosition = getVal('qc-seller-pos') || currentQuoteContract.sellerPosition;
     currentQuoteContract.sellerAddress = getVal('qc-seller-addr') || currentQuoteContract.sellerAddress;
-    currentQuoteContract.sellerTax = getVal('qc-seller-tax') || currentQuoteContract.sellerTax;
     currentQuoteContract.sellerPhone = getVal('qc-seller-phone') || currentQuoteContract.sellerPhone;
-    currentQuoteContract.sellerBank = getVal('qc-seller-bank') || currentQuoteContract.sellerBank;
+    currentQuoteContract.sellerEmail = getVal('qc-seller-email') || currentQuoteContract.sellerEmail;
+    currentQuoteContract.sellerRep = getVal('qc-seller-rep') || currentQuoteContract.sellerRep;
 
     currentQuoteContract.buyerRep = getVal('qc-buyer-rep') || currentQuoteContract.buyerRep;
-    currentQuoteContract.buyerPosition = getVal('qc-buyer-pos') || currentQuoteContract.buyerPosition;
     currentQuoteContract.buyerAddress = getVal('qc-buyer-addr');
-    currentQuoteContract.buyerTax = getVal('qc-buyer-tax');
     currentQuoteContract.buyerPhone = getVal('qc-buyer-phone') || currentQuoteContract.buyerPhone;
     currentQuoteContract.buyerEmail = getVal('qc-buyer-email') || currentQuoteContract.buyerEmail;
-    currentQuoteContract.buyerBank = getVal('qc-buyer-bank');
 
-    currentQuoteContract.deliveryTime = getVal('qc-delivery-time') || currentQuoteContract.deliveryTime;
-    currentQuoteContract.paymentMethod = getVal('qc-payment-method') || currentQuoteContract.paymentMethod;
-    currentQuoteContract.paymentTerms = getVal('qc-payment-terms') || currentQuoteContract.paymentTerms;
-    currentQuoteContract.deliveryLocation = getVal('qc-delivery-location') || currentQuoteContract.deliveryLocation;
-    currentQuoteContract.warrantyTerms = getVal('qc-warranty-terms') || currentQuoteContract.warrantyTerms;
+    const notesEl = document.getElementById('qc-quote-notes');
+    if (notesEl) currentQuoteContract.quoteNotes = notesEl.value;
+
+    currentQuoteContract.thankYouText = getVal('qc-thank-you') || currentQuoteContract.thankYouText;
+
+    const showTotalEl = document.getElementById('qc-show-total');
+    if (showTotalEl) currentQuoteContract.showTotal = showTotalEl.checked;
   }
 }
 
@@ -2467,22 +2484,12 @@ function updateQuoteItem(index, field, value) {
     currentQuoteContract.items[index].quantity = Math.max(1, parseFloat(value) || 1);
   } else if (field === 'price') {
     currentQuoteContract.items[index].price = Math.max(0, parseFloat(value) || 0);
+  } else if (field === 'note') {
+    currentQuoteContract.items[index].note = cleanVietnameseText(value);
   } else {
     currentQuoteContract.items[index][field] = cleanVietnameseText(value);
   }
 
-  const rowTotalEl = document.getElementById(`qc-item-total-${index}`);
-  if (rowTotalEl) {
-    const item = currentQuoteContract.items[index];
-    rowTotalEl.textContent = formatVND(item.quantity * item.price) + ' đ';
-  }
-
-  recalcQuoteTotals();
-}
-
-function updateQuoteContractVat(val) {
-  if (!currentQuoteContract) return;
-  currentQuoteContract.vatPercent = Math.max(0, Math.min(100, parseFloat(val) || 0));
   recalcQuoteTotals();
 }
 
@@ -2492,15 +2499,8 @@ function recalcQuoteTotals() {
   const vatAmount = Math.round(subtotal * (currentQuoteContract.vatPercent / 100));
   const grandTotal = subtotal + vatAmount;
 
-  const subtotalEl = document.getElementById('qc-calc-subtotal');
-  const vatAmountEl = document.getElementById('qc-calc-vat-amount');
   const grandTotalEl = document.getElementById('qc-calc-grand-total');
-  const wordsEl = document.getElementById('qc-calc-words');
-
-  if (subtotalEl) subtotalEl.textContent = formatVND(subtotal) + ' đ';
-  if (vatAmountEl) vatAmountEl.textContent = formatVND(vatAmount) + ' đ';
   if (grandTotalEl) grandTotalEl.textContent = formatVND(grandTotal) + ' đ';
-  if (wordsEl) wordsEl.value = numberToVietnameseWords(grandTotal);
 }
 
 function addQuoteContractItem() {
@@ -2509,9 +2509,10 @@ function addQuoteContractItem() {
   currentQuoteContract.items.push({
     id: Date.now(),
     name: '',
-    unit: 'Cái',
+    unit: 'Tấm',
     quantity: 1,
-    price: 0
+    price: 0,
+    note: ''
   });
   renderQuoteContractModal();
 }
@@ -2519,7 +2520,7 @@ function addQuoteContractItem() {
 function removeQuoteContractItem(index) {
   if (!currentQuoteContract) return;
   if (currentQuoteContract.items.length <= 1) {
-    showToast('Bảng báo giá phải có ít nhất 1 sản phẩm!', 'warning');
+    showToast('Bảng báo giá phải có ít nhất 1 hạng mục!', 'warning');
     return;
   }
   syncQuoteEditInputsToState();
@@ -2532,166 +2533,139 @@ function renderQuoteContractModal() {
   if (!container || !currentQuoteContract) return;
 
   const q = currentQuoteContract;
-  const subtotal = q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
-  const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
-  const grandTotal = subtotal + vatAmount;
-  const words = numberToVietnameseWords(grandTotal);
 
   container.innerHTML = `
     <!-- Datalist gợi ý đơn vị tính -->
     <datalist id="qc-unit-list">
-      <option value="Cái">
-      <option value="Mét">
-      <option value="Cuộn">
       <option value="Tấm">
+      <option value="m dài">
+      <option value="Mét">
+      <option value="Cái">
+      <option value="Cuộn">
       <option value="Bộ">
       <option value="Hệ">
-      <option value="Thùng">
-      <option value="Hộp">
       <option value="Kg">
+      <option value="Hộp">
+      <option value="Thùng">
     </datalist>
 
     <!-- TAB 1: SOẠN THẢO VÀ CHỈNH SỬA (EDIT VIEW) -->
     <div id="quote-view-edit" class="${currentQuoteTab === 'edit' ? '' : 'hidden'} space-y-5">
-      <!-- KHỐI 1: THÔNG TIN HỢP ĐỒNG & 2 BÊN -->
+      <!-- KHỐI 1: THÔNG TIN ĐƠN VỊ & KHÁCH HÀNG -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <span class="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center space-x-2">
-            <i class="fa-solid fa-file-signature text-[#c8102e]"></i>
-            <span>1. Thông tin hợp đồng & Hai bên</span>
+            <i class="fa-solid fa-file-invoice-dollar text-[#c8102e]"></i>
+            <span>1. Thông tin Báo Giá & Hai Bên</span>
           </span>
-          <span class="text-[11px] text-slate-400">Bạn có thể chỉnh sửa mọi thông tin trước khi in hoặc xuất file</span>
+          <span class="text-[11px] text-slate-400">Chỉnh sửa thông tin đơn vị gửi và khách hàng nhận báo giá</span>
         </div>
 
-        <!-- Số HĐ, Ngày ký, V/v -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Số Báo Giá, Ngày báo giá -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Số Hợp Đồng / Báo Giá:</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Số Báo Giá:</label>
             <input type="text" id="qc-contract-no" value="${escapeHtml(q.contractNo)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-800 focus:border-[#c8102e] outline-none">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Ngày lập hợp đồng:</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Ngày lập báo giá:</label>
             <input type="text" id="qc-contract-date" value="${escapeHtml(q.contractDate)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-800 focus:border-[#c8102e] outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nội dung trích yếu (V/v):</label>
-            <input type="text" id="qc-contract-subject" value="${escapeHtml(q.contractSubject)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-800 focus:border-[#c8102e] outline-none">
           </div>
         </div>
 
-        <!-- BÊN A & BÊN B -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
-          <!-- BÊN A -->
+        <!-- 2 CỘT: ĐƠN VỊ BÁO GIÁ & KHÁCH HÀNG (KÍNH GỬI) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+          <!-- ĐƠN VỊ BÁO GIÁ -->
           <div class="bg-red-50/40 p-4 rounded-xl border border-red-100 space-y-2.5">
             <div class="flex items-center space-x-2 text-xs font-black text-[#c8102e] uppercase pb-1 border-b border-red-100">
               <i class="fa-solid fa-building"></i>
-              <span>Bên A (Bán hàng):</span>
+              <span>Đơn Vị Báo Giá:</span>
             </div>
             <div>
-              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tên đơn vị / Công ty:</label>
+              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tên Đơn Vị / Công Ty:</label>
               <input type="text" id="qc-seller-company" value="${escapeHtml(q.sellerCompany)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
             </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Người đại diện:</label>
-                <input type="text" id="qc-seller-rep" value="${escapeHtml(q.sellerRep)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
-              </div>
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Chức vụ:</label>
-                <input type="text" id="qc-seller-pos" value="${escapeHtml(q.sellerPosition)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
-              </div>
-            </div>
             <div>
-              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa chỉ trụ sở:</label>
+              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa chỉ:</label>
               <input type="text" id="qc-seller-addr" value="${escapeHtml(q.sellerAddress)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Mã số thuế:</label>
-                <input type="text" id="qc-seller-tax" value="${escapeHtml(q.sellerTax)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
+                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Điện thoại:</label>
+                <input type="text" id="qc-seller-phone" value="${escapeHtml(q.sellerPhone)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
               </div>
               <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Số điện thoại:</label>
-                <input type="text" id="qc-seller-phone" value="${escapeHtml(q.sellerPhone)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
+                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Email:</label>
+                <input type="text" id="qc-seller-email" value="${escapeHtml(q.sellerEmail)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
               </div>
             </div>
             <div>
-              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tài khoản ngân hàng:</label>
-              <input type="text" id="qc-seller-bank" value="${escapeHtml(q.sellerBank)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
+              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Đại diện ký tên (chức vụ / họ tên):</label>
+              <input type="text" id="qc-seller-rep" value="${escapeHtml(q.sellerRep)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
             </div>
           </div>
 
-          <!-- BÊN B -->
+          <!-- KHÁCH HÀNG (KÍNH GỬI) -->
           <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-100 space-y-2.5">
             <div class="flex items-center space-x-2 text-xs font-black text-blue-700 uppercase pb-1 border-b border-blue-100">
               <i class="fa-solid fa-user-tie"></i>
-              <span>Bên B (Mua hàng - Khách hàng):</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Đại diện (Họ và tên):</label>
-                <input type="text" id="qc-buyer-rep" value="${escapeHtml(q.buyerRep)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
-              </div>
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Chức vụ:</label>
-                <input type="text" id="qc-buyer-pos" value="${escapeHtml(q.buyerPosition)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
-              </div>
+              <span>Khách Hàng (Kính gửi):</span>
             </div>
             <div>
-              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa chỉ khách hàng:</label>
-              <input type="text" id="qc-buyer-addr" value="${escapeHtml(q.buyerAddress)}" placeholder="Nhập địa chỉ giao hàng / trụ sở bên B..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
+              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Kính gửi (Tên khách hàng / đơn vị):</label>
+              <input type="text" id="qc-buyer-rep" value="${escapeHtml(q.buyerRep)}" placeholder="Nhập tên khách hàng..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa chỉ:</label>
+              <input type="text" id="qc-buyer-addr" value="${escapeHtml(q.buyerAddress)}" placeholder="Nhập địa chỉ khách hàng..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Mã số thuế / CCCD:</label>
-                <input type="text" id="qc-buyer-tax" value="${escapeHtml(q.buyerTax)}" placeholder="Nhập MST hoặc CCCD..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
-              </div>
               <div>
                 <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Số điện thoại:</label>
-                <input type="text" id="qc-buyer-phone" value="${escapeHtml(q.buyerPhone)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Địa chỉ Email:</label>
-                <input type="email" id="qc-buyer-email" value="${escapeHtml(q.buyerEmail)}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
+                <input type="text" id="qc-buyer-phone" value="${escapeHtml(q.buyerPhone)}" placeholder="Nhập số điện thoại..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
               </div>
               <div>
-                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tài khoản ngân hàng:</label>
-                <input type="text" id="qc-buyer-bank" value="${escapeHtml(q.buyerBank)}" placeholder="Số tài khoản (nếu có)..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none font-mono">
+                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Email:</label>
+                <input type="email" id="qc-buyer-email" value="${escapeHtml(q.buyerEmail)}" placeholder="Nhập email..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 outline-none">
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- KHỐI 2: BẢNG SẢN PHẨM BÁO GIÁ (CHO PHÉP CHỈNH SỬA CHI TIẾT) -->
+      <!-- KHỐI 2: BẢNG HẠNG MỤC BÁO GIÁ (CHỈNH SỬA CHI TIẾT) -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
           <div>
             <span class="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center space-x-2">
               <i class="fa-solid fa-boxes-stacked text-[#c8102e]"></i>
-              <span>2. Danh Sách Sản Phẩm & Đơn Giá (Tương ứng sản phẩm đã chọn)</span>
+              <span>2. Danh Sách Hạng Mục Báo Giá</span>
             </span>
-            <p class="text-[11px] text-slate-400 mt-0.5">Hệ thống đã tự động điền danh sách sản phẩm khách chọn. Bạn có thể thay đổi số lượng, đơn giá hoặc thêm bớt dòng.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Thêm bớt hạng mục, điều chỉnh đơn vị tính, số lượng, đơn giá và ghi chú từng dòng.</p>
           </div>
-          <button type="button" onclick="addQuoteContractItem()" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 font-bold text-xs rounded-xl transition flex items-center space-x-1.5 cursor-pointer shrink-0">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Thêm sản phẩm</span>
-          </button>
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="loadSampleCncQuoteItems()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1 cursor-pointer shrink-0" title="Nạp nhanh 5 dòng hạng mục mẫu gia công CNC theo yêu cầu">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
+              <span>Nạp mẫu CNC</span>
+            </button>
+            <button type="button" onclick="addQuoteContractItem()" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-[#c8102e] border border-red-200 font-bold text-xs rounded-xl transition flex items-center space-x-1.5 cursor-pointer shrink-0">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>Thêm hạng mục</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Table Danh sách sản phẩm -->
+        <!-- Table Danh sách hạng mục -->
         <div class="overflow-x-auto border border-slate-200 rounded-xl">
           <table class="w-full text-left text-xs divide-y divide-slate-200">
             <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[11px]">
               <tr>
                 <th class="py-2.5 px-3 w-12 text-center">STT</th>
-                <th class="py-2.5 px-3 min-w-[220px]">Tên Sản Phẩm / Quy Cách</th>
+                <th class="py-2.5 px-3 min-w-[220px]">Hạng Mục / Tên Dịch Vụ</th>
                 <th class="py-2.5 px-3 w-28 text-center">ĐVT</th>
-                <th class="py-2.5 px-3 w-24 text-center">SL</th>
-                <th class="py-2.5 px-3 w-36 text-right">Đơn Giá (VNĐ)</th>
-                <th class="py-2.5 px-3 w-36 text-right">Thành Tiền (VNĐ)</th>
+                <th class="py-2.5 px-3 w-20 text-center">SL</th>
+                <th class="py-2.5 px-3 w-32 text-right">Đơn Giá (VNĐ)</th>
+                <th class="py-2.5 px-3 min-w-[180px]">Ghi Chú</th>
                 <th class="py-2.5 px-2 w-10 text-center"></th>
               </tr>
             </thead>
@@ -2704,7 +2678,7 @@ function renderQuoteContractModal() {
                       type="text" 
                       value="${escapeHtml(it.name)}" 
                       oninput="updateQuoteItem(${idx}, 'name', this.value)" 
-                      placeholder="Tên sản phẩm..."
+                      placeholder="Tên hạng mục dịch vụ / sản phẩm..."
                       class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-[#c8102e] outline-none text-xs font-bold text-slate-800"
                     />
                   </td>
@@ -2736,8 +2710,14 @@ function renderQuoteContractModal() {
                       class="w-full px-2 py-1.5 rounded-lg border border-slate-200 focus:border-[#c8102e] outline-none text-xs text-right font-bold font-mono"
                     />
                   </td>
-                  <td class="py-2 px-3 text-right font-black text-slate-800 font-mono" id="qc-item-total-${idx}">
-                    ${formatVND(it.quantity * it.price)} đ
+                  <td class="py-2 px-3">
+                    <input 
+                      type="text" 
+                      value="${escapeHtml(it.note || '')}" 
+                      oninput="updateQuoteItem(${idx}, 'note', this.value)" 
+                      placeholder="Ghi chú dòng này (nếu có)..."
+                      class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-[#c8102e] outline-none text-xs text-slate-700"
+                    />
                   </td>
                   <td class="py-2 px-2 text-center">
                     <button 
@@ -2754,81 +2734,34 @@ function renderQuoteContractModal() {
             </tbody>
           </table>
         </div>
-
-        <!-- Bảng tổng hợp tiền & VAT -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-slate-600 font-medium">Tổng thành tiền (Chưa VAT):</span>
-            <span class="font-bold text-slate-900 font-mono text-sm" id="qc-calc-subtotal">${formatVND(subtotal)} đ</span>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="text-slate-600 font-medium">Thuế GTGT (VAT):</span>
-              <div class="inline-flex items-center space-x-1">
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100" 
-                  value="${q.vatPercent}" 
-                  oninput="updateQuoteContractVat(this.value)"
-                  class="w-14 px-2 py-0.5 rounded-lg border border-slate-300 text-center font-bold text-xs font-mono"
-                />
-                <span class="font-bold text-slate-500">%</span>
-              </div>
-            </div>
-            <span class="font-bold text-slate-900 font-mono" id="qc-calc-vat-amount">${formatVND(vatAmount)} đ</span>
-          </div>
-
-          <div class="pt-2 border-t border-slate-200 flex items-center justify-between">
-            <span class="text-sm font-extrabold text-slate-900 uppercase">TỔNG CỘNG THANH TOÁN:</span>
-            <span class="text-base font-black text-[#c8102e] font-mono" id="qc-calc-grand-total">${formatVND(grandTotal)} đ</span>
-          </div>
-
-          <div class="pt-2">
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Số tiền bằng chữ:</label>
-            <input 
-              type="text" 
-              id="qc-calc-words" 
-              value="${escapeHtml(words)}" 
-              class="w-full px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50/70 text-xs italic font-bold text-amber-900 outline-none"
-            />
-          </div>
-        </div>
       </div>
 
-      <!-- KHỐI 3: TIẾN ĐỘ, THANH TOÁN & ĐIỀU KHOẢN -->
+      <!-- KHỐI 3: GHI CHÚ BÁO GIÁ & TÙY CHỌN -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
         <span class="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center space-x-2 pb-2 border-b border-slate-100">
-          <i class="fa-solid fa-list-check text-[#c8102e]"></i>
-          <span>3. Tiến độ giao hàng & Phương thức thanh toán</span>
+          <i class="fa-solid fa-comment-dots text-[#c8102e]"></i>
+          <span>3. Ghi Chú & Tùy Chọn Báo Giá</span>
         </span>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Thời gian giao hàng (Điều 2):</label>
-            <input type="text" id="qc-delivery-time" value="${escapeHtml(q.deliveryTime)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Hình thức thanh toán (Điều 3):</label>
-            <input type="text" id="qc-payment-method" value="${escapeHtml(q.paymentMethod)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tỷ lệ thanh toán (Điều 3):</label>
-            <input type="text" id="qc-payment-terms" value="${escapeHtml(q.paymentTerms)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Địa điểm giao hàng (Điều 3):</label>
-            <input type="text" id="qc-delivery-location" value="${escapeHtml(q.deliveryLocation)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">
-          </div>
           <div class="sm:col-span-2">
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Cam kết chất lượng & Bảo hành:</label>
-            <textarea id="qc-warranty-terms" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.warrantyTerms)}</textarea>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nội dung Ghi chú (mỗi dòng một ý):</label>
+            <textarea id="qc-quote-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')}</textarea>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Lời cảm ơn cuối bảng:</label>
+            <input type="text" id="qc-thank-you" value="${escapeHtml(q.thankYouText || 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none font-bold text-slate-800">
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex items-center space-x-2 cursor-pointer select-none">
+              <input type="checkbox" id="qc-show-total" ${q.showTotal ? 'checked' : ''} onchange="toggleQuoteShowTotal(this.checked)" class="w-4 h-4 rounded text-[#c8102e] focus:ring-0">
+              <span class="text-xs font-bold text-slate-700">Hiển thị dòng Tổng cộng thanh toán ở cuối bảng</span>
+            </label>
           </div>
         </div>
       </div>
 
-      <!-- Nút to chuyển sang Xem trước -->
+      <!-- Nút Gửi Báo Giá to ở dưới cùng -->
       <div class="pt-2">
         <button 
           type="button" 
@@ -2836,7 +2769,7 @@ function renderQuoteContractModal() {
           class="w-full py-3.5 bg-[#c8102e] hover:bg-red-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
         >
           <i class="fa-solid fa-paper-plane text-base"></i>
-          <span>Gửi báo giá</span>
+          <span>Gửi Báo Giá</span>
         </button>
       </div>
     </div>
@@ -2862,186 +2795,121 @@ function renderQuotePreviewHtml() {
   const subtotal = q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
   const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
   const grandTotal = subtotal + vatAmount;
-  const wordsInput = document.getElementById('qc-calc-words');
-  const words = wordsInput ? cleanVietnameseText(wordsInput.value) : numberToVietnameseWords(grandTotal);
+
+  const logoSrc = q.sellerLogo || '/uploads/img-1794390284769-958980201.png';
 
   container.innerHTML = `
-    <!-- Header Quốc hiệu Tiêu ngữ & Đơn vị theo chuẩn thể thức văn bản hành chính -->
-    <div style="display: flex; justify-content: space-between; text-align: center; margin-bottom: 24px;">
-      <!-- Cột trái: Đơn vị & Số hợp đồng -->
-      <div style="width: 44%; text-align: center;">
-        <div style="font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; color: #0f172a;">${escapeHtml(cleanVietnameseText(q.sellerCompany))}</div>
-        <div style="width: 85px; height: 1px; background-color: #64748b; margin: 3px auto 4px;"></div>
-        <div style="font-size: 12px; color: #334155;">Số: ${escapeHtml(cleanVietnameseText(q.contractNo))}</div>
-      </div>
-      <!-- Cột phải: Quốc hiệu & Tiêu ngữ -->
-      <div style="width: 54%; text-align: center;">
-        <div style="font-weight: bold; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-        <div style="font-weight: bold; font-size: 13px; margin-top: 2px; color: #0f172a;">Độc lập - Tự do - Hạnh phúc</div>
-        <div style="width: 135px; height: 1.5px; background-color: #0f172a; margin: 4px auto 0;"></div>
-      </div>
+    <!-- KHỐI 1: HEADER LOGO + THÔNG TIN ĐƠN VỊ -->
+    <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #334155; margin-bottom: 24px; padding-bottom: 14px;">
+      <tr>
+        <td style="width: 25%; vertical-align: middle; padding: 4px 14px 14px 0; text-align: center;">
+          <img src="${logoSrc}" alt="Logo" style="max-height: 80px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto;" />
+        </td>
+        <td style="width: 75%; vertical-align: middle; padding: 4px 0 14px 16px; border-left: 2px solid #e2e8f0;">
+          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; color: #0f172a; margin-bottom: 5px; letter-spacing: 0.3px;">
+            ${escapeHtml(cleanVietnameseText(q.sellerCompany))}
+          </div>
+          <div style="font-size: 13px; color: #334155; margin-bottom: 3px;">
+            <strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.sellerAddress))}
+          </div>
+          <div style="font-size: 13px; color: #334155;">
+            <span><strong>Email:</strong> ${escapeHtml(cleanVietnameseText(q.sellerEmail))}</span>
+            <span style="margin: 0 10px; color: #94a3b8;">•</span>
+            <span><strong>Điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.sellerPhone))}</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- KHỐI 2: TIÊU ĐỀ BẢNG BÁO GIÁ -->
+    <div style="text-align: center; margin: 26px 0 20px;">
+      <h1 style="font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 6px 0; letter-spacing: 1.5px; color: #0f172a;">BẢNG BÁO GIÁ</h1>
+      ${q.contractNo ? `<div style="font-size: 13px; font-style: italic; color: #475569;">Số: <strong>${escapeHtml(cleanVietnameseText(q.contractNo))}</strong></div>` : ''}
     </div>
 
-    <!-- Tiêu đề Hợp đồng -->
-    <div style="text-align: center; margin: 26px 0 22px;">
-      <h2 style="font-size: 21px; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a;">HỢP ĐỒNG MUA BÁN</h2>
-      <div style="font-size: 13.5px; font-weight: bold; margin-top: 5px; color: #334155;">Số: ${escapeHtml(cleanVietnameseText(q.contractNo))}</div>
-      <div style="font-style: italic; font-size: 13px; margin-top: 3px; color: #475569;">(V/v: ${escapeHtml(cleanVietnameseText(q.contractSubject))})</div>
-    </div>
-
-    <!-- Căn cứ pháp lý -->
-    <div style="margin-bottom: 16px; font-style: italic; line-height: 1.6; font-size: 13px; color: #334155; padding-left: 12px; border-left: 2px solid #cbd5e1;">
-      <div>- Căn cứ vào Bộ Luật dân sự số 91/2015/QH13 ngày 24/11/2015;</div>
-      <div>- Căn cứ Luật Thương mại số 36/2005/QH 11 do Quốc hội nước Cộng hoà xã hội chủ nghĩa Việt Nam ban hành ngày 14 tháng 6 năm 2005;</div>
-      <div>- Căn cứ vào khả năng và nhu cầu thực tế của hai bên.</div>
-    </div>
-
-    <div style="margin-bottom: 14px; font-size: 13.5px;">
-      Hôm nay, ${escapeHtml(cleanVietnameseText(q.contractDate))}, chúng tôi gồm các bên:
-    </div>
-
-    <!-- BÊN A -->
-    <div style="margin-bottom: 14px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px;">
-      <div style="font-weight: bold; text-transform: uppercase; color: #0f172a; margin-bottom: 6px; font-size: 13.5px;">BÊN A (BÁN HÀNG): ${escapeHtml(cleanVietnameseText(q.sellerCompany.toUpperCase()))}</div>
-      <table style="width: 100%; border: none; border-collapse: collapse; font-size: 13px;">
-        <tr style="border: none;"><td style="border: none; padding: 2px 0; width: 50%;"><strong>Đại diện:</strong> ${escapeHtml(cleanVietnameseText(q.sellerRep))}</td><td style="border: none; padding: 2px 0;"><strong>Chức vụ:</strong> ${escapeHtml(cleanVietnameseText(q.sellerPosition))}</td></tr>
-        <tr style="border: none;"><td colspan="2" style="border: none; padding: 2px 0;"><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.sellerAddress))}</td></tr>
-        <tr style="border: none;"><td style="border: none; padding: 2px 0;"><strong>Mã số thuế:</strong> ${escapeHtml(cleanVietnameseText(q.sellerTax))}</td><td style="border: none; padding: 2px 0;"><strong>Điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.sellerPhone))}</td></tr>
-        <tr style="border: none;"><td colspan="2" style="border: none; padding: 2px 0;"><strong>Tài khoản ngân hàng:</strong> ${escapeHtml(cleanVietnameseText(q.sellerBank))}</td></tr>
+    <!-- KHỐI 3: THÔNG TIN KHÁCH HÀNG & LỜI MỞ ĐẦU -->
+    <div style="margin-bottom: 18px; font-size: 13.5px; line-height: 1.8; color: #1e293b;">
+      <div><strong>Kính gửi:</strong> ${escapeHtml(cleanVietnameseText(q.buyerRep || 'Quý khách hàng'))}</div>
+      <div><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.buyerAddress || '...................................................................................................................'))}</div>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 2px;">
+        <tr>
+          <td style="width: 50%; padding: 0;">
+            <strong>Số điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.buyerPhone || '.....................................................'))}
+          </td>
+          <td style="width: 50%; padding: 0;">
+            <strong>Email:</strong> ${escapeHtml(cleanVietnameseText(q.buyerEmail || '.................................................'))}
+          </td>
+        </tr>
       </table>
+      <div style="margin-top: 8px;">
+        ${escapeHtml(cleanVietnameseText(q.sellerCompany))} xin gửi tới quý khách hàng báo giá các dịch vụ như sau:
+      </div>
     </div>
 
-    <!-- BÊN B -->
-    <div style="margin-bottom: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px;">
-      <div style="font-weight: bold; text-transform: uppercase; color: #0f172a; margin-bottom: 6px; font-size: 13.5px;">BÊN B (MUA HÀNG):</div>
-      <table style="width: 100%; border: none; border-collapse: collapse; font-size: 13px;">
-        <tr style="border: none;"><td style="border: none; padding: 2px 0; width: 50%;"><strong>Đại diện:</strong> ${escapeHtml(cleanVietnameseText(q.buyerRep))}</td><td style="border: none; padding: 2px 0;"><strong>Chức vụ:</strong> ${escapeHtml(cleanVietnameseText(q.buyerPosition || 'Khách hàng'))}</td></tr>
-        <tr style="border: none;"><td colspan="2" style="border: none; padding: 2px 0;"><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.buyerAddress || '................................................................................................................................................'))}</td></tr>
-        <tr style="border: none;"><td style="border: none; padding: 2px 0;"><strong>Mã số thuế/CCCD:</strong> ${escapeHtml(cleanVietnameseText(q.buyerTax || '...................................................'))}</td><td style="border: none; padding: 2px 0;"><strong>Điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.buyerPhone || '...................................................'))}</td></tr>
-        <tr style="border: none;"><td colspan="2" style="border: none; padding: 2px 0;"><strong>Tài khoản/Email:</strong> ${escapeHtml(cleanVietnameseText(q.buyerBank || q.buyerEmail || '................................................................................................................................................'))}</td></tr>
-      </table>
-    </div>
-
-    <div style="margin-bottom: 12px; font-size: 13.5px;">
-      Hai bên cùng bàn bạc và thống nhất ký kết hợp đồng mua bán với các điều khoản chi tiết như sau:
-    </div>
-
-    <!-- ĐIỀU 1: BẢNG SẢN PHẨM -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 14px; margin-bottom: 4px; color: #0f172a;">ĐIỀU 1: TÊN HÀNG – SỐ LƯỢNG – CHẤT LƯỢNG</div>
-    <div style="margin-bottom: 6px; font-size: 13px;">Bên A đồng ý bán cho Bên B các sản phẩm với số lượng, đơn giá chi tiết như sau:</div>
-
-    <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; border: 1px solid #334155;">
+    <!-- KHỐI 4: BẢNG BÁO GIÁ CHI TIẾT THEO CHUẨN MẪU -->
+    <table style="width: 100%; border-collapse: collapse; margin: 14px 0 16px; border: 1px solid #334155; font-size: 13px;">
       <thead>
         <tr style="background-color: #f1f5f9; color: #0f172a;">
-          <th style="border: 1px solid #334155; padding: 8px 6px; text-align: center; width: 45px; font-weight: bold;">STT</th>
-          <th style="border: 1px solid #334155; padding: 8px 12px; text-align: left; font-weight: bold;">TÊN SẢN PHẨM / QUY CÁCH</th>
-          <th style="border: 1px solid #334155; padding: 8px 6px; text-align: center; width: 65px; font-weight: bold;">ĐVT</th>
-          <th style="border: 1px solid #334155; padding: 8px 6px; text-align: center; width: 60px; font-weight: bold;">SL</th>
-          <th style="border: 1px solid #334155; padding: 8px 10px; text-align: right; width: 120px; font-weight: bold;">ĐƠN GIÁ</th>
-          <th style="border: 1px solid #334155; padding: 8px 10px; text-align: right; width: 135px; font-weight: bold;">THÀNH TIỀN</th>
+          <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 45px; font-weight: bold;">STT</th>
+          <th style="border: 1px solid #334155; padding: 9px 12px; text-align: left; font-weight: bold;">HẠNG MỤC</th>
+          <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 75px; font-weight: bold;">ĐVT</th>
+          <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 55px; font-weight: bold;">SL</th>
+          <th style="border: 1px solid #334155; padding: 9px 10px; text-align: right; width: 110px; font-weight: bold;">ĐƠN GIÁ</th>
+          <th style="border: 1px solid #334155; padding: 9px 12px; text-align: left; min-width: 150px; font-weight: bold;">GHI CHÚ</th>
         </tr>
       </thead>
       <tbody>
         ${q.items.map((it, idx) => `
-          <tr style="border-bottom: 1px solid #cbd5e1;">
-            <td style="border: 1px solid #334155; padding: 7px 6px; text-align: center;">${idx + 1}</td>
-            <td style="border: 1px solid #334155; padding: 7px 12px; font-weight: bold;">${escapeHtml(cleanVietnameseText(it.name))}</td>
-            <td style="border: 1px solid #334155; padding: 7px 6px; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
-            <td style="border: 1px solid #334155; padding: 7px 6px; text-align: center; font-weight: bold;">${it.quantity}</td>
-            <td style="border: 1px solid #334155; padding: 7px 10px; text-align: right;">${formatVND(it.price)}</td>
-            <td style="border: 1px solid #334155; padding: 7px 10px; text-align: right; font-weight: bold;">${formatVND(it.quantity * it.price)}</td>
+          <tr>
+            <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center;">${idx + 1}</td>
+            <td style="border: 1px solid #334155; padding: 8px 12px; font-weight: 600;">${escapeHtml(cleanVietnameseText(it.name))}</td>
+            <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
+            <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center; font-weight: bold;">${it.quantity}</td>
+            <td style="border: 1px solid #334155; padding: 8px 10px; text-align: right; font-weight: 600;">${formatVND(it.price)}</td>
+            <td style="border: 1px solid #334155; padding: 8px 12px; color: #475569; font-size: 12.5px;">${escapeHtml(cleanVietnameseText(it.note || ''))}</td>
           </tr>
         `).join('')}
-        <tr style="background-color: #f8fafc;">
-          <td colspan="5" style="border: 1px solid #334155; padding: 7px 12px; font-weight: bold; text-align: right;">THÀNH TIỀN (Chưa VAT):</td>
-          <td style="border: 1px solid #334155; padding: 7px 10px; font-weight: bold; text-align: right;">${formatVND(subtotal)}</td>
-        </tr>
-        <tr style="background-color: #f8fafc;">
-          <td colspan="5" style="border: 1px solid #334155; padding: 7px 12px; font-weight: bold; text-align: right;">THUẾ GTGT (VAT ${q.vatPercent}%):</td>
-          <td style="border: 1px solid #334155; padding: 7px 10px; font-weight: bold; text-align: right;">${formatVND(vatAmount)}</td>
-        </tr>
-        <tr style="background-color: #f1f5f9;">
-          <td colspan="5" style="border: 1px solid #334155; padding: 8px 12px; font-weight: bold; text-align: right; font-size: 14px;">TỔNG CỘNG THANH TOÁN (ĐÃ CÓ VAT):</td>
-          <td style="border: 1px solid #334155; padding: 8px 10px; font-weight: bold; text-align: right; font-size: 14px; color: #000000;">${formatVND(grandTotal)}</td>
-        </tr>
+        ${q.showTotal ? `
+          <tr style="background-color: #f8fafc; font-weight: bold;">
+            <td colspan="4" style="border: 1px solid #334155; padding: 8px 12px; text-align: right; text-transform: uppercase;">TỔNG CỘNG:</td>
+            <td style="border: 1px solid #334155; padding: 8px 10px; text-align: right; color: #000; font-size: 13.5px;">${formatVND(grandTotal)}</td>
+            <td style="border: 1px solid #334155; padding: 8px 12px; font-style: italic; font-size: 12px;">(Đã gồm VAT)</td>
+          </tr>
+        ` : ''}
       </tbody>
     </table>
 
-    <div style="margin: 10px 0; padding: 8px 12px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
-      <div style="font-weight: bold; color: #0f172a;">
-        Tổng giá trị hợp đồng là: <span style="color: #000000;">${formatVND(grandTotal)} VNĐ</span>
-      </div>
-      <div style="font-style: italic; margin-top: 3px; color: #334155;">
-        (Bằng chữ: <strong>${cleanVietnameseText(words)}</strong>)
-      </div>
+    <!-- KHỐI 5: GHI CHÚ -->
+    <div style="margin-bottom: 18px; font-size: 13px; line-height: 1.7; color: #1e293b;">
+      <div style="font-weight: bold; margin-bottom: 3px;">Ghi chú:</div>
+      <div style="white-space: pre-line; padding-left: 4px;">${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất'))}</div>
     </div>
 
-    <div style="margin: 5px 0; font-style: italic; font-size: 12.5px; color: #475569;">
-      ${q.vatPercent > 0 ? `* Tổng giá trị hợp đồng đã bao gồm thuế GTGT ${q.vatPercent}%.` : '* Tổng giá trị hợp đồng chưa bao gồm thuế GTGT.'}
-    </div>
-    <div style="margin: 8px 0; font-size: 13px; text-align: justify; line-height: 1.6;">
-      <strong>Chất lượng hàng hóa:</strong> ${escapeHtml(cleanVietnameseText(q.warrantyTerms))}
+    <!-- KHỐI 6: LỜI CẢM ƠN -->
+    <div style="margin: 22px 0 16px; font-weight: bold; font-size: 13.5px; text-transform: uppercase; color: #0f172a;">
+      ${escapeHtml(cleanVietnameseText(q.thankYouText || 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!'))}
     </div>
 
-    <!-- ĐIỀU 2 -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 16px; margin-bottom: 5px; color: #0f172a;">ĐIỀU 2: TIẾN ĐỘ THỰC HIỆN</div>
-    <div style="margin-left: 12px; font-size: 13px;">- <strong>Thời gian giao hàng:</strong> ${escapeHtml(cleanVietnameseText(q.deliveryTime))}</div>
-
-    <!-- ĐIỀU 3 -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 16px; margin-bottom: 5px; color: #0f172a;">ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN & GIAO HÀNG</div>
-    <div style="margin-left: 12px; line-height: 1.6; font-size: 13px;">
-      <div>- <strong>Hình thức thanh toán:</strong> ${escapeHtml(cleanVietnameseText(q.paymentMethod))}</div>
-      <div>- <strong>Tỷ lệ thanh toán:</strong> ${escapeHtml(cleanVietnameseText(q.paymentTerms))}</div>
-      <div>- <strong>Địa điểm giao hàng:</strong> ${escapeHtml(cleanVietnameseText(q.deliveryLocation))}</div>
-    </div>
-
-    <!-- ĐIỀU 4 -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 16px; margin-bottom: 5px; color: #0f172a;">ĐIỀU 4: TRÁCH NHIỆM MỖI BÊN</div>
-    <div style="margin-left: 12px; line-height: 1.6; font-size: 13px;">
-      <div style="font-weight: bold; margin-top: 4px;">1. Trách nhiệm Bên A:</div>
-      <ul style="margin: 4px 0 8px 22px; padding: 0; list-style-type: disc;">
-        <li>Đảm bảo có đầy đủ tư cách pháp nhân và năng lực thực hiện tốt hợp đồng theo quy định của pháp luật.</li>
-        <li>Cung cấp cho Bên B đầy đủ hóa đơn, chứng từ và giấy chứng nhận xuất xứ, chất lượng hàng hóa (CO/CQ).</li>
-        <li>Đơn giá không thay đổi trong suốt quá trình thực hiện hợp đồng.</li>
-        <li>Đảm bảo giao vật tư đúng chủng loại, quy cách, chất lượng và số lượng đã cam kết tại Điều 1.</li>
-        <li>Giao hàng đúng tiến độ và đúng địa điểm theo thỏa thuận.</li>
-      </ul>
-
-      <div style="font-weight: bold; margin-top: 6px;">2. Trách nhiệm Bên B:</div>
-      <ul style="margin: 4px 0 8px 22px; padding: 0; list-style-type: disc;">
-        <li>Kiểm tra, ký biên bản nghiệm thu xác nhận số lượng và quy cách sản phẩm khi nhận hàng.</li>
-        <li>Bố trí kho bãi, mặt bằng tiếp nhận hàng hóa theo thỏa thuận.</li>
-        <li>Thanh toán đầy đủ và đúng thời hạn ghi trong hợp đồng.</li>
-        <li>Kịp thời thông báo cho Bên A nếu phát hiện bất kỳ sự cố hoặc lỗi kỹ thuật nào của sản phẩm.</li>
-      </ul>
-    </div>
-
-    <!-- ĐIỀU 5 -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 16px; margin-bottom: 5px; color: #0f172a;">ĐIỀU 5: ĐIỀU KHOẢN BẤT KHẢ KHÁNG</div>
-    <div style="margin-left: 12px; text-align: justify; line-height: 1.6; font-size: 13px;">
-      Hai bên thống nhất các trường hợp sau đây được xem là sự kiện bất khả kháng: chiến tranh, thiên tai, hỏa hoạn, lũ lụt, động đất, đình công, dịch bệnh… gây cản trở hoặc ngăn chặn việc thực hiện hợp đồng. Bên gặp sự cố bất khả kháng được miễn trừ trách nhiệm bồi thường nhưng phải thông báo bằng văn bản cho bên kia trong vòng 10 (mười) ngày kể từ ngày xảy ra sự cố.
-    </div>
-
-    <!-- ĐIỀU 6 -->
-    <div style="font-weight: bold; font-size: 13.5px; margin-top: 16px; margin-bottom: 5px; color: #0f172a;">ĐIỀU 6: HIỆU LỰC & ĐIỀU KHOẢN CHUNG</div>
-    <div style="margin-left: 12px; text-align: justify; line-height: 1.6; font-size: 13px;">
-      Hai bên cam kết thực hiện đúng và đầy đủ các điều khoản đã thỏa thuận trong hợp đồng này. Trong quá trình thực hiện, mọi sửa đổi hoặc bổ sung phải được lập thành phụ lục hợp đồng bằng văn bản có chữ ký của hai bên. Nếu phát sinh tranh chấp, hai bên cùng nhau bàn bạc thương lượng trên tinh thần thiện chí và tôn trọng lợi ích chung; nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền để giải quyết theo luật định. Hợp đồng này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản và có hiệu lực kể từ ngày ký.
-    </div>
-
-    <!-- BẢNG KÝ TÊN 2 BÊN -->
-    <table style="width: 100%; border: none; border-collapse: collapse; margin-top: 36px; margin-bottom: 30px;">
-      <tr style="border: none;">
+    <!-- KHỐI 7: BẢNG KÝ TÊN 2 BÊN -->
+    <table style="width: 100%; border: none; border-collapse: collapse; margin-top: 10px; margin-bottom: 25px;">
+      <tr>
+        <td style="width: 50%; border: none;"></td>
+        <td style="width: 50%; border: none; text-align: center; font-style: italic; font-size: 13px; color: #334155; padding-bottom: 8px;">
+          ${escapeHtml(cleanVietnameseText(q.contractDate))}
+        </td>
+      </tr>
+      <tr>
         <td style="width: 50%; text-align: center; border: none; vertical-align: top;">
-          <div style="font-weight: bold; text-transform: uppercase; font-size: 13.5px; color: #0f172a;">ĐẠI DIỆN BÊN A</div>
-          <div style="font-style: italic; font-size: 12px; color: #64748b; margin-top: 2px;">(Ký tên, đóng dấu và ghi rõ họ tên)</div>
-          <div style="height: 85px;"></div>
-          <div style="font-weight: bold; font-size: 13.5px; text-transform: uppercase; color: #0f172a;">${escapeHtml(cleanVietnameseText(q.sellerRep))}</div>
+          <div style="font-weight: bold; text-transform: uppercase; font-size: 13.5px; color: #0f172a;">ĐẠI DIỆN KHÁCH HÀNG</div>
+          <div style="font-style: italic; font-size: 12px; color: #64748b; margin-top: 2px;">(Ký, ghi rõ họ tên)</div>
+          <div style="height: 80px;"></div>
+          <div style="font-weight: bold; font-size: 13.5px; color: #0f172a;">${escapeHtml(cleanVietnameseText(q.buyerRep))}</div>
         </td>
         <td style="width: 50%; text-align: center; border: none; vertical-align: top;">
-          <div style="font-weight: bold; text-transform: uppercase; font-size: 13.5px; color: #0f172a;">ĐẠI DIỆN BÊN B</div>
-          <div style="font-style: italic; font-size: 12px; color: #64748b; margin-top: 2px;">(Ký tên, đóng dấu và ghi rõ họ tên)</div>
-          <div style="height: 85px;"></div>
-          <div style="font-weight: bold; font-size: 13.5px; text-transform: uppercase; color: #0f172a;">${escapeHtml(cleanVietnameseText(q.buyerRep))}</div>
+          <div style="font-weight: bold; text-transform: uppercase; font-size: 13.5px; color: #0f172a;">ĐẠI DIỆN CÔNG TY</div>
+          <div style="font-style: italic; font-size: 12px; color: #64748b; margin-top: 2px;">(Ký, ghi rõ họ tên)</div>
+          <div style="height: 80px;"></div>
+          <div style="font-weight: bold; font-size: 13.5px; color: #0f172a;">${escapeHtml(cleanVietnameseText(q.sellerRep || q.sellerCompany))}</div>
         </td>
       </tr>
     </table>
@@ -3055,11 +2923,10 @@ function printQuoteContract() {
 
   const printableEl = document.getElementById('quote-contract-printable');
   if (!printableEl || !currentQuoteContract) {
-    showToast('Chưa có nội dung hợp đồng để in!', 'warning');
+    showToast('Chưa có nội dung báo giá để in!', 'warning');
     return;
   }
 
-  // Tạo iframe in chuyên dụng độc lập để không bị cắt trang bởi các container overflow của modal
   let printFrame = document.getElementById('quote-print-iframe');
   if (!printFrame) {
     printFrame = document.createElement('iframe');
@@ -3080,11 +2947,11 @@ function printQuoteContract() {
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Hợp Đồng Mua Bán - ${escapeHtml(cleanVietnameseText(currentQuoteContract.contractNo || ''))}</title>
+  <title>Bảng Báo Giá - ${escapeHtml(cleanVietnameseText(currentQuoteContract.buyerRep || ''))}</title>
   <style>
     @page {
       size: A4 portrait;
-      margin: 15mm 15mm 15mm 20mm;
+      margin: 15mm 15mm 15mm 15mm;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -3126,7 +2993,6 @@ function printQuoteContract() {
 </html>`);
   frameDoc.close();
 
-  // Đợi tài nguyên và layout iframe hoàn tất rồi gọi print()
   setTimeout(() => {
     try {
       printFrame.contentWindow.focus();
@@ -3146,164 +3012,113 @@ function exportQuoteToWord() {
   const subtotal = q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
   const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
   const grandTotal = subtotal + vatAmount;
-  const wordsInput = document.getElementById('qc-calc-words');
-  const words = wordsInput ? cleanVietnameseText(wordsInput.value) : numberToVietnameseWords(grandTotal);
+
+  const logoSrc = q.sellerLogo ? (q.sellerLogo.startsWith('http') ? q.sellerLogo : window.location.origin + q.sellerLogo) : (window.location.origin + '/images/hd/logo.png');
 
   const docHtml = `
-    <div style="text-align: center; margin-bottom: 16pt;">
-      <table style="width: 100%; border: none; border-collapse: collapse;">
-        <tr style="border: none;">
-          <td style="width: 44%; text-align: center; border: none; vertical-align: top;">
-            <strong style="font-size: 12pt;">${escapeHtml(cleanVietnameseText(q.sellerCompany.toUpperCase()))}</strong><br>
-            <div style="width: 90pt; height: 1pt; background-color: #666; margin: 2pt auto 3pt;"></div>
-            <span style="font-size: 10pt; color: #444;">Số: ${escapeHtml(cleanVietnameseText(q.contractNo))}</span>
+    <!-- PHẦN 1: HEADER LOGO + ĐƠN VỊ BÁO GIÁ -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16pt;" border="0">
+      <tr>
+        <td style="width: 22%; vertical-align: middle; padding: 4pt 10pt 10pt 0; text-align: center;">
+          <img src="${logoSrc}" alt="Logo" width="120" style="max-height: 60pt; object-fit: contain;" />
+        </td>
+        <td style="width: 78%; vertical-align: middle; padding: 4pt 0 10pt 12pt; border-left: 2pt solid #ccc;">
+          <strong style="font-size: 13pt; text-transform: uppercase; color: #000;">${escapeHtml(cleanVietnameseText(q.sellerCompany))}</strong><br>
+          <span style="font-size: 10.5pt; color: #333;"><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.sellerAddress))}</span><br>
+          <span style="font-size: 10.5pt; color: #333;"><strong>Email:</strong> ${escapeHtml(cleanVietnameseText(q.sellerEmail))} &nbsp;|&nbsp; <strong>Điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.sellerPhone))}</span>
+        </td>
+      </tr>
+    </table>
+
+    <div style="width: 100%; height: 1.5pt; background-color: #000; margin-bottom: 16pt;"></div>
+
+    <!-- PHẦN 2: TIÊU ĐỀ -->
+    <div style="text-align: center; margin: 16pt 0 14pt;">
+      <h1 style="font-size: 18pt; margin: 0; text-transform: uppercase; font-weight: bold;">BẢNG BÁO GIÁ</h1>
+      ${q.contractNo ? `<div style="font-size: 10.5pt; font-style: italic; margin-top: 3pt;">Số: <strong>${escapeHtml(cleanVietnameseText(q.contractNo))}</strong></div>` : ''}
+    </div>
+
+    <!-- PHẦN 3: KHÁCH HÀNG -->
+    <div style="margin-bottom: 14pt; font-size: 11pt; line-height: 1.5;">
+      <div><strong>Kính gửi:</strong> ${escapeHtml(cleanVietnameseText(q.buyerRep || 'Quý khách hàng'))}</div>
+      <div><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.buyerAddress || '...................................................................................................................'))}</div>
+      <table style="width: 100%; border: none; margin-top: 2pt;" border="0">
+        <tr>
+          <td style="width: 50%; padding: 0; border: none; font-size: 11pt;">
+            <strong>Số điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.buyerPhone || '.....................................................'))}
           </td>
-          <td style="width: 56%; text-align: center; border: none; vertical-align: top;">
-            <strong style="font-size: 12pt;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>
-            <strong style="font-size: 11pt;">Độc lập - Tự do - Hạnh phúc</strong><br>
-            <div style="width: 120pt; height: 1.5pt; background-color: #000; margin: 3pt auto 0;"></div>
+          <td style="width: 50%; padding: 0; border: none; font-size: 11pt;">
+            <strong>Email:</strong> ${escapeHtml(cleanVietnameseText(q.buyerEmail || '.................................................'))}
           </td>
         </tr>
       </table>
+      <div style="margin-top: 6pt;">
+        ${escapeHtml(cleanVietnameseText(q.sellerCompany))} xin gửi tới quý khách hàng báo giá các dịch vụ như sau:
+      </div>
     </div>
 
-    <div style="text-align: center; margin: 18pt 0 14pt;">
-      <h2 style="font-size: 16pt; margin: 0; text-transform: uppercase;">HỢP ĐỒNG MUA BÁN</h2>
-      <div style="font-size: 11pt; font-weight: bold; margin-top: 3pt;">Số: ${escapeHtml(cleanVietnameseText(q.contractNo))}</div>
-      <div style="font-size: 11pt; font-style: italic;">(V/v: ${escapeHtml(cleanVietnameseText(q.contractSubject))})</div>
-    </div>
-
-    <div style="font-style: italic; margin-bottom: 12pt; font-size: 11pt; line-height: 1.4;">
-      - Căn cứ vào Bộ Luật dân sự số 91/2015/QH13 ngày 24/11/2015;<br>
-      - Căn cứ Luật Thương mại số 36/2005/QH 11 do Quốc hội nước Cộng hoà xã hội chủ nghĩa Việt Nam ban hành ngày 14 tháng 6 năm 2005;<br>
-      - Căn cứ vào khả năng và nhu cầu thực tế của hai bên.
-    </div>
-
-    <div style="margin-bottom: 10pt; font-size: 11pt;">
-      Hôm nay, ${escapeHtml(cleanVietnameseText(q.contractDate))}, chúng tôi gồm các bên:
-    </div>
-
-    <div style="margin-bottom: 10pt; font-size: 11pt; line-height: 1.4;">
-      <strong>BÊN A (BÁN HÀNG): ${escapeHtml(cleanVietnameseText(q.sellerCompany.toUpperCase()))}</strong><br>
-      Đại diện: ${escapeHtml(cleanVietnameseText(q.sellerRep))} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(cleanVietnameseText(q.sellerPosition))}<br>
-      Địa chỉ: ${escapeHtml(cleanVietnameseText(q.sellerAddress))}<br>
-      Mã số thuế: ${escapeHtml(cleanVietnameseText(q.sellerTax))} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Điện thoại: ${escapeHtml(cleanVietnameseText(q.sellerPhone))}<br>
-      Tài khoản ngân hàng: ${escapeHtml(cleanVietnameseText(q.sellerBank))}
-    </div>
-
-    <div style="margin-bottom: 12pt; font-size: 11pt; line-height: 1.4;">
-      <strong>BÊN B (MUA HÀNG):</strong><br>
-      Đại diện: ${escapeHtml(cleanVietnameseText(q.buyerRep))} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: ${escapeHtml(cleanVietnameseText(q.buyerPosition || 'Khách hàng'))}<br>
-      Địa chỉ: ${escapeHtml(cleanVietnameseText(q.buyerAddress || '................................................................................................'))}<br>
-      Mã số thuế/CCCD: ${escapeHtml(cleanVietnameseText(q.buyerTax || '....................................'))} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Điện thoại: ${escapeHtml(cleanVietnameseText(q.buyerPhone || '....................................'))}<br>
-      Tài khoản/Email: ${escapeHtml(cleanVietnameseText(q.buyerBank || q.buyerEmail || '................................................................................................'))}
-    </div>
-
-    <div style="margin-bottom: 10pt; font-size: 11pt;">
-      Hai bên cùng bàn bạc và thống nhất ký kết hợp đồng mua bán với các điều khoản chi tiết như sau:
-    </div>
-
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">ĐIỀU 1: TÊN HÀNG – SỐ LƯỢNG – CHẤT LƯỢNG</div>
-    <div style="font-size: 11pt;">Bên A đồng ý bán cho Bên B các sản phẩm với số lượng, đơn giá chi tiết như sau:</div>
-
-    <table style="width: 100%; border-collapse: collapse; margin: 8pt 0;" border="1">
+    <!-- PHẦN 4: BẢNG HẠNG MỤC -->
+    <table style="width: 100%; border-collapse: collapse; margin: 10pt 0 14pt;" border="1">
       <thead>
         <tr style="background-color: #f2f2f2;">
-          <th style="padding: 6pt; text-align: center; width: 35pt;">STT</th>
-          <th style="padding: 6pt; text-align: left;">TÊN SẢN PHẨM / QUY CÁCH</th>
-          <th style="padding: 6pt; text-align: center; width: 45pt;">ĐVT</th>
-          <th style="padding: 6pt; text-align: center; width: 40pt;">SL</th>
-          <th style="padding: 6pt; text-align: right; width: 85pt;">ĐƠN GIÁ</th>
-          <th style="padding: 6pt; text-align: right; width: 95pt;">THÀNH TIỀN</th>
+          <th style="padding: 6pt 4pt; text-align: center; width: 35pt;">STT</th>
+          <th style="padding: 6pt 8pt; text-align: left;">HẠNG MỤC</th>
+          <th style="padding: 6pt 4pt; text-align: center; width: 55pt;">ĐVT</th>
+          <th style="padding: 6pt 4pt; text-align: center; width: 40pt;">SL</th>
+          <th style="padding: 6pt 6pt; text-align: right; width: 85pt;">ĐƠN GIÁ</th>
+          <th style="padding: 6pt 8pt; text-align: left; width: 150pt;">GHI CHÚ</th>
         </tr>
       </thead>
       <tbody>
         ${q.items.map((it, idx) => `
           <tr>
-            <td style="padding: 5pt; text-align: center;">${idx + 1}</td>
-            <td style="padding: 5pt; font-weight: bold;">${escapeHtml(cleanVietnameseText(it.name))}</td>
-            <td style="padding: 5pt; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
-            <td style="padding: 5pt; text-align: center;">${it.quantity}</td>
-            <td style="padding: 5pt; text-align: right;">${formatVND(it.price)}</td>
-            <td style="padding: 5pt; text-align: right; font-weight: bold;">${formatVND(it.quantity * it.price)}</td>
+            <td style="padding: 5pt 4pt; text-align: center;">${idx + 1}</td>
+            <td style="padding: 5pt 8pt; font-weight: bold;">${escapeHtml(cleanVietnameseText(it.name))}</td>
+            <td style="padding: 5pt 4pt; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
+            <td style="padding: 5pt 4pt; text-align: center; font-weight: bold;">${it.quantity}</td>
+            <td style="padding: 5pt 6pt; text-align: right;">${formatVND(it.price)}</td>
+            <td style="padding: 5pt 8pt; color: #444;">${escapeHtml(cleanVietnameseText(it.note || ''))}</td>
           </tr>
         `).join('')}
-        <tr>
-          <td colspan="5" style="padding: 5pt; font-weight: bold; text-align: right;">THÀNH TIỀN:</td>
-          <td style="padding: 5pt; font-weight: bold; text-align: right;">${formatVND(subtotal)}</td>
-        </tr>
-        <tr>
-          <td colspan="5" style="padding: 5pt; font-weight: bold; text-align: right;">VAT ${q.vatPercent}%:</td>
-          <td style="padding: 5pt; font-weight: bold; text-align: right;">${formatVND(vatAmount)}</td>
-        </tr>
-        <tr style="background-color: #f9f9f9;">
-          <td colspan="5" style="padding: 6pt; font-weight: bold; text-align: right;">TỔNG CỘNG ĐÃ CÓ VAT:</td>
-          <td style="padding: 6pt; font-weight: bold; text-align: right;">${formatVND(grandTotal)}</td>
-        </tr>
+        ${q.showTotal ? `
+          <tr style="background-color: #f9f9f9; font-weight: bold;">
+            <td colspan="4" style="padding: 6pt 8pt; text-align: right; text-transform: uppercase;">TỔNG CỘNG:</td>
+            <td style="padding: 6pt 6pt; text-align: right;">${formatVND(grandTotal)}</td>
+            <td style="padding: 6pt 8pt; font-style: italic;">(Đã gồm VAT)</td>
+          </tr>
+        ` : ''}
       </tbody>
     </table>
 
-    <div style="font-weight: bold; margin: 6pt 0; font-size: 11pt;">
-      Tổng giá trị hợp đồng là: ${formatVND(grandTotal)} VNĐ (${cleanVietnameseText(words)})
-    </div>
-    <div style="font-style: italic; margin: 3pt 0; font-size: 10pt;">
-      ${q.vatPercent > 0 ? `* Tổng giá trị hợp đồng đã bao gồm thuế GTGT ${q.vatPercent}%.` : '* Tổng giá trị hợp đồng chưa bao gồm thuế GTGT.'}
-    </div>
-    <div style="margin: 5pt 0; font-size: 11pt; line-height: 1.4;">
-      <strong>Chất lượng hàng hóa:</strong> ${escapeHtml(cleanVietnameseText(q.warrantyTerms))}
+    <!-- PHẦN 5: GHI CHÚ -->
+    <div style="margin-bottom: 14pt; font-size: 10.5pt; line-height: 1.5;">
+      <strong>Ghi chú:</strong><br>
+      ${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')).replace(/\n/g, '<br>')}
     </div>
 
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 3pt; font-size: 11pt;">ĐIỀU 2: TIẾN ĐỘ THỰC HIỆN</div>
-    <div style="font-size: 11pt;">- <strong>Thời gian giao hàng:</strong> ${escapeHtml(cleanVietnameseText(q.deliveryTime))}</div>
-
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 3pt; font-size: 11pt;">ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN & GIAO HÀNG</div>
-    <div style="font-size: 11pt; line-height: 1.4;">
-      <div>- <strong>Hình thức thanh toán:</strong> ${escapeHtml(cleanVietnameseText(q.paymentMethod))}</div>
-      <div>- <strong>Tỷ lệ thanh toán:</strong> ${escapeHtml(cleanVietnameseText(q.paymentTerms))}</div>
-      <div>- <strong>Địa điểm giao hàng:</strong> ${escapeHtml(cleanVietnameseText(q.deliveryLocation))}</div>
+    <!-- PHẦN 6: LỜI CẢM ƠN -->
+    <div style="margin: 16pt 0 14pt; font-weight: bold; font-size: 11pt; text-transform: uppercase;">
+      ${escapeHtml(cleanVietnameseText(q.thankYouText || 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!'))}
     </div>
 
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 3pt; font-size: 11pt;">ĐIỀU 4: TRÁCH NHIỆM MỖI BÊN</div>
-    <div style="font-size: 11pt; line-height: 1.4;">
-      <strong>1. Trách nhiệm Bên A:</strong>
-      <ul>
-        <li>Đảm bảo có đầy đủ tư cách pháp nhân và năng lực thực hiện tốt hợp đồng theo quy định của pháp luật.</li>
-        <li>Cung cấp cho Bên B đầy đủ hóa đơn, chứng từ và giấy chứng nhận xuất xứ, chất lượng hàng hóa (CO/CQ).</li>
-        <li>Đơn giá không thay đổi trong suốt quá trình thực hiện hợp đồng.</li>
-        <li>Đảm bảo giao vật tư đúng chủng loại, quy cách, chất lượng và số lượng đã cam kết tại Điều 1.</li>
-        <li>Giao hàng đúng tiến độ và đúng địa điểm theo thỏa thuận.</li>
-      </ul>
-
-      <strong>2. Trách nhiệm Bên B:</strong>
-      <ul>
-        <li>Kiểm tra, ký biên bản nghiệm thu xác nhận số lượng và quy cách sản phẩm khi nhận hàng.</li>
-        <li>Bố trí kho bãi, mặt bằng tiếp nhận hàng hóa theo thỏa thuận.</li>
-        <li>Thanh toán đầy đủ và đúng thời hạn ghi trong hợp đồng.</li>
-        <li>Kịp thời thông báo cho Bên A nếu phát hiện bất kỳ sự cố hoặc lỗi kỹ thuật nào của sản phẩm.</li>
-      </ul>
-    </div>
-
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 3pt; font-size: 11pt;">ĐIỀU 5: ĐIỀU KHOẢN BẤT KHẢ KHÁNG</div>
-    <div style="font-size: 11pt; text-align: justify; line-height: 1.4;">
-      Hai bên thống nhất các trường hợp sau đây được xem là sự kiện bất khả kháng: chiến tranh, thiên tai, hỏa hoạn, lũ lụt, động đất, đình công, dịch bệnh… gây cản trở hoặc ngăn chặn việc thực hiện hợp đồng. Bên gặp sự cố bất khả kháng được miễn trừ trách nhiệm bồi thường nhưng phải thông báo bằng văn bản cho bên kia trong vòng 10 (mười) ngày kể từ ngày xảy ra sự cố.
-    </div>
-
-    <div style="font-weight: bold; margin-top: 10pt; margin-bottom: 3pt; font-size: 11pt;">ĐIỀU 6: HIỆU LỰC & ĐIỀU KHOẢN CHUNG</div>
-    <div style="font-size: 11pt; text-align: justify; line-height: 1.4;">
-      Hai bên cam kết thực hiện đúng và đầy đủ các điều khoản đã thỏa thuận trong hợp đồng này. Trong quá trình thực hiện, mọi sửa đổi hoặc bổ sung phải được lập thành phụ lục hợp đồng bằng văn bản có chữ ký của hai bên. Nếu phát sinh tranh chấp, hai bên cùng nhau bàn bạc thương lượng trên tinh thần thiện chí và tôn trọng lợi ích chung; nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền để giải quyết theo luật định. Hợp đồng này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản và có hiệu lực kể từ ngày ký.
-    </div>
-
-    <table style="width: 100%; border: none; margin-top: 25pt; margin-bottom: 20pt;">
-      <tr style="border: none;">
+    <!-- PHẦN 7: KÝ TÊN -->
+    <table style="width: 100%; border: none; margin-top: 10pt; margin-bottom: 25pt;" border="0">
+      <tr>
+        <td style="width: 50%; border: none;"></td>
+        <td style="width: 50%; border: none; text-align: center; font-style: italic; font-size: 10.5pt; padding-bottom: 6pt;">
+          ${escapeHtml(cleanVietnameseText(q.contractDate))}
+        </td>
+      </tr>
+      <tr>
         <td style="width: 50%; text-align: center; border: none; vertical-align: top;">
-          <strong style="font-size: 11pt;">ĐẠI DIỆN BÊN A</strong><br>
-          <span style="font-style: italic; font-size: 10pt;">(Ký tên, đóng dấu và ghi rõ họ tên)</span><br><br><br><br>
-          <strong style="font-size: 11pt;">${escapeHtml(cleanVietnameseText(q.sellerRep))}</strong>
+          <strong style="font-size: 11pt; text-transform: uppercase;">ĐẠI DIỆN KHÁCH HÀNG</strong><br>
+          <span style="font-style: italic; font-size: 9.5pt; color: #555;">(Ký, ghi rõ họ tên)</span><br><br><br><br><br>
+          <strong style="font-size: 11pt;">${escapeHtml(cleanVietnameseText(q.buyerRep))}</strong>
         </td>
         <td style="width: 50%; text-align: center; border: none; vertical-align: top;">
-          <strong style="font-size: 11pt;">ĐẠI DIỆN BÊN B</strong><br>
-          <span style="font-style: italic; font-size: 10pt;">(Ký tên, đóng dấu và ghi rõ họ tên)</span><br><br><br><br>
-          <strong style="font-size: 11pt;">${escapeHtml(cleanVietnameseText(q.buyerRep))}</strong>
+          <strong style="font-size: 11pt; text-transform: uppercase;">ĐẠI DIỆN CÔNG TY</strong><br>
+          <span style="font-style: italic; font-size: 9.5pt; color: #555;">(Ký, ghi rõ họ tên)</span><br><br><br><br><br>
+          <strong style="font-size: 11pt;">${escapeHtml(cleanVietnameseText(q.sellerRep || q.sellerCompany))}</strong>
         </td>
       </tr>
     </table>
@@ -3316,7 +3131,7 @@ function exportQuoteToWord() {
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
 <meta charset='utf-8'>
-<title>Hợp Đồng Mua Bán</title>
+<title>Bảng Báo Giá</title>
 <!--[if gte mso 9]>
 <xml>
 <w:WordDocument>
@@ -3329,32 +3144,28 @@ function exportQuoteToWord() {
 <style>
   @page {
     size: 210mm 297mm;
-    margin: 20mm 20mm 20mm 25mm;
+    margin: 20mm 20mm 20mm 20mm;
   }
   body {
     font-family: ${wordFont};
-    font-size: 13pt;
+    font-size: 12pt;
     line-height: 1.45;
     color: #000;
   }
   table {
     border-collapse: collapse;
     width: 100%;
-    margin: 10pt 0;
+    margin: 8pt 0;
   }
   th, td {
     border: 1pt solid black;
     padding: 6pt;
-    font-size: 11pt;
+    font-size: 10.5pt;
   }
   th {
     background-color: #f2f2f2;
     text-align: center;
     font-weight: bold;
-  }
-  ul {
-    margin: 4pt 0 8pt 20pt;
-    padding: 0;
   }
 </style>
 </head>
@@ -3364,7 +3175,7 @@ ${docHtml}
 </html>`;
 
   const safeName = (q.buyerRep || 'Khach_Hang').replace(/[^\p{L}\p{N}_]+/gu, '_');
-  const filename = `Hop_Dong_Mua_Ban_${safeName}.doc`;
+  const filename = `Bang_Bao_Gia_${safeName}.doc`;
 
   const blob = new Blob(['\ufeff', wordTemplate], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -3384,9 +3195,9 @@ async function copyQuoteContractText() {
   if (!el) return;
   try {
     await navigator.clipboard.writeText(el.innerText);
-    showToast('Đã sao chép nội dung văn bản hợp đồng!', 'success');
+    showToast('Đã sao chép nội dung bảng báo giá!', 'success');
   } catch (e) {
-    showToast('Lỗi khi sao chép văn bản!', 'error');
+    showToast('Lỗi khi sao chép nội dung!', 'error');
   }
 }
 
@@ -4743,6 +4554,12 @@ window.switchQuoteTab = switchQuoteTab;
 window.setQuoteContractFont = setQuoteContractFont;
 window.exportQuoteToWord = exportQuoteToWord;
 window.printQuoteContract = printQuoteContract;
+window.loadSampleCncQuoteItems = loadSampleCncQuoteItems;
+window.toggleQuoteShowTotal = toggleQuoteShowTotal;
+window.addQuoteContractItem = addQuoteContractItem;
+window.removeQuoteContractItem = removeQuoteContractItem;
+window.updateQuoteItem = updateQuoteItem;
+window.copyQuoteContractText = copyQuoteContractText;
 window.changeCategoriesPage = changeCategoriesPage;
 window.changeProductsPage = changeProductsPage;
 window.changeBlogsPage = changeBlogsPage;
