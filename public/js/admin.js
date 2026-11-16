@@ -3221,12 +3221,12 @@ function exportQuoteToWord() {
 
   const docHtml = `
     <!-- PHẦN 1: HEADER LOGO + ĐƠN VỊ BÁO GIÁ -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16pt;" border="0">
+    <table class="header-table" style="width: 100%; border-collapse: collapse; margin-bottom: 14pt; border: none;" border="0">
       <tr>
-        <td style="width: 22%; vertical-align: middle; padding: 4pt 10pt 10pt 0; text-align: center;">
-          <img src="${logoSrc}" alt="Logo" width="120" style="max-height: 60pt; object-fit: contain;" />
+        <td style="width: 25%; vertical-align: middle; padding: 4pt 12pt 8pt 0; text-align: center; border: none;">
+          <img src="${logoSrc}" alt="Logo" width="80" height="80" style="width: 80pt; height: 80pt; max-width: 80pt; max-height: 80pt; border: none; display: inline-block;" />
         </td>
-        <td style="width: 78%; vertical-align: middle; padding: 4pt 0 10pt 12pt; border-left: 2pt solid #ccc;">
+        <td style="width: 75%; vertical-align: middle; padding: 4pt 0 8pt 14pt; border-left: 2pt solid #000; border-top: none; border-right: none; border-bottom: none;">
           <strong style="font-size: 13pt; text-transform: uppercase; color: #000;">${escapeHtml(cleanVietnameseText(q.sellerCompany))}</strong><br>
           <span style="font-size: 10.5pt; color: #333;"><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.sellerAddress))}</span><br>
           <span style="font-size: 10.5pt; color: #333;"><strong>Email:</strong> ${escapeHtml(cleanVietnameseText(q.sellerEmail))} &nbsp;|&nbsp; <strong>Điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.sellerPhone))}</span>
@@ -3246,7 +3246,7 @@ function exportQuoteToWord() {
     <div style="margin-bottom: 14pt; font-size: 11pt; line-height: 1.5;">
       <div><strong>Kính gửi:</strong> ${escapeHtml(cleanVietnameseText(q.buyerRep || 'Quý khách hàng'))}</div>
       <div><strong>Địa chỉ:</strong> ${escapeHtml(cleanVietnameseText(q.buyerAddress || '...................................................................................................................'))}</div>
-      <table style="width: 100%; border: none; margin-top: 2pt;" border="0">
+      <table class="noborder-table" style="width: 100%; border: none; margin-top: 2pt;" border="0">
         <tr>
           <td style="width: 50%; padding: 0; border: none; font-size: 11pt;">
             <strong>Số điện thoại:</strong> ${escapeHtml(cleanVietnameseText(q.buyerPhone || '.....................................................'))}
@@ -3262,7 +3262,7 @@ function exportQuoteToWord() {
     </div>
 
     <!-- PHẦN 4: BẢNG HẠNG MỤC -->
-    <table style="width: 100%; border-collapse: collapse; margin: 10pt 0 14pt;" border="1">
+    <table class="items-table" style="width: 100%; border-collapse: collapse; margin: 10pt 0 14pt;" border="1">
       <thead>
         <tr style="background-color: #f2f2f2;">
           <th style="padding: 6pt 4pt; text-align: center; width: 35pt;">STT</th>
@@ -3304,7 +3304,7 @@ function exportQuoteToWord() {
     </div>
 
     <!-- PHẦN 7: KÝ TÊN -->
-    <table style="width: 100%; border: none; margin-top: 10pt; margin-bottom: 25pt;" border="0">
+    <table class="noborder-table" style="width: 100%; border: none; margin-top: 10pt; margin-bottom: 25pt;" border="0">
       <tr>
         <td style="width: 50%; border: none;"></td>
         <td style="width: 50%; border: none; text-align: center; font-style: italic; font-size: 10.5pt; padding-bottom: 6pt;">
@@ -3354,20 +3354,29 @@ function exportQuoteToWord() {
     line-height: 1.45;
     color: #000;
   }
-  table {
+  table.items-table {
     border-collapse: collapse;
     width: 100%;
-    margin: 8pt 0;
+    margin: 10pt 0 14pt;
   }
-  th, td {
+  table.items-table th, table.items-table td {
     border: 1pt solid black;
     padding: 6pt;
     font-size: 10.5pt;
   }
-  th {
+  table.items-table th {
     background-color: #f2f2f2;
     text-align: center;
     font-weight: bold;
+  }
+  table.header-table, table.noborder-table {
+    border-collapse: collapse;
+    width: 100%;
+    border: none;
+    margin: 4pt 0;
+  }
+  table.header-table td, table.noborder-table td {
+    border: none;
   }
 </style>
 </head>
