@@ -2323,7 +2323,7 @@ function openQuoteContractModal(contactId) {
     vatPercent: 10,
     quoteNotes: `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`,
     thankYouText: 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!',
-    showTotal: false
+    showTotal: true
   };
 
   currentQuoteTab = 'edit';
@@ -2346,6 +2346,7 @@ function loadSampleCncQuoteItems() {
   ];
   currentQuoteContract.quoteNotes = `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`;
   currentQuoteContract.thankYouText = 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!';
+  currentQuoteContract.showTotal = true;
   renderQuoteContractModal();
   showToast('Đã nạp 5 hạng mục mẫu gia công CNC theo yêu cầu!', 'success');
 }
@@ -2490,17 +2491,24 @@ function updateQuoteItem(index, field, value) {
     currentQuoteContract.items[index][field] = cleanVietnameseText(value);
   }
 
+  const it = currentQuoteContract.items[index];
+  const rowSubtotalEl = document.getElementById(`qc-item-subtotal-${index}`);
+  if (rowSubtotalEl) {
+    rowSubtotalEl.textContent = formatVND(it.quantity * it.price);
+  }
+
   recalcQuoteTotals();
 }
 
 function recalcQuoteTotals() {
   if (!currentQuoteContract) return;
   const subtotal = currentQuoteContract.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
-  const vatAmount = Math.round(subtotal * (currentQuoteContract.vatPercent / 100));
-  const grandTotal = subtotal + vatAmount;
 
   const grandTotalEl = document.getElementById('qc-calc-grand-total');
-  if (grandTotalEl) grandTotalEl.textContent = formatVND(grandTotal) + ' đ';
+  if (grandTotalEl) grandTotalEl.textContent = formatVND(subtotal);
+
+  const editTotalEl = document.getElementById('qc-edit-grand-total');
+  if (editTotalEl) editTotalEl.textContent = formatVND(subtotal);
 }
 
 function addQuoteContractItem() {
@@ -2665,7 +2673,7 @@ function renderQuoteContractModal() {
                 <th class="py-2.5 px-3 w-28 text-center">ĐVT</th>
                 <th class="py-2.5 px-3 w-20 text-center">SL</th>
                 <th class="py-2.5 px-3 w-32 text-right">Đơn Giá (VNĐ)</th>
-                <th class="py-2.5 px-3 min-w-[180px]">Ghi Chú</th>
+                <th class="py-2.5 px-3 w-36 text-right">Thành Tiền (VNĐ)</th>
                 <th class="py-2.5 px-2 w-10 text-center"></th>
               </tr>
             </thead>
@@ -2710,14 +2718,8 @@ function renderQuoteContractModal() {
                       class="w-full px-2 py-1.5 rounded-lg border border-slate-200 focus:border-[#c8102e] outline-none text-xs text-right font-bold font-mono"
                     />
                   </td>
-                  <td class="py-2 px-3">
-                    <input 
-                      type="text" 
-                      value="${escapeHtml(it.note || '')}" 
-                      oninput="updateQuoteItem(${idx}, 'note', this.value)" 
-                      placeholder="Ghi chú dòng này (nếu có)..."
-                      class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-[#c8102e] outline-none text-xs text-slate-700"
-                    />
+                  <td class="py-2 px-3 text-right font-mono font-bold text-slate-900 text-xs" id="qc-item-subtotal-${idx}">
+                    ${formatVND(it.quantity * it.price)}
                   </td>
                   <td class="py-2 px-2 text-center">
                     <button 
@@ -2732,6 +2734,15 @@ function renderQuoteContractModal() {
                 </tr>
               `).join('')}
             </tbody>
+            <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+              <tr>
+                <td colspan="5" class="py-2.5 px-3 text-right font-black uppercase text-slate-700 text-[11px] tracking-wider">TỔNG CỘNG:</td>
+                <td class="py-2.5 px-3 text-right font-mono font-black text-sm text-[#c8102e]" id="qc-edit-grand-total">
+                  ${formatVND(q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0))}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -2752,11 +2763,16 @@ function renderQuoteContractModal() {
             <label class="block text-[11px] font-bold text-slate-600 mb-1">Lời cảm ơn cuối bảng:</label>
             <input type="text" id="qc-thank-you" value="${escapeHtml(q.thankYouText || 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none font-bold text-slate-800">
           </div>
-          <div class="flex items-center pt-5">
-            <label class="flex items-center space-x-2 cursor-pointer select-none">
-              <input type="checkbox" id="qc-show-total" ${q.showTotal ? 'checked' : ''} onchange="toggleQuoteShowTotal(this.checked)" class="w-4 h-4 rounded text-[#c8102e] focus:ring-0">
-              <span class="text-xs font-bold text-slate-700">Hiển thị dòng Tổng cộng thanh toán ở cuối bảng</span>
-            </label>
+          <div class="flex items-center pt-2">
+            <div class="p-3 bg-red-50/60 rounded-xl border border-red-100 flex items-center justify-between w-full">
+              <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                <i class="fa-solid fa-calculator text-[#c8102e]"></i>
+                <span>Tổng cộng bảng báo giá:</span>
+              </span>
+              <span class="text-sm font-black font-mono text-[#c8102e]" id="qc-calc-grand-total">
+                ${formatVND(q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0))}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -2852,10 +2868,10 @@ function renderQuotePreviewHtml() {
         <tr style="background-color: #f1f5f9; color: #0f172a;">
           <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 45px; font-weight: bold;">STT</th>
           <th style="border: 1px solid #334155; padding: 9px 12px; text-align: left; font-weight: bold;">HẠNG MỤC</th>
-          <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 75px; font-weight: bold;">ĐVT</th>
+          <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 70px; font-weight: bold;">ĐVT</th>
           <th style="border: 1px solid #334155; padding: 9px 6px; text-align: center; width: 55px; font-weight: bold;">SL</th>
           <th style="border: 1px solid #334155; padding: 9px 10px; text-align: right; width: 110px; font-weight: bold;">ĐƠN GIÁ</th>
-          <th style="border: 1px solid #334155; padding: 9px 12px; text-align: left; min-width: 150px; font-weight: bold;">GHI CHÚ</th>
+          <th style="border: 1px solid #334155; padding: 9px 12px; text-align: right; width: 130px; font-weight: bold;">THÀNH TIỀN</th>
         </tr>
       </thead>
       <tbody>
@@ -2866,16 +2882,14 @@ function renderQuotePreviewHtml() {
             <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
             <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center; font-weight: bold;">${it.quantity}</td>
             <td style="border: 1px solid #334155; padding: 8px 10px; text-align: right; font-weight: 600;">${formatVND(it.price)}</td>
-            <td style="border: 1px solid #334155; padding: 8px 12px; color: #475569; font-size: 12.5px;">${escapeHtml(cleanVietnameseText(it.note || ''))}</td>
+            <td style="border: 1px solid #334155; padding: 8px 12px; text-align: right; font-weight: bold; color: #0f172a;">${formatVND(it.quantity * it.price)}</td>
           </tr>
         `).join('')}
-        ${q.showTotal ? `
-          <tr style="background-color: #f8fafc; font-weight: bold;">
-            <td colspan="4" style="border: 1px solid #334155; padding: 8px 12px; text-align: right; text-transform: uppercase;">TỔNG CỘNG:</td>
-            <td style="border: 1px solid #334155; padding: 8px 10px; text-align: right; color: #000; font-size: 13.5px;">${formatVND(grandTotal)}</td>
-            <td style="border: 1px solid #334155; padding: 8px 12px; font-style: italic; font-size: 12px;">(Đã gồm VAT)</td>
-          </tr>
-        ` : ''}
+        <!-- DÒNG TỔNG CỘNG DƯỚI CUỐI DANH SÁCH -->
+        <tr style="background-color: #f8fafc; font-weight: bold;">
+          <td colspan="5" style="border: 1px solid #334155; padding: 9px 12px; text-align: right; text-transform: uppercase; font-weight: bold; font-size: 13px;">TỔNG CỘNG:</td>
+          <td style="border: 1px solid #334155; padding: 9px 12px; text-align: right; font-weight: bold; color: #000; font-size: 13.5px;">${formatVND(subtotal)}</td>
+        </tr>
       </tbody>
     </table>
 
@@ -3063,10 +3077,10 @@ function exportQuoteToWord() {
         <tr style="background-color: #f2f2f2;">
           <th style="padding: 6pt 4pt; text-align: center; width: 35pt;">STT</th>
           <th style="padding: 6pt 8pt; text-align: left;">HẠNG MỤC</th>
-          <th style="padding: 6pt 4pt; text-align: center; width: 55pt;">ĐVT</th>
-          <th style="padding: 6pt 4pt; text-align: center; width: 40pt;">SL</th>
+          <th style="padding: 6pt 4pt; text-align: center; width: 50pt;">ĐVT</th>
+          <th style="padding: 6pt 4pt; text-align: center; width: 35pt;">SL</th>
           <th style="padding: 6pt 6pt; text-align: right; width: 85pt;">ĐƠN GIÁ</th>
-          <th style="padding: 6pt 8pt; text-align: left; width: 150pt;">GHI CHÚ</th>
+          <th style="padding: 6pt 8pt; text-align: right; width: 100pt;">THÀNH TIỀN</th>
         </tr>
       </thead>
       <tbody>
@@ -3077,16 +3091,14 @@ function exportQuoteToWord() {
             <td style="padding: 5pt 4pt; text-align: center;">${escapeHtml(cleanVietnameseText(it.unit))}</td>
             <td style="padding: 5pt 4pt; text-align: center; font-weight: bold;">${it.quantity}</td>
             <td style="padding: 5pt 6pt; text-align: right;">${formatVND(it.price)}</td>
-            <td style="padding: 5pt 8pt; color: #444;">${escapeHtml(cleanVietnameseText(it.note || ''))}</td>
+            <td style="padding: 5pt 8pt; text-align: right; font-weight: bold;">${formatVND(it.quantity * it.price)}</td>
           </tr>
         `).join('')}
-        ${q.showTotal ? `
-          <tr style="background-color: #f9f9f9; font-weight: bold;">
-            <td colspan="4" style="padding: 6pt 8pt; text-align: right; text-transform: uppercase;">TỔNG CỘNG:</td>
-            <td style="padding: 6pt 6pt; text-align: right;">${formatVND(grandTotal)}</td>
-            <td style="padding: 6pt 8pt; font-style: italic;">(Đã gồm VAT)</td>
-          </tr>
-        ` : ''}
+        <!-- DÒNG TỔNG CỘNG DƯỚI CUỐI DANH SÁCH -->
+        <tr style="background-color: #f2f2f2; font-weight: bold;">
+          <td colspan="5" style="padding: 6pt 8pt; text-align: right; text-transform: uppercase; font-weight: bold;">TỔNG CỘNG:</td>
+          <td style="padding: 6pt 8pt; text-align: right; font-weight: bold; font-size: 11pt;">${formatVND(subtotal)}</td>
+        </tr>
       </tbody>
     </table>
 
