@@ -273,6 +273,9 @@ function fallbackQuery(sql, params = []) {
     if (lower.includes('p.is_promo = 1') || lower.includes('is_promo = 1')) {
       list = list.filter(p => p.is_promo === 1 || p.is_promo === '1');
     }
+    if (lower.includes('p.is_active = 1') || lower.includes('is_active = 1')) {
+      list = list.filter(p => p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false);
+    }
 
     // Lọc theo show_in_slider của danh mục nếu câu truy vấn công khai yêu cầu
     if (lower.includes('show_in_slider = 1') || (!lower.includes('from products p left join') && !lower.includes('select p.* from products p order by p.id desc'))) {
@@ -430,6 +433,14 @@ function fallbackRun(sql, params = []) {
     const [val, id] = params;
     const p = fallbackData.products.find(x => String(x.id) === String(id));
     if (p) p.is_promo = Number(val);
+    saveFallbackData();
+    return { lastID: 0, changes: 1 };
+  }
+
+  if (lower.startsWith('update products set is_active = ?')) {
+    const [val, id] = params;
+    const p = fallbackData.products.find(x => String(x.id) === String(id));
+    if (p) p.is_active = Number(val);
     saveFallbackData();
     return { lastID: 0, changes: 1 };
   }
@@ -724,6 +735,7 @@ const initDB = async () => {
         warranty_policy TEXT,
         is_new INTEGER DEFAULT 0,
         is_promo INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
         stock INTEGER DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
@@ -731,6 +743,11 @@ const initDB = async () => {
     `);
 
     // Tự động bổ sung các cột mới nếu database đã tồn tại từ trước
+    try {
+      await run('ALTER TABLE products ADD COLUMN is_active INTEGER DEFAULT 1');
+    } catch (e) {
+      // Đã có cột is_active
+    }
     try {
       await run('ALTER TABLE products ADD COLUMN images TEXT');
     } catch (e) {
@@ -1418,8 +1435,8 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
       if (!useFallback && db) {
         try {
           db.run(
-            `INSERT OR REPLACE INTO products (id, category_id, name, slug, price, original_price, image, images, short_desc, description, specs, applications, warranty_policy, is_new, is_promo, stock, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT OR REPLACE INTO products (id, category_id, name, slug, price, original_price, image, images, short_desc, description, specs, applications, warranty_policy, is_new, is_promo, is_active, stock, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               prod.id,
               prod.category_id || null,
@@ -1436,6 +1453,7 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
               prod.warranty_policy || '',
               prod.is_new ? 1 : 0,
               prod.is_promo ? 1 : 0,
+              prod.is_active !== undefined ? (prod.is_active ? 1 : 0) : 1,
               prod.stock || null,
               prod.created_at || new Date().toISOString()
             ]

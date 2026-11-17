@@ -571,7 +571,7 @@ async function loadCategories() {
           <!-- Cột 2: TÊN DANH MỤC (Ẩn icon thư mục và ẩn /slug theo yêu cầu 3) -->
           <td class="py-3.5 px-6">
             <div class="flex items-center space-x-1.5">
-              <span class="font-black text-slate-900 text-sm">${parent.name}</span>
+              <span class="font-normal text-slate-800 text-sm">${parent.name}</span>
               ${hasChildren ? `<span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">${children.length} con</span>` : ''}
             </div>
           </td>
@@ -626,7 +626,7 @@ async function loadCategories() {
 
             <!-- Cột 2: TÊN DANH MỤC CON (Đã ẩn icon và text Con) -->
             <td class="py-2.5 px-6">
-              <span class="font-bold text-slate-700 text-xs sm:text-[13px]">${child.name}</span>
+              <span class="font-normal text-slate-700 text-xs sm:text-[13px]">${child.name}</span>
             </td>
 
             <td class="py-2.5 px-6 text-slate-500 max-w-xs truncate text-[11px]">${child.description || '<span class="italic text-slate-300">Không có mô tả</span>'}</td>
@@ -1060,7 +1060,7 @@ function renderProductsTable(products) {
   if (!tbody) return;
 
   if (!currentAdminProductsList || currentAdminProductsList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Không có sản phẩm nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Không có sản phẩm nào.</td></tr>`;
     renderAdminPagination('products-pagination', 1, 0, ADMIN_PAGE_SIZE, 'changeProductsPage');
     return;
   }
@@ -1074,6 +1074,7 @@ function renderProductsTable(products) {
 
   tbody.innerHTML = pagedItems.map(p => {
     const hasPromo = p.original_price && p.original_price > p.price;
+    const isAct = (p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false);
 
     return `
       <tr class="hover:bg-slate-50 transition">
@@ -1104,6 +1105,13 @@ function renderProductsTable(products) {
           <button onclick="toggleProductPromo(${p.id})" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${p.is_promo ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt trạng thái Hot">
             <i class="fa-solid ${p.is_promo ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark'}"></i>
             <span>${p.is_promo ? 'Bật' : 'Tắt'}</span>
+          </button>
+        </td>
+        <!-- Cột Hiển thị: Hiển thị Bật hoặc Tắt trên landing page / website -->
+        <td class="py-3 px-6 text-center">
+          <button onclick="toggleProductActive(${p.id})" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${isAct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt hiển thị trên website">
+            <i class="fa-solid ${isAct ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark'}"></i>
+            <span>${isAct ? 'Bật' : 'Tắt'}</span>
           </button>
         </td>
         <td class="py-3 px-6 text-right space-x-2">
@@ -1277,6 +1285,7 @@ function openProductModal(prod = null) {
   const warrantyInput = document.getElementById('prod-warranty');
   const isNewInput = document.getElementById('prod-is-new');
   const isPromoInput = document.getElementById('prod-is-promo');
+  const isActiveInput = document.getElementById('prod-is-active');
 
   if (prod) {
     title.textContent = 'Chỉnh Sửa Sản Phẩm';
@@ -1292,6 +1301,9 @@ function openProductModal(prod = null) {
     if (warrantyInput) warrantyInput.value = prod.warranty_policy || '';
     isNewInput.checked = prod.is_new === 1;
     isPromoInput.checked = prod.is_promo === 1;
+    if (isActiveInput) {
+      isActiveInput.checked = (prod.is_active !== 0 && prod.is_active !== '0' && prod.is_active !== false);
+    }
 
     // Cấu hình danh sách nhiều ảnh
     currentProductImages = [];
@@ -1320,6 +1332,7 @@ function openProductModal(prod = null) {
     if (warrantyInput) warrantyInput.value = '';
     isNewInput.checked = false;
     isPromoInput.checked = false;
+    if (isActiveInput) isActiveInput.checked = true;
     currentProductImages = [];
     renderProductImagePreviews();
   }
@@ -1834,6 +1847,38 @@ async function toggleProductPromo(id) {
       renderProductsTable(productsCache);
     } else {
       showToast(result.message || 'Lỗi khi cập nhật trạng thái Hot!', 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi kết nối máy chủ!', 'error');
+  }
+}
+
+// Bật / Tắt trạng thái Hiển thị nhanh trên website / landing page
+async function toggleProductActive(id) {
+  try {
+    const res = await fetch(`/api/admin/products/${id}/toggle-active`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(result.message, 'success');
+      const p = productsCache.find(x => x.id === id);
+      if (p) p.is_active = result.is_active;
+
+      // Đồng bộ vào localStorage để lưu trạng thái
+      try {
+        const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+        const lp = localProds.find(x => x.id === id);
+        if (lp) {
+          lp.is_active = result.is_active;
+          setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
+        }
+      } catch (e) {}
+
+      renderProductsTable(productsCache);
+    } else {
+      showToast(result.message || 'Lỗi khi cập nhật trạng thái hiển thị!', 'error');
     }
   } catch (err) {
     showToast('Lỗi kết nối máy chủ!', 'error');
@@ -4918,6 +4963,7 @@ function setupForms() {
       const warranty_policy = document.getElementById('prod-warranty') ? document.getElementById('prod-warranty').value.trim() : '';
       const is_new = document.getElementById('prod-is-new').checked ? 1 : 0;
       const is_promo = document.getElementById('prod-is-promo').checked ? 1 : 0;
+      const is_active = document.getElementById('prod-is-active') ? (document.getElementById('prod-is-active').checked ? 1 : 0) : 1;
 
       const mainImage = currentProductImages.length > 0 ? currentProductImages[0] : (document.getElementById('prod-image').value.trim() || '');
 
@@ -4934,7 +4980,8 @@ function setupForms() {
         applications,
         warranty_policy,
         is_new,
-        is_promo
+        is_promo,
+        is_active
       };
 
       const url = id ? `/api/admin/products/${id}` : '/api/admin/products';
@@ -5234,6 +5281,7 @@ window.closeProductModal = closeProductModal;
 window.editProduct = editProduct;
 window.deleteProduct = deleteProduct;
 window.toggleProductPromo = toggleProductPromo;
+window.toggleProductActive = toggleProductActive;
 window.openBlogModal = openBlogModal;
 window.closeBlogModal = closeBlogModal;
 window.editBlog = editBlog;

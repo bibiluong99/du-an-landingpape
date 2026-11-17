@@ -278,6 +278,7 @@ function renderCategoriesSidebar() {
           <div class="space-y-1 pl-6 pt-1 pb-1 transition-all duration-300 ${isExpanded ? '' : 'hidden'}" id="subcats-container-${parent.id}">
             ${children.map(child => {
               const isChildActive = String(child.id) === String(currentCategory);
+              const childImgSrc = child.image || '/images/hd/cat-day-dien.jpg';
               return `
                 <button 
                   type="button"
@@ -288,9 +289,11 @@ function renderCategoriesSidebar() {
                       : 'text-slate-600 hover:bg-slate-50 hover:text-[#c8102e] font-medium'
                   }"
                 >
-                  <div class="flex items-center space-x-2">
-                    <span class="text-slate-300 font-mono text-sm leading-none">↳</span>
-                    <span class="text-xs sm:text-[13px]">${child.name}</span>
+                  <div class="flex items-center space-x-2.5 min-w-0">
+                    <div class="w-5.5 h-5.5 rounded-md border border-slate-200/90 bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                      <img src="${childImgSrc}" alt="${child.name}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
+                    </div>
+                    <span class="text-xs sm:text-[13px] truncate">${child.name}</span>
                   </div>
                   <i class="fa-solid fa-circle text-[5px] ${isChildActive ? 'text-[#c8102e]' : 'text-slate-300 group-hover:text-[#c8102e]'}"></i>
                 </button>
@@ -400,6 +403,9 @@ async function fetchProducts() {
       serverProds = serverProds.filter(p => !p.category_id || validCatIds.has(String(p.category_id)));
     }
 
+    // Lọc sản phẩm: Ẩn các sản phẩm có trạng thái TẮT hiển thị (is_active === 0)
+    serverProds = serverProds.filter(p => p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false);
+
     allProducts = serverProds;
     sortAndRenderProducts();
   } catch (err) {
@@ -500,7 +506,7 @@ function renderProductsGrid(items) {
           <img src="${p.image || '/images/hd/cat-day-dien.jpg'}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
         </a>
         <div class="flex-1 min-w-0">
-          <span class="text-[11px] text-[#c8102e] font-bold uppercase tracking-wider">${p.category_name || 'Điện Việt'}</span>
+          <span class="text-[11px] text-[#c8102e] font-bold tracking-wider">${p.category_name || 'Điện Việt'}</span>
           <a href="/product-detail?id=${p.id}" class="block text-base sm:text-lg font-black text-[#0f172a] hover:text-[#c8102e] truncate mt-0.5">
             ${p.name}
           </a>

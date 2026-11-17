@@ -459,7 +459,10 @@ async function loadCategories() {
       return;
     }
 
-    container.innerHTML = parentCategories.map(cat => `
+    // Trang chủ hiển thị mặc định tối đa 6 danh mục sản phẩm
+    const displayCategories = parentCategories.slice(0, 6);
+
+    container.innerHTML = displayCategories.map(cat => `
       <a href="/products?category_id=${cat.id}" class="bg-white rounded-2xl border border-slate-200/90 hover:border-red-400 hover:shadow-lg transition-all duration-300 p-3 sm:p-3.5 xl:p-4 2xl:p-6 flex flex-col items-center text-center group cursor-pointer">
         <div class="w-full h-20 sm:h-24 xl:h-28 2xl:h-36 flex items-center justify-center p-2 mb-2 group-hover:scale-105 transition duration-300">
           <img src="${cat.image || '/images/hd/cat-day-dien.jpg'}" alt="${cat.name}" class="max-w-full max-h-full object-contain drop-shadow-xs" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
@@ -494,8 +497,9 @@ async function loadBestsellerProducts() {
       const localProds = JSON.parse(localStorage.getItem('dienviet_persistent_products') || '[]');
       const delProdIds = JSON.parse(localStorage.getItem('dienviet_deleted_prod_ids') || '[]');
       prods = prods.filter(p => !delProdIds.includes(Number(p.id)) && !delProdIds.includes(String(p.id)));
+      prods = prods.filter(p => p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false);
       localProds.forEach(lp => {
-        if (lp.is_promo && !delProdIds.includes(Number(lp.id)) && !prods.find(p => String(p.id) === String(lp.id))) {
+        if (lp.is_promo && (lp.is_active !== 0 && lp.is_active !== '0' && lp.is_active !== false) && !delProdIds.includes(Number(lp.id)) && !prods.find(p => String(p.id) === String(lp.id))) {
           prods.unshift(lp);
         }
       });

@@ -547,6 +547,12 @@ app.get('/api/categories', async (req, res) => {
     }
 
     sql += ' ORDER BY COALESCE(c.parent_id, c.id) ASC, (CASE WHEN c.parent_id IS NULL THEN 0 ELSE 1 END) ASC, c.sort_order ASC, c.id ASC';
+    if (req.query.limit) {
+      const numLimit = parseInt(req.query.limit);
+      if (!isNaN(numLimit) && numLimit > 0) {
+        sql += ` LIMIT ${numLimit}`;
+      }
+    }
     const categories = await query(sql, params);
     res.json({ success: true, data: categories });
   } catch (error) {
@@ -584,6 +590,7 @@ app.get('/api/products', async (req, res) => {
           AND (c.parent_id IS NULL OR (p_cat.show_in_slider = 1 OR p_cat.show_in_slider IS NULL))
         )
       )
+      AND (p.is_active = 1 OR p.is_active IS NULL)
     `;
     const params = [];
 
@@ -645,6 +652,7 @@ app.get('/api/products', async (req, res) => {
           AND (c.parent_id IS NULL OR (p_cat.show_in_slider = 1 OR p_cat.show_in_slider IS NULL))
         )
       )
+      AND (p.is_active = 1 OR p.is_active IS NULL)
     `;
     const countParams = [];
     if (category_id && category_id !== 'all') {
@@ -1155,8 +1163,8 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
     const result = await run(`
       INSERT INTO products (
         category_id, name, slug, price, original_price, image, images,
-        short_desc, description, specs, applications, warranty_policy, is_new, is_promo, stock
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        short_desc, description, specs, applications, warranty_policy, is_new, is_promo, is_active, stock
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
     `, [
       category_id || null,
       name,
@@ -1171,7 +1179,8 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
       applications || '',
       warranty_policy || '',
       is_new ? 1 : 0,
-      is_promo ? 1 : 0
+      is_promo ? 1 : 0,
+      (req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0') ? 0 : 1
     ]);
 
     res.json({ success: true, message: 'Thêm sản phẩm mới thành công!', id: result.lastID });
@@ -1231,6 +1240,7 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
         warranty_policy = ?,
         is_new = ?,
         is_promo = ?,
+        is_active = ?,
         stock = NULL
       WHERE id = ?
     `, [
@@ -1247,12 +1257,32 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
       warranty_policy || '',
       is_new ? 1 : 0,
       is_promo ? 1 : 0,
+      (req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0') ? 0 : 1,
       req.params.id
     ]);
 
     res.json({ success: true, message: 'Cập nhật sản phẩm thành công!' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.patch('/api/admin/products/:id/toggle-active', requireAdmin, async (req, res) => {
+  try {
+    const prod = await get('SELECT is_active FROM products WHERE id = ?', [req.params.id]);
+    if (!prod) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm!' });
+    }
+    const currentVal = (prod.is_active === 0 || prod.is_active === '0' || prod.is_active === false) ? 0 : 1;
+    const newValue = currentVal === 1 ? 0 : 1;
+    await run('UPDATE products SET is_active = ? WHERE id = ?', [newValue, req.params.id]);
+    res.json({
+      success: true,
+      message: `Đã ${newValue === 1 ? 'bật' : 'tắt'} hiển thị sản phẩm trên website!`,
+      is_active: newValue
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
   }
 });
 
