@@ -470,7 +470,8 @@ async function loadCategories() {
               `}
               <img src="${parent.image || '/images/hd/cat-day-dien.jpg'}" 
                    alt="${parent.name}" 
-                   class="w-12 h-12 rounded-xl object-contain border border-slate-200 p-1 bg-slate-50 shadow-2xs shrink-0">
+                   class="w-12 h-12 rounded-xl object-contain border border-slate-200 p-1 bg-slate-50 shadow-2xs shrink-0"
+                   onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
             </div>
           </td>
 
@@ -525,7 +526,8 @@ async function loadCategories() {
               <div class="flex items-center space-x-2.5 pl-8 sm:pl-9">
                 <img src="${child.image || parent.image || '/images/hd/cat-day-dien.jpg'}" 
                      alt="${child.name}" 
-                     class="w-9 h-9 rounded-lg object-contain border border-amber-200/80 p-0.5 bg-white shadow-2xs shrink-0">
+                     class="w-9 h-9 rounded-lg object-contain border border-amber-200/80 p-0.5 bg-white shadow-2xs shrink-0"
+                     onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
               </div>
             </td>
 
@@ -640,6 +642,11 @@ function openCategoryModal(cat = null, defaultParentId = null) {
     imgInput.value = cat.image || '';
     sliderInput.checked = cat.show_in_slider === 1;
 
+    const catPreview = document.getElementById('cat-image-preview');
+    if (catPreview) {
+      catPreview.src = cat.image || '/images/hd/cat-day-dien.jpg';
+    }
+
     // Nếu sửa danh mục con, hiển thị ô chọn cha. Nếu sửa danh mục gốc, ẩn đi
     if (cat.parent_id) {
       if (parentGroup) parentGroup.classList.remove('hidden');
@@ -659,6 +666,11 @@ function openCategoryModal(cat = null, defaultParentId = null) {
     descInput.value = '';
     imgInput.value = '';
     sliderInput.checked = true;
+
+    const catPreview = document.getElementById('cat-image-preview');
+    if (catPreview) {
+      catPreview.src = '/images/hd/cat-day-dien.jpg';
+    }
   } else {
     // Tạo danh mục mới gốc -> ẨN trường chọn Danh mục cha (Yêu cầu 5)
     title.textContent = 'Thêm Danh Mục Mới';
@@ -669,6 +681,11 @@ function openCategoryModal(cat = null, defaultParentId = null) {
     descInput.value = '';
     imgInput.value = '';
     sliderInput.checked = true;
+
+    const catPreview = document.getElementById('cat-image-preview');
+    if (catPreview) {
+      catPreview.src = '/images/hd/cat-day-dien.jpg';
+    }
   }
 
   modal.classList.add('active');
@@ -677,6 +694,14 @@ function openCategoryModal(cat = null, defaultParentId = null) {
 function closeCategoryModal() {
   document.getElementById('category-modal').classList.remove('active');
 }
+
+function updateCatImagePreview(val) {
+  const prev = document.getElementById('cat-image-preview');
+  if (prev) {
+    prev.src = val ? val.trim() : '/images/hd/cat-day-dien.jpg';
+  }
+}
+window.updateCatImagePreview = updateCatImagePreview;
 
 function editCategory(id) {
   const cat = categoriesCache.find(c => c.id === id);
@@ -827,8 +852,9 @@ function renderProductsTable(products) {
       <tr class="hover:bg-slate-50 transition">
         <td class="py-3 px-6">
           <img src="${p.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80'}" 
-               alt="${p.name}" 
-               class="w-12 h-12 rounded-xl object-cover border border-slate-200">
+               alt="${escapeHtml(p.name)}" 
+               class="w-12 h-12 rounded-xl object-cover border border-slate-200"
+               onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
         </td>
         <td class="py-3 px-6 font-bold text-slate-900 max-w-xs">
           <span class="block truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
@@ -918,7 +944,7 @@ function renderProductImagePreviews() {
 
   let html = currentProductImages.map((imgUrl, idx) => `
     <div class="relative group w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden border-2 ${idx === 0 ? 'border-[#c8102e] shadow-sm' : 'border-slate-200'} bg-white flex items-center justify-center shrink-0">
-      <img src="${imgUrl}" alt="Ảnh ${idx + 1}" class="w-full h-full object-cover">
+      <img src="${imgUrl}" alt="Ảnh ${idx + 1}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
       ${idx === 0 ? '<span class="absolute top-1 left-1 bg-[#c8102e] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow pointer-events-none">Ảnh chính</span>' : ''}
       <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition duration-200">
         ${idx !== 0 ? `<button type="button" onclick="setPrimaryProductImage(${idx})" class="w-6 h-6 rounded-full bg-white text-amber-500 hover:bg-amber-100 flex items-center justify-center text-[10px] shadow" title="Đặt làm ảnh chính"><i class="fa-solid fa-star"></i></button>` : ''}
@@ -943,30 +969,37 @@ async function uploadMultipleProductImages(fileInput) {
   if (!fileInput.files || fileInput.files.length === 0) return;
 
   const files = Array.from(fileInput.files);
-  const formData = new FormData();
-  files.forEach(f => formData.append('images', f));
-
-  showToast(`Đang tải lên ${files.length} ảnh...`, 'info');
+  showToast(`Đang tối ưu & tải lên ${files.length} ảnh...`, 'info');
 
   try {
-    const res = await fetch('/api/admin/upload-multiple', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    const result = await res.json();
-    if (result.success && Array.isArray(result.urls)) {
-      currentProductImages.push(...result.urls);
-      renderProductImagePreviews();
-      showToast(`Đã tải lên ${result.urls.length} ảnh thành công!`, 'success');
-    } else {
-      showToast(result.message || 'Lỗi tải nhiều ảnh!', 'error');
+    let addedCount = 0;
+    for (const f of files) {
+      try {
+        const dataUrl = await compressImageToDataUrl(f, 1200, 1200, 0.82);
+        if (dataUrl) {
+          currentProductImages.push(dataUrl);
+          addedCount++;
+        }
+      } catch (err) {
+        console.warn('Lỗi nén ảnh:', err);
+      }
     }
+
+    renderProductImagePreviews();
+    showToast(`Đã thêm ${addedCount} ảnh sản phẩm thành công!`, 'success');
+
+    // Tải lên nền dự phòng cho server
+    try {
+      const formData = new FormData();
+      files.forEach(f => formData.append('images', f));
+      fetch('/api/admin/upload-multiple', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      }).catch(() => {});
+    } catch (e) {}
   } catch (err) {
-    showToast('Lỗi kết nối khi tải ảnh lên!', 'error');
+    showToast('Lỗi khi tải ảnh lên!', 'error');
   } finally {
     fileInput.value = '';
   }
@@ -1673,8 +1706,9 @@ function renderBlogsTable(blogs) {
     <tr class="hover:bg-slate-50 transition">
       <td class="py-3 px-6">
         <img src="${b.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80'}" 
-             alt="${b.title}" 
-             class="w-14 h-10 rounded-lg object-cover border border-slate-200">
+             alt="${escapeHtml(b.title)}" 
+             class="w-14 h-10 rounded-lg object-cover border border-slate-200"
+             onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
       </td>
       <td class="py-3 px-6 font-bold text-slate-900 max-w-md truncate" title="${b.title}">
         ${b.title}
@@ -1709,12 +1743,14 @@ function openBlogModal(blog = null) {
   const summaryInput = document.getElementById('blog-summary');
   const contentInput = document.getElementById('blog-content');
 
+  const blogPreview = document.getElementById('blog-image-preview');
   if (blog) {
     title.textContent = 'Chỉnh Sửa Bài Viết';
     idInput.value = blog.id;
     titleInput.value = blog.title;
     if (catInput) catInput.value = blog.category || 'Tin công ty';
     imgInput.value = blog.image || '';
+    if (blogPreview) blogPreview.src = blog.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80';
     summaryInput.value = blog.summary || '';
     contentInput.value = blog.content || '';
   } else {
@@ -1723,12 +1759,21 @@ function openBlogModal(blog = null) {
     titleInput.value = '';
     if (catInput) catInput.value = 'Tin công ty';
     imgInput.value = '';
+    if (blogPreview) blogPreview.src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80';
     summaryInput.value = '';
     contentInput.value = '';
   }
 
   modal.classList.add('active');
 }
+
+function updateBlogImagePreview(val) {
+  const prev = document.getElementById('blog-image-preview');
+  if (prev) {
+    prev.src = val ? val.trim() : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80';
+  }
+}
+window.updateBlogImagePreview = updateBlogImagePreview;
 
 function closeBlogModal() {
   document.getElementById('blog-modal').classList.remove('active');
@@ -3532,40 +3577,40 @@ function updateLogoPreview(url) {
 async function uploadLogoImage(fileInput) {
   if (!fileInput.files || fileInput.files.length === 0) return;
   const file = fileInput.files[0];
-  const formData = new FormData();
-  formData.append('image', file);
-
-  showToast('Đang tải logo lên...', 'info');
+  showToast('Đang tối ưu & tải logo...', 'info');
 
   try {
-    const currentToken = localStorage.getItem('admin_token') || token;
-    const res = await fetch('/api/admin/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${currentToken}`
-      },
-      body: formData
+    const dataUrl = await compressImageToDataUrl(file, 600, 600, 0.9);
+    if (!dataUrl) {
+      showToast('Không thể đọc file logo!', 'error');
+      return;
+    }
+
+    const inputEl = document.getElementById('set-logo-url');
+    if (inputEl) inputEl.value = dataUrl;
+    updateLogoPreview(dataUrl);
+
+    // Tự động lưu logo vào settings ngay lập tức
+    await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ logo_url: dataUrl })
     });
 
-    const result = await res.json();
-    if (result.success) {
-      const inputEl = document.getElementById('set-logo-url');
-      if (inputEl) inputEl.value = result.url;
-      updateLogoPreview(result.url);
+    showToast('Tải và lưu Logo mới thành công!', 'success');
 
-      // Tự động lưu logo vào settings ngay lập tức
-      await fetch('/api/admin/settings', {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ logo_url: result.url })
-      });
-
-      showToast('Tải và lưu Logo mới thành công!', 'success');
-    } else {
-      showToast(result.message || 'Lỗi tải logo!', 'error');
-    }
+    // Gửi nền cho server nếu có hỗ trợ
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      }).catch(() => {});
+    } catch (e) {}
   } catch (err) {
-    showToast('Lỗi kết nối khi tải logo!', 'error');
+    showToast('Lỗi khi tải logo!', 'error');
   } finally {
     fileInput.value = '';
   }
@@ -4044,48 +4089,113 @@ async function saveQuoteTypesSettings(silent = false) {
 
 
 // ========================================================
-// 9. UPLOAD ẢNH MULTIPART
+// HÀM TIỆN ÍCH NÉN ẢNH CHUẨN VÀ NHẸ (CANVAS TO DATA URL)
+// Tương thích 100% serverless Vercel, không bị mất ảnh khi cold restart
+// ========================================================
+function compressImageToDataUrl(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    if (!file) return resolve('');
+    if (file.type === 'image/svg+xml') {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth || h > maxHeight) {
+          const ratio = Math.min(maxWidth / w, maxHeight / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        let dataUrl = '';
+        try {
+          dataUrl = canvas.toDataURL('image/webp', quality);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+        } catch (err) {
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target.result || '');
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+window.compressImageToDataUrl = compressImageToDataUrl;
+
+// ========================================================
+// 9. UPLOAD VÀ TỐI ƯU HÌNH ẢNH
 // ========================================================
 async function uploadImage(fileInput, targetInputId, previewImgId) {
   if (!fileInput.files || fileInput.files.length === 0) return;
 
   const file = fileInput.files[0];
-  const formData = new FormData();
-  formData.append('image', file);
-
-  showToast('Đang tải ảnh lên...', 'info');
+  showToast('Đang xử lý & tải ảnh lên...', 'info');
 
   try {
-    const res = await fetch('/api/admin/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    const result = await res.json();
-    if (result.success) {
-      const inputEl = document.getElementById(targetInputId);
-      if (inputEl) inputEl.value = result.url;
-      if (previewImgId) {
-        const prevEl = document.getElementById(previewImgId);
-        if (prevEl) prevEl.src = result.url;
-      }
-      showToast('Tải ảnh thành công!', 'success');
-    } else {
-      showToast(result.message || 'Lỗi tải ảnh!', 'error');
+    const dataUrl = await compressImageToDataUrl(file, 1000, 1000, 0.82);
+    if (!dataUrl) {
+      showToast('Không thể đọc file ảnh!', 'error');
+      return;
     }
+
+    const inputEl = document.getElementById(targetInputId);
+    if (inputEl) inputEl.value = dataUrl;
+    if (previewImgId) {
+      const prevEl = document.getElementById(previewImgId);
+      if (prevEl) {
+        prevEl.src = dataUrl;
+        prevEl.classList.remove('hidden');
+      }
+    }
+    showToast('Tải ảnh thành công!', 'success');
+
+    // Tải lên nền dự phòng cho server
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      }).catch(() => {});
+    } catch (e) {}
   } catch (err) {
-    showToast('Lỗi kết nối khi tải ảnh!', 'error');
+    showToast('Lỗi khi tải ảnh!', 'error');
+  } finally {
+    fileInput.value = '';
   }
 }
 
 // Helper upload banner chuyên dụng: Tự động lưu ngay sau khi upload
 async function uploadBannerImage(fileInput, targetInputId, previewImgId) {
-  await uploadImage(fileInput, targetInputId, previewImgId);
-  const inputEl = document.getElementById(targetInputId);
-  if (inputEl && inputEl.value) {
+  if (!fileInput.files || fileInput.files.length === 0) return;
+  const file = fileInput.files[0];
+  showToast('Đang tối ưu & tải banner...', 'info');
+  try {
+    const dataUrl = await compressImageToDataUrl(file, 1920, 1080, 0.85);
+    const inputEl = document.getElementById(targetInputId);
+    if (inputEl) inputEl.value = dataUrl;
+    if (previewImgId) {
+      const prevEl = document.getElementById(previewImgId);
+      if (prevEl) prevEl.src = dataUrl;
+    }
+
     const keyMap = {
       'set-banner-home': 'banner_home',
       'set-banner-about': 'banner_about',
@@ -4099,7 +4209,7 @@ async function uploadBannerImage(fileInput, targetInputId, previewImgId) {
         const res = await fetch('/api/admin/settings', {
           method: 'PUT',
           headers: getAuthHeaders(),
-          body: JSON.stringify({ [key]: inputEl.value })
+          body: JSON.stringify({ [key]: dataUrl })
         });
         const result = await res.json();
         if (result.success) {
@@ -4109,6 +4219,10 @@ async function uploadBannerImage(fileInput, targetInputId, previewImgId) {
         console.error('Lỗi khi tự động lưu banner:', err);
       }
     }
+  } catch (err) {
+    showToast('Lỗi khi xử lý banner!', 'error');
+  } finally {
+    fileInput.value = '';
   }
 }
 

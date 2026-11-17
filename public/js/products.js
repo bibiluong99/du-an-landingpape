@@ -437,7 +437,7 @@ function renderProductsGrid(items) {
     container.innerHTML = items.map(p => `
       <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-md transition flex items-center justify-between gap-4 group">
         <a href="/product-detail?id=${p.id}" class="w-24 h-24 sm:w-28 sm:h-28 shrink-0 bg-slate-50 rounded-xl p-2 flex items-center justify-center">
-          <img src="${p.image}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition">
+          <img src="${p.image || '/images/hd/cat-day-dien.jpg'}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
         </a>
         <div class="flex-1 min-w-0">
           <span class="text-[11px] text-[#c8102e] font-bold uppercase tracking-wider">${p.category_name || 'Điện Việt'}</span>
@@ -461,7 +461,7 @@ function renderProductsGrid(items) {
         <div>
           <!-- Ảnh sản phẩm -->
           <a href="/product-detail?id=${p.id}" class="block overflow-hidden rounded-xl mb-3 h-28 sm:h-32 2xl:h-36 flex items-center justify-center bg-slate-50/40 p-2">
-            <img src="${p.image}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300">
+            <img src="${p.image || '/images/hd/cat-day-dien.jpg'}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
           </a>
           <!-- Tên sản phẩm -->
           <a href="/product-detail?id=${p.id}" class="font-bold text-xs sm:text-[13px] 2xl:text-sm text-[#0f172a] hover:text-[#c8102e] line-clamp-2 min-h-[34px] flex items-center justify-center leading-snug mb-3">

@@ -418,7 +418,7 @@ async function loadCategories() {
     container.innerHTML = parentCategories.map(cat => `
       <a href="/products?category_id=${cat.id}" class="bg-white rounded-2xl border border-slate-200/90 hover:border-red-400 hover:shadow-lg transition-all duration-300 p-3 sm:p-3.5 xl:p-4 2xl:p-6 flex flex-col items-center text-center group cursor-pointer">
         <div class="w-full h-20 sm:h-24 xl:h-28 2xl:h-36 flex items-center justify-center p-2 mb-2 group-hover:scale-105 transition duration-300">
-          <img src="${cat.image || '/images/hd/cat-day-dien.jpg'}" alt="${cat.name}" class="max-w-full max-h-full object-contain drop-shadow-xs">
+          <img src="${cat.image || '/images/hd/cat-day-dien.jpg'}" alt="${cat.name}" class="max-w-full max-h-full object-contain drop-shadow-xs" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
         </div>
         <span class="text-xs sm:text-sm xl:text-[15px] 2xl:text-[17px] font-bold text-[#0f172a] group-hover:text-[#c8102e] transition leading-tight mt-auto">
           ${cat.name}
@@ -459,7 +459,7 @@ async function loadBestsellerProducts() {
           <a href="/product-detail?id=${p.id}" class="block cursor-pointer">
             <!-- Product image -->
             <div class="h-28 sm:h-32 xl:h-36 2xl:h-44 flex items-center justify-center p-2 mb-2 group-hover:scale-105 transition duration-300">
-              <img src="${p.image || '/images/hd/prod-cadivi-25.jpg'}" alt="${p.name}" class="max-w-full max-h-full object-contain drop-shadow-xs">
+              <img src="${p.image || '/images/hd/prod-cadivi-25.jpg'}" alt="${p.name}" class="max-w-full max-h-full object-contain drop-shadow-xs" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
             </div>
             
             <!-- Title -->

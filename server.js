@@ -69,6 +69,24 @@ if (process.env.VERCEL) {
   app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
 }
 
+// Xử lý route /uploads/:filename fallback (chống ảnh hỏng trên Vercel serverless)
+app.get('/uploads/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const localFile = path.join(__dirname, 'public', 'uploads', filename);
+  if (fs.existsSync(localFile)) {
+    return res.sendFile(localFile);
+  }
+  const tmpFile = path.join('/tmp', 'uploads', filename);
+  if (fs.existsSync(tmpFile)) {
+    return res.sendFile(tmpFile);
+  }
+  const fallbackImg = path.join(__dirname, 'public', 'images', 'hd', 'cat-day-dien.jpg');
+  if (fs.existsSync(fallbackImg)) {
+    return res.sendFile(fallbackImg);
+  }
+  return res.redirect('/images/logo.png');
+});
+
 // Quản lý phiên xác thực (HMAC Stateless Token) an toàn 100% cho Serverless đa instance
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'dienviet_secure_token_secret_2026_key_v1';
 const sessions = new Map();
@@ -858,7 +876,15 @@ app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) =
     return res.status(400).json({ success: false, message: 'Chưa có file ảnh nào được tải lên!' });
   }
   const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ success: true, url: fileUrl });
+  let dataUrl = fileUrl;
+  try {
+    if (fs.existsSync(req.file.path)) {
+      const mime = req.file.mimetype || 'image/jpeg';
+      const b64 = fs.readFileSync(req.file.path).toString('base64');
+      dataUrl = `data:${mime};base64,${b64}`;
+    }
+  } catch (e) {}
+  res.json({ success: true, url: dataUrl, fileUrl });
 });
 
 // Upload nhiều ảnh cùng lúc cho sản phẩm
@@ -866,8 +892,22 @@ app.post('/api/admin/upload-multiple', requireAdmin, upload.array('images', 20),
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ success: false, message: 'Chưa có file ảnh nào được tải lên!' });
   }
-  const urls = req.files.map(f => `/uploads/${f.filename}`);
-  res.json({ success: true, urls });
+  const urls = [];
+  const fileUrls = [];
+  for (const f of req.files) {
+    const fileUrl = `/uploads/${f.filename}`;
+    fileUrls.push(fileUrl);
+    let url = fileUrl;
+    try {
+      if (fs.existsSync(f.path)) {
+        const mime = f.mimetype || 'image/jpeg';
+        const b64 = fs.readFileSync(f.path).toString('base64');
+        url = `data:${mime};base64,${b64}`;
+      }
+    } catch (e) {}
+    urls.push(url);
+  }
+  res.json({ success: true, urls, fileUrls });
 });
 
 // Thư viện ảnh hệ thống (Uploads & Images)

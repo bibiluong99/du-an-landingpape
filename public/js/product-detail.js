@@ -184,7 +184,7 @@ function renderThumbnails() {
 
   container.innerHTML = productGalleryImages.map((img, idx) => `
     <button type="button" onclick="setProductImage(${idx})" class="thumb-btn ${idx === currentImageIndex ? 'border-2 border-[#c8102e] shadow-xs' : 'border border-slate-200 hover:border-red-300 shadow-2xs'} w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden p-1 bg-white flex items-center justify-center shrink-0 cursor-pointer transition">
-      <img src="${img}" alt="Thumbnail ${idx + 1}" class="w-full h-full object-contain">
+      <img src="${img}" alt="Thumbnail ${idx + 1}" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
     </button>
   `).join('');
 }
@@ -196,6 +196,7 @@ function setProductImage(index) {
 
   const mainImg = document.getElementById('main-product-image');
   if (mainImg) {
+    mainImg.onerror = function() { this.onerror = null; this.src = '/images/hd/cat-day-dien.jpg'; };
     mainImg.src = productGalleryImages[index];
   }
 
@@ -498,7 +499,7 @@ async function loadRelatedProducts(currentId) {
       <div class="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs hover:shadow-md hover:-translate-y-1 transition duration-300 flex flex-col justify-between text-center group">
         <div>
           <a href="/product-detail?id=${p.id}" class="block overflow-hidden rounded-xl mb-2.5 h-24 sm:h-28 flex items-center justify-center bg-slate-50/40 p-1.5">
-            <img src="${p.image}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300">
+            <img src="${p.image || '/images/hd/cat-day-dien.jpg'}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
           </a>
           <a href="/product-detail?id=${p.id}" class="font-bold text-xs sm:text-[13px] text-[#0f172a] hover:text-[#c8102e] line-clamp-2 min-h-[32px] flex items-center justify-center leading-snug mb-2.5">
             ${p.name}
