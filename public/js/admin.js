@@ -4092,7 +4092,7 @@ async function saveQuoteTypesSettings(silent = false) {
 // HÀM TIỆN ÍCH NÉN ẢNH CHUẨN VÀ NHẸ (CANVAS TO DATA URL)
 // Tương thích 100% serverless Vercel, không bị mất ảnh khi cold restart
 // ========================================================
-function compressImageToDataUrl(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
+function compressImageToDataUrl(file, maxWidth = 1000, maxHeight = 1000, quality = 0.78) {
   return new Promise((resolve) => {
     if (!file) return resolve('');
     if (file.type === 'image/svg+xml') {
@@ -4117,15 +4117,15 @@ function compressImageToDataUrl(file, maxWidth = 1200, maxHeight = 1200, quality
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
+        // Tô nền trắng giúp ảnh PNG trong suốt không bị đen nền khi nén JPEG
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
         let dataUrl = '';
         try {
-          dataUrl = canvas.toDataURL('image/webp', quality);
-          if (!dataUrl.startsWith('data:image/webp')) {
-            dataUrl = canvas.toDataURL('image/jpeg', quality);
-          }
-        } catch (err) {
           dataUrl = canvas.toDataURL('image/jpeg', quality);
+        } catch (err) {
+          dataUrl = canvas.toDataURL('image/png');
         }
         resolve(dataUrl);
       };
