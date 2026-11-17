@@ -19,6 +19,22 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchBlogs();
 });
 
+// Helper lấy danh sách blogs từ LocalStorage
+function getLocalBlogs() {
+  try {
+    const raw = localStorage.getItem('dienviet_persistent_blogs');
+    const del = localStorage.getItem('dienviet_deleted_blog_ids');
+    const blogs = raw ? JSON.parse(raw) : [];
+    const delIds = del ? JSON.parse(del) : [];
+    return {
+      blogs: Array.isArray(blogs) ? blogs : [],
+      delIds: Array.isArray(delIds) ? delIds : []
+    };
+  } catch (e) {
+    return { blogs: [], delIds: [] };
+  }
+}
+
 async function fetchBlogs() {
   const container = document.getElementById('blogs-grid');
   if (!container) return;
@@ -29,6 +45,8 @@ async function fetchBlogs() {
       <p class="mt-3 text-sm font-medium">Đang tải tin tức...</p>
     </div>
   `;
+
+  const { blogs: localBlogs, delIds } = getLocalBlogs();
 
   try {
     let url = `/api/blogs?all=1`;
@@ -41,18 +59,48 @@ async function fetchBlogs() {
 
     const res = await fetch(url);
     const result = await res.json();
-    if (!result.success || !result.data) {
-      container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">Không có bài viết nào.</div>`;
-      return;
-    }
+    let serverBlogs = (result && result.success && Array.isArray(result.data)) ? result.data : [];
 
-    // Hiển thị đầy đủ tất cả các bài viết cấu hình từ Admin
-    allBlogs = result.data || [];
+    // Lọc bỏ bài viết đã xóa
+    serverBlogs = serverBlogs.filter(b => !delIds.includes(Number(b.id)) && !delIds.includes(String(b.id)));
 
+    // Hợp nhất các bài viết tạo từ Admin trên LocalStorage
+    localBlogs.forEach(lb => {
+      if (delIds.includes(Number(lb.id)) || delIds.includes(String(lb.id))) return;
+      const exist = serverBlogs.find(sb => String(sb.id) === String(lb.id));
+      if (!exist) {
+        let matchCat = (!currentCategory || currentCategory === 'all' || lb.category === currentCategory);
+        let matchSearch = (!currentSearch || (lb.title && lb.title.toLowerCase().includes(currentSearch.toLowerCase())) || (lb.summary && lb.summary.toLowerCase().includes(currentSearch.toLowerCase())));
+        if (matchCat && matchSearch) {
+          serverBlogs.unshift(lb);
+        }
+      } else {
+        Object.assign(exist, lb);
+      }
+    });
+
+    allBlogs = serverBlogs;
     renderBlogs();
+
+    // Đồng bộ nền lên serverless store nếu có bài viết cục bộ
+    if (localBlogs.length > 0) {
+      fetch('/api/sync-store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customBlogs: localBlogs, deletedBlogIds: delIds })
+      }).catch(() => {});
+    }
   } catch (err) {
     console.error('Lỗi khi tải tin tức:', err);
-    container.innerHTML = `<div class="col-span-full text-center py-12 text-red-500 text-sm">Không thể kết nối đến máy chủ.</div>`;
+    let fallbackList = localBlogs.filter(b => !delIds.includes(Number(b.id)) && !delIds.includes(String(b.id)));
+    if (currentCategory && currentCategory !== 'all') {
+      fallbackList = fallbackList.filter(b => b.category === currentCategory);
+    }
+    if (currentSearch) {
+      fallbackList = fallbackList.filter(b => (b.title && b.title.toLowerCase().includes(currentSearch.toLowerCase())) || (b.summary && b.summary.toLowerCase().includes(currentSearch.toLowerCase())));
+    }
+    allBlogs = fallbackList;
+    renderBlogs();
   }
 }
 

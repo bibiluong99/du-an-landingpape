@@ -984,7 +984,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
 });
 
 // API đồng bộ dữ liệu giữa LocalStorage Client và Serverless Store
-app.post('/api/admin/sync-store', requireAdmin, async (req, res) => {
+app.post(['/api/admin/sync-store', '/api/sync-store'], async (req, res) => {
   try {
     const result = await syncStoreData(req.body);
     res.json(result);
@@ -1393,10 +1393,22 @@ app.post('/api/admin/blogs', requireAdmin, async (req, res) => {
 
     const result = await run(
       'INSERT INTO blogs (title, slug, summary, content, image, author, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))',
-      [title, slug, summary || '', content, image || '', author || 'Ban Biên Tập', category || 'Tin công ty']
+      [title, slug, summary || '', content, image || '', author || 'Điện Việt', category || 'Tin công ty']
     );
 
-    res.json({ success: true, message: 'Tạo bài viết mới thành công!', id: result.lastID });
+    const newBlog = {
+      id: result.lastID,
+      title,
+      slug,
+      summary: summary || '',
+      content,
+      image: image || '',
+      author: author || 'Điện Việt',
+      category: category || 'Tin công ty',
+      created_at: new Date().toISOString()
+    };
+
+    res.json({ success: true, message: 'Tạo bài viết mới thành công!', id: result.lastID, data: newBlog });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

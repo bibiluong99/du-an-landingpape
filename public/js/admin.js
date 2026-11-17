@@ -24,7 +24,9 @@ const LOCAL_STORAGE_KEYS = {
   CATEGORIES: 'dienviet_persistent_categories',
   DELETED_CAT_IDS: 'dienviet_deleted_cat_ids',
   PRODUCTS: 'dienviet_persistent_products',
-  DELETED_PROD_IDS: 'dienviet_deleted_prod_ids'
+  DELETED_PROD_IDS: 'dienviet_deleted_prod_ids',
+  BLOGS: 'dienviet_persistent_blogs',
+  DELETED_BLOG_IDS: 'dienviet_deleted_blog_ids'
 };
 
 function getLocalStore(key, defaultVal = []) {
@@ -47,8 +49,12 @@ async function syncLocalStoreToServer() {
   const deletedCategoryIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
   const customProducts = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
   const deletedProductIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
+  const customBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS);
+  const deletedBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
 
-  if (customCategories.length === 0 && customProducts.length === 0 && deletedCategoryIds.length === 0 && deletedProductIds.length === 0) {
+  if (customCategories.length === 0 && customProducts.length === 0 &&
+      deletedCategoryIds.length === 0 && deletedProductIds.length === 0 &&
+      customBlogs.length === 0 && deletedBlogIds.length === 0) {
     return;
   }
 
@@ -60,7 +66,9 @@ async function syncLocalStoreToServer() {
         customCategories,
         deletedCategoryIds,
         customProducts,
-        deletedProductIds
+        deletedProductIds,
+        customBlogs,
+        deletedBlogIds
       })
     });
   } catch (e) {
@@ -1797,11 +1805,37 @@ async function loadBlogs() {
   tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-lg text-brand-600"></i> Đang tải bài viết...</td></tr>`;
 
   try {
+    await syncLocalStoreToServer();
+
     const res = await fetch('/api/admin/blogs', { headers: getAuthHeaders() });
     const result = await res.json();
-    if (!result.success) return;
+    let serverBlogs = (result && result.success && Array.isArray(result.data)) ? result.data : [];
 
-    blogsCache = result.data || [];
+    const localBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS);
+    const delBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
+
+    // Lọc bỏ các bài viết đã bị xóa
+    serverBlogs = serverBlogs.filter(b => !delBlogIds.includes(Number(b.id)) && !delBlogIds.includes(String(b.id)));
+
+    // Hợp nhất các bài viết từ LocalStorage nếu server chưa có
+    let needsSync = false;
+    localBlogs.forEach(lb => {
+      if (delBlogIds.includes(Number(lb.id)) || delBlogIds.includes(String(lb.id))) return;
+      const exist = serverBlogs.find(sb => String(sb.id) === String(lb.id));
+      if (!exist) {
+        serverBlogs.unshift(lb);
+        needsSync = true;
+      } else {
+        Object.assign(exist, lb);
+      }
+    });
+
+    blogsCache = serverBlogs;
+
+    if (needsSync) {
+      syncLocalStoreToServer();
+    }
+
     if (blogsCache.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">Chưa có bài viết tin tức nào.</td></tr>`;
       return;
@@ -1811,7 +1845,15 @@ async function loadBlogs() {
     applyAdminBlogFilters();
   } catch (err) {
     console.error('Lỗi tải blogs:', err);
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">Lỗi khi tải danh sách bài viết.</td></tr>`;
+    const localBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS);
+    const delBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
+    blogsCache = localBlogs.filter(b => !delBlogIds.includes(Number(b.id)) && !delBlogIds.includes(String(b.id)));
+    if (blogsCache.length > 0) {
+      updateAdminBlogCatFilterOptions();
+      applyAdminBlogFilters();
+    } else {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">Lỗi khi tải danh sách bài viết.</td></tr>`;
+    }
   }
 }
 
@@ -1971,6 +2013,16 @@ async function deleteBlog(id) {
       const result = await res.json();
       if (result.success) {
         showToast(result.message, 'success');
+
+        const localBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS).filter(b => String(b.id) !== String(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.BLOGS, localBlogs);
+
+        const delBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
+        if (!delBlogIds.includes(Number(id))) delBlogIds.push(Number(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS, delBlogIds);
+
+        syncLocalStoreToServer();
+
         loadBlogs();
       } else {
         showToast(result.message, 'error');
@@ -4887,6 +4939,32 @@ function setupForms() {
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
+
+          const savedBlog = {
+            id: id ? Number(id) : (result.id || (result.data && result.data.id) || Date.now()),
+            title,
+            category,
+            image: image || '/images/blog-saving-hero.jpg',
+            summary,
+            content,
+            author: 'Điện Việt',
+            created_at: new Date().toISOString()
+          };
+
+          const localBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS);
+          const idx = localBlogs.findIndex(b => String(b.id) === String(savedBlog.id));
+          if (idx >= 0) {
+            localBlogs[idx] = Object.assign({}, localBlogs[idx], savedBlog);
+          } else {
+            localBlogs.unshift(savedBlog);
+          }
+          setLocalStore(LOCAL_STORAGE_KEYS.BLOGS, localBlogs);
+
+          const delBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS).filter(x => String(x) !== String(savedBlog.id));
+          setLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS, delBlogIds);
+
+          syncLocalStoreToServer();
+
           closeBlogModal();
           loadBlogs();
         } else {

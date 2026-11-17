@@ -299,6 +299,21 @@ function fallbackQuery(sql, params = []) {
       const found = list.find(b => b.slug === params[0]);
       return found ? [found] : [];
     }
+    if (lower.includes('category = ?')) {
+      const catParam = params.find(p => typeof p === 'string' && !p.startsWith('%'));
+      if (catParam && catParam !== 'all') {
+        list = list.filter(b => b.category === catParam);
+      }
+    }
+    if (lower.includes('like ?')) {
+      const searchParam = params.find(p => typeof p === 'string' && p.startsWith('%'));
+      if (searchParam) {
+        const term = searchParam.replace(/%/g, '').toLowerCase().trim();
+        if (term) {
+          list = list.filter(b => (b.title && b.title.toLowerCase().includes(term)) || (b.summary && b.summary.toLowerCase().includes(term)));
+        }
+      }
+    }
     const limitMatch = lower.match(/limit\s+(\d+)/);
     if (limitMatch) {
       list = list.slice(0, parseInt(limitMatch[1]));
@@ -1324,7 +1339,7 @@ const seedData = async () => {
   }
 };
 
-async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds }) {
+async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds }) {
   let updated = false;
 
   // 1. Categories
@@ -1415,6 +1430,53 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
     if (!useFallback && db) {
       try {
         deletedProductIds.forEach(id => db.run(`DELETE FROM products WHERE id = ?`, [id]));
+      } catch (e) {}
+    }
+  }
+
+  // 5. Blogs
+  if (Array.isArray(customBlogs) && customBlogs.length > 0) {
+    for (const blog of customBlogs) {
+      const exist = fallbackData.blogs.find(b => String(b.id) === String(blog.id));
+      if (!exist) {
+        fallbackData.blogs.unshift(blog);
+        updated = true;
+      } else {
+        Object.assign(exist, blog);
+        updated = true;
+      }
+
+      if (!useFallback && db) {
+        try {
+          db.run(
+            `INSERT OR REPLACE INTO blogs (id, title, slug, summary, content, image, author, category, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              blog.id,
+              blog.title,
+              blog.slug || '',
+              blog.summary || '',
+              blog.content || '',
+              blog.image || '',
+              blog.author || 'Điện Việt',
+              blog.category || 'Tin công ty',
+              blog.created_at || new Date().toISOString()
+            ]
+          );
+        } catch (e) {}
+      }
+    }
+  }
+
+  // 6. Deleted Blogs
+  if (Array.isArray(deletedBlogIds) && deletedBlogIds.length > 0) {
+    const before = fallbackData.blogs.length;
+    fallbackData.blogs = fallbackData.blogs.filter(b => !deletedBlogIds.includes(Number(b.id)) && !deletedBlogIds.includes(String(b.id)));
+    if (fallbackData.blogs.length !== before) updated = true;
+
+    if (!useFallback && db) {
+      try {
+        deletedBlogIds.forEach(id => db.run(`DELETE FROM blogs WHERE id = ?`, [id]));
       } catch (e) {}
     }
   }

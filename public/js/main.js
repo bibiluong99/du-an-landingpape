@@ -532,12 +532,31 @@ async function loadBlogs() {
   try {
     const res = await fetch('/api/blogs?limit=3');
     const result = await res.json();
-    if (!result.success || !result.data || result.data.length === 0) {
+    let serverBlogs = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+
+    try {
+      const localBlogs = JSON.parse(localStorage.getItem('dienviet_persistent_blogs') || '[]');
+      const delBlogIds = JSON.parse(localStorage.getItem('dienviet_deleted_blog_ids') || '[]');
+      serverBlogs = serverBlogs.filter(b => !delBlogIds.includes(Number(b.id)) && !delBlogIds.includes(String(b.id)));
+      localBlogs.forEach(lb => {
+        if (!delBlogIds.includes(Number(lb.id)) && !delBlogIds.includes(String(lb.id))) {
+          const exist = serverBlogs.find(b => String(b.id) === String(lb.id));
+          if (!exist) {
+            serverBlogs.unshift(lb);
+          } else {
+            Object.assign(exist, lb);
+          }
+        }
+      });
+    } catch (e) {}
+
+    const displayBlogs = serverBlogs.slice(0, 3);
+    if (displayBlogs.length === 0) {
       container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-medium">Chưa có bài viết tin tức nào.</div>`;
       return;
     }
 
-    container.innerHTML = result.data.map(b => {
+    container.innerHTML = displayBlogs.map(b => {
       let dateFormatted = '12/11/2024';
       if (b.created_at) {
         try {
