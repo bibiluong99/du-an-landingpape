@@ -290,8 +290,8 @@ function renderCategoriesSidebar() {
                   }"
                 >
                   <div class="flex items-center space-x-2.5 min-w-0">
-                    <div class="w-5.5 h-5.5 rounded-md border border-slate-200/90 bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-                      <img src="${childImgSrc}" alt="${child.name}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
+                    <div class="w-5 h-5 rounded-md border border-slate-200/90 bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs" style="width: 22px; height: 22px; min-width: 22px; min-height: 22px;">
+                      <img src="${childImgSrc}" alt="${child.name}" class="w-full h-full object-contain" style="max-width: 100%; max-height: 100%;" onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
                     </div>
                     <span class="text-xs sm:text-[13px] truncate">${child.name}</span>
                   </div>
