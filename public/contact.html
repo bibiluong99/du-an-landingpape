@@ -205,10 +205,10 @@
         
         <!-- Left: Standalone Red Bolt Logo Điện Việt -->
         <a href="/" class="flex items-center space-x-2.5 sm:space-x-3 shrink-0 group min-w-0">
-          <div class="site-logo-icon text-[#c8102e] text-2xl sm:text-3xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6 group-hover:scale-110 transition duration-300">
+          <div class="site-logo-icon hidden text-[#c8102e] text-2xl sm:text-3xl 2xl:text-[42px] flex items-center justify-center transform -rotate-6 group-hover:scale-110 transition duration-300">
             <i class="fa-solid fa-bolt"></i>
           </div>
-          <img src="" alt="Điện Việt Logo" class="site-logo-img hidden h-8 sm:h-10 2xl:h-12 w-auto object-contain">
+          <img src="/uploads/img-1794390284769-958980201.png" alt="Điện Việt Logo" class="site-logo-img h-8 sm:h-10 2xl:h-12 w-auto object-contain">
           <div class="min-w-0">
             <div id="company-name-header" class="site-company-name text-xl sm:text-2xl 2xl:text-[34px] font-black tracking-tight text-[#0f172a] leading-none">
               Điện <span class="text-[#c8102e]">Việt</span>
@@ -308,7 +308,15 @@
        ======================================================== -->
   <section class="w-full relative overflow-hidden bg-slate-50">
     <div class="w-full">
-      <img id="page-banner-contact" src="/images/contact-hero-banner.jpg" alt="Liên hệ với Điện Việt - Chúng tôi luôn sẵn sàng hỗ trợ bạn!" class="w-full h-auto block select-none">
+      <img id="page-banner-contact" src="/uploads/img-1794551137554-998049514.png" alt="Liên hệ với Điện Việt - Chúng tôi luôn sẵn sàng hỗ trợ bạn!" class="w-full h-auto block select-none">
+      <script>
+        (function(){
+          try {
+            var s = JSON.parse(localStorage.getItem('dienviet_cached_settings') || '{}');
+            if (s.banner_contact) document.getElementById('page-banner-contact').src = s.banner_contact;
+          } catch(e) {}
+        })();
+      </script>
     </div>
   </section>
 
@@ -686,10 +694,10 @@
         <!-- Cột 1: Logo, Slogan, Mạng xã hội (3 cols) -->
         <div class="lg:col-span-3 space-y-3 2xl:space-y-4">
           <div class="flex items-center space-x-3">
-            <div class="footer-logo-icon w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl bg-white text-[#c8102e] flex items-center justify-center text-xl 2xl:text-2xl font-black shadow-xs">
+            <div class="footer-logo-icon hidden w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl bg-white text-[#c8102e] flex items-center justify-center text-xl 2xl:text-2xl font-black shadow-xs">
               <i class="fa-solid fa-bolt"></i>
             </div>
-            <img src="" alt="Điện Việt Logo" class="footer-logo-img hidden h-10 2xl:h-12 w-auto object-contain bg-white rounded-xl p-1">
+            <img src="/uploads/img-1794390284769-958980201.png" alt="Điện Việt Logo" class="footer-logo-img h-10 2xl:h-12 w-auto object-contain bg-white rounded-xl p-1">
             <div>
               <span class="site-footer-company-name text-2xl 2xl:text-3xl font-black tracking-tight text-white leading-none">Điện <span class="text-red-200">Việt</span></span>
               <span class="site-footer-slogan block text-xs 2xl:text-sm text-red-200/90 font-medium tracking-tight mt-1">Kết nối giá trị - Thắp sáng tương lai</span>

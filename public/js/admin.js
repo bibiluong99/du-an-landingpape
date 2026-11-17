@@ -5019,6 +5019,11 @@ function setupForms() {
         });
         const result = await res.json();
         if (result.success) {
+          try {
+            const currentCached = JSON.parse(localStorage.getItem('dienviet_cached_settings') || '{}');
+            const updated = Object.assign({}, currentCached, payload);
+            localStorage.setItem('dienviet_cached_settings', JSON.stringify(updated));
+          } catch (e) {}
           showToast(result.message, 'success');
         } else {
           showToast(result.message, 'error');
@@ -5111,6 +5116,11 @@ function setupForms() {
             });
             const result = await res.json();
             if (result.success) {
+              try {
+                const currentCached = JSON.parse(localStorage.getItem('dienviet_cached_settings') || '{}');
+                currentCached[key] = el.value.trim();
+                localStorage.setItem('dienviet_cached_settings', JSON.stringify(currentCached));
+              } catch (e) {}
               showToast('Đã tự động lưu Banner mới vào hệ thống!', 'success');
             }
           } catch (err) {

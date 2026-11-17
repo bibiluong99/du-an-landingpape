@@ -110,286 +110,307 @@ function formatFooterBrandName(name) {
 }
 
 // ========================================================
-// 1. TẢI CÀI ĐẶT HỆ THỐNG (SETTINGS)
+// 1. ÁP DỤNG CÀI ĐẶT HỆ THỐNG (SETTINGS)
+// ========================================================
+function applySettingsData(s) {
+  if (!s || typeof s !== 'object') return;
+
+  // 1. Cập nhật Tên thương hiệu (Header & Footer)
+  if (s.company_name && String(s.company_name).trim()) {
+    const brandHtml = formatBrandName(String(s.company_name).trim());
+    const footerBrandHtml = formatFooterBrandName(String(s.company_name).trim());
+    document.querySelectorAll('#company-name-header, .site-company-name').forEach(el => {
+      el.innerHTML = brandHtml;
+    });
+    document.querySelectorAll('.site-footer-company-name').forEach(el => {
+      el.innerHTML = footerBrandHtml;
+    });
+  }
+
+  // 2. Cập nhật Slogan thương hiệu (Header & Footer)
+  if (s.company_slogan && String(s.company_slogan).trim()) {
+    const slogan = String(s.company_slogan).trim();
+    document.querySelectorAll('#company-slogan-header, .site-company-slogan').forEach(el => {
+      el.textContent = slogan;
+    });
+    document.querySelectorAll('.site-footer-slogan').forEach(el => {
+      el.textContent = slogan;
+    });
+  }
+
+  if (s.phone) {
+    document.querySelectorAll('#header-phone, .header-phone-val').forEach(el => {
+      el.textContent = s.phone;
+      if (el.tagName === 'A') el.href = `tel:${s.phone.replace(/[^0-9]/g, '')}`;
+    });
+    document.querySelectorAll('#footer-phone').forEach(el => {
+      el.textContent = s.phone;
+    });
+    const cPhone = document.getElementById('contact-page-phone');
+    if (cPhone) {
+      cPhone.textContent = s.phone;
+      cPhone.href = `tel:${s.phone.replace(/[^0-9]/g, '')}`;
+    }
+  }
+
+  if (s.email) {
+    document.querySelectorAll('#footer-email').forEach(el => {
+      el.textContent = s.email;
+    });
+    const cEmail = document.getElementById('contact-page-email');
+    if (cEmail) {
+      cEmail.textContent = s.email;
+      cEmail.href = `mailto:${s.email}`;
+    }
+  }
+
+  if (s.address) {
+    document.querySelectorAll('#footer-address').forEach(el => {
+      el.textContent = s.address;
+    });
+    const cAddr = document.getElementById('contact-page-address');
+    if (cAddr) cAddr.textContent = s.address;
+  }
+
+  if (s.working_hours) {
+    const cHours = document.getElementById('contact-page-hours');
+    if (cHours) {
+      const lines = s.working_hours.split(/\n|\|/).map(l => l.trim()).filter(Boolean);
+      cHours.innerHTML = lines.map(line => `<p>${line}</p>`).join('');
+    }
+  }
+
+  if (s.about_why_choose) {
+    const wDesc = document.getElementById('about-why-desc');
+    if (wDesc) {
+      const isWhyHtml = /<[a-z][\s\S]*>/i.test(s.about_why_choose);
+      wDesc.style.whiteSpace = isWhyHtml ? 'normal' : 'pre-line';
+      wDesc.innerHTML = s.about_why_choose;
+      wDesc.classList.remove('hidden');
+    }
+  }
+
+  if (s.about_title) {
+    const aTitle = document.getElementById('about-title');
+    if (aTitle) aTitle.textContent = s.about_title;
+    const aUsTitle = document.getElementById('about-us-title');
+    if (aUsTitle) aUsTitle.textContent = s.about_title;
+  }
+
+  if (s.about_history) {
+    let rawHistory = String(s.about_history).trim();
+    if (rawHistory.includes('<style') && !rawHistory.includes('</style>')) {
+      rawHistory += '\n</style>';
+    }
+    window.fullAboutHistoryContent = rawHistory;
+    const isRichHtml = /<div\b|<article\b|<section\b|<style\b|company-intro-card/i.test(rawHistory);
+
+    const aHist = document.getElementById('about-history');
+    if (aHist) {
+      if (isRichHtml) {
+        const cleanHtml = rawHistory.replace(/<style\b[^>]*>[\s\S]*?(<\/style>|$)/gi, '');
+        const temp = document.createElement('div');
+        temp.innerHTML = cleanHtml;
+        const paragraphs = Array.from(temp.querySelectorAll('p'))
+          .map(p => p.textContent.trim())
+          .filter(Boolean);
+        const summary = paragraphs.length > 0 
+          ? paragraphs.slice(0, 3).join('\n\n') 
+          : temp.textContent.trim();
+        aHist.style.whiteSpace = 'pre-line';
+        aHist.style.display = '-webkit-box';
+        aHist.style.webkitLineClamp = '4';
+        aHist.style.webkitBoxOrient = 'vertical';
+        aHist.style.overflow = 'hidden';
+        aHist.textContent = summary;
+      } else {
+        aHist.style.whiteSpace = 'pre-line';
+        aHist.style.display = '-webkit-box';
+        aHist.style.webkitLineClamp = '4';
+        aHist.style.webkitBoxOrient = 'vertical';
+        aHist.style.overflow = 'hidden';
+        aHist.innerHTML = rawHistory;
+      }
+    }
+
+    const aUsDesc = document.getElementById('about-us-desc');
+    if (aUsDesc) {
+      if (isRichHtml) {
+        aUsDesc.style.whiteSpace = 'normal';
+        const colLeft = document.getElementById('about-us-col-left');
+        const colRight = document.getElementById('about-us-col-right');
+        const gridEl = document.getElementById('about-us-grid');
+        if (colLeft) colLeft.className = 'w-full';
+        if (colRight) colRight.classList.add('hidden');
+        if (gridEl) gridEl.className = 'w-full';
+        if (/<h[1-3]\b|class=["'][^"']*company-title[^"']*["']/i.test(rawHistory)) {
+          const aUsTitle = document.getElementById('about-us-title');
+          if (aUsTitle) aUsTitle.classList.add('hidden');
+        }
+      } else {
+        aUsDesc.style.whiteSpace = 'pre-line';
+      }
+      aUsDesc.innerHTML = rawHistory;
+    }
+  }
+
+  if (s.about_values) {
+    const aVal = document.getElementById('about-values');
+    if (aVal) {
+      aVal.classList.add('hidden');
+    }
+    const aValDesc = document.getElementById('about-values-desc');
+    if (aValDesc) {
+      const isValHtml = /<[a-z][\s\S]*>/i.test(s.about_values);
+      aValDesc.style.whiteSpace = isValHtml ? 'normal' : 'pre-line';
+      aValDesc.innerHTML = s.about_values;
+    }
+  }
+
+  // Dynamic Logo (Header & Footer)
+  if (s.logo_url && String(s.logo_url).trim()) {
+    const logoUrl = String(s.logo_url).trim();
+    document.querySelectorAll('.site-logo-img, .footer-logo-img').forEach(img => {
+      if (img.getAttribute('src') !== logoUrl) img.src = logoUrl;
+      img.classList.remove('hidden');
+    });
+    document.querySelectorAll('.site-logo-icon, .footer-logo-icon').forEach(icon => {
+      icon.classList.add('hidden');
+    });
+  } else {
+    document.querySelectorAll('.site-logo-img').forEach(img => {
+      img.classList.add('hidden');
+    });
+    document.querySelectorAll('.site-logo-icon').forEach(icon => {
+      icon.classList.remove('hidden');
+    });
+    document.querySelectorAll('.footer-logo-img').forEach(img => {
+      img.classList.add('hidden');
+    });
+    document.querySelectorAll('.footer-logo-icon').forEach(icon => {
+      icon.classList.remove('hidden');
+    });
+  }
+
+  if (s.maps_embed) {
+    const fMap = document.getElementById('footer-map-iframe');
+    if (fMap && fMap.getAttribute('src') !== s.maps_embed) fMap.src = s.maps_embed;
+  }
+
+  // Cập nhật Banner động cho các trang (tránh chớp nháy banner cũ)
+  if (s.banner_home) {
+    const bHome = document.getElementById('page-banner-home');
+    if (bHome && bHome.getAttribute('src') !== s.banner_home) bHome.src = s.banner_home;
+  }
+  if (s.banner_about) {
+    const bAbout = document.getElementById('page-banner-about');
+    if (bAbout && bAbout.getAttribute('src') !== s.banner_about) bAbout.src = s.banner_about;
+  }
+  if (s.banner_products) {
+    document.querySelectorAll('#page-banner-products, #page-banner-product-detail').forEach(el => {
+      if (el.getAttribute('src') !== s.banner_products) el.src = s.banner_products;
+    });
+  }
+  if (s.banner_blogs) {
+    document.querySelectorAll('#page-banner-blogs, #page-banner-blog-detail').forEach(el => {
+      if (el.getAttribute('src') !== s.banner_blogs) el.src = s.banner_blogs;
+    });
+  }
+  if (s.banner_contact) {
+    const bContact = document.getElementById('page-banner-contact');
+    if (bContact && bContact.getAttribute('src') !== s.banner_contact) bContact.src = s.banner_contact;
+  }
+
+  // Đồng bộ cấu hình Loại Báo Giá / Liên Hệ vào trang Contact và Modal Liên Hệ
+  if (s.quote_types) {
+    try {
+      const list = typeof s.quote_types === 'string' ? JSON.parse(s.quote_types) : s.quote_types;
+      if (Array.isArray(list) && list.length > 0) {
+        // 1. Đồng bộ thẻ <select id="form-type"> trên trang Contact
+        const typeSelect = document.getElementById('form-type');
+        if (typeSelect) {
+          const currentVal = typeSelect.value;
+          let optionsHtml = `<option value=""${!currentVal ? ' selected' : ''}>-- Chọn loại --</option>\n`;
+          list.forEach((item) => {
+            const name = typeof item === 'string' ? item : item.name;
+            const isBg = name.toLowerCase().includes('báo giá') || name.toLowerCase().includes('bao gia');
+            const show = isBg ? 'true' : 'false';
+            const selected = (currentVal && currentVal === name) ? ' selected' : '';
+            optionsHtml += `<option value="${name}" data-show-products="${show}"${selected}>${name}</option>\n`;
+          });
+          typeSelect.innerHTML = optionsHtml;
+          if (typeof toggleProductInterest === 'function') toggleProductInterest();
+          if (typeof syncCustomTypeLabel === 'function') syncCustomTypeLabel();
+        }
+
+        // 2. Đồng bộ các radio buttons trong Modal Liên hệ (Landing Page)
+        const modalTypeContainer = document.getElementById('contact-modal-type-group');
+        if (modalTypeContainer) {
+          modalTypeContainer.innerHTML = list.map((item, idx) => {
+            const name = typeof item === 'string' ? item : item.name;
+            const isBg = name.toLowerCase().includes('báo giá') || name.toLowerCase().includes('bao gia');
+            const show = isBg ? 'true' : 'false';
+            return `
+              <label class="inline-flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-slate-700">
+                <input type="radio" name="contact-type" value="${name}" data-show-products="${show}" ${idx === 0 ? 'checked' : ''} class="text-[#c8102e] focus:ring-[#c8102e] w-4 h-4">
+                <span>${name}</span>
+              </label>
+            `;
+          }).join('');
+
+          modalTypeContainer.querySelectorAll('input[name="contact-type"]').forEach(r => {
+            r.addEventListener('change', (e) => {
+              const quoteContainer = document.getElementById('quote-product-container');
+              const val = (e.target.value || '').toLowerCase().trim();
+              const isShow = val.includes('báo giá') || val.includes('bao gia');
+              if (quoteContainer) {
+                if (isShow) quoteContainer.classList.remove('hidden');
+                else quoteContainer.classList.add('hidden');
+              }
+            });
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi phân tích quote_types:', e);
+    }
+  }
+}
+
+// Áp dụng ngay lập tức cấu hình đã lưu trong localStorage để không bao giờ bị chớp banner/logo cũ
+try {
+  const cachedSettings = JSON.parse(localStorage.getItem('dienviet_cached_settings') || 'null');
+  if (cachedSettings) {
+    applySettingsData(cachedSettings);
+  }
+} catch (e) {}
+
+// ========================================================
+// 1. TẢI CÀI ĐẶT HỆ THỐNG (SETTINGS TỪ SERVER)
 // ========================================================
 async function loadSettings() {
+  // 1. Áp dụng ngay bộ nhớ đệm nếu có
+  try {
+    const cachedSettings = JSON.parse(localStorage.getItem('dienviet_cached_settings') || 'null');
+    if (cachedSettings) {
+      applySettingsData(cachedSettings);
+    }
+  } catch (e) {}
+
+  // 2. Fetch cài đặt mới nhất từ máy chủ
   try {
     const res = await fetch('/api/settings?_t=' + Date.now());
     const result = await res.json();
     if (!result.success || !result.data) return;
 
     const s = result.data;
+    try {
+      localStorage.setItem('dienviet_cached_settings', JSON.stringify(s));
+    } catch (e) {}
 
-    // 1. Cập nhật Tên thương hiệu (Header & Footer)
-    if (s.company_name && String(s.company_name).trim()) {
-      const brandHtml = formatBrandName(String(s.company_name).trim());
-      const footerBrandHtml = formatFooterBrandName(String(s.company_name).trim());
-      document.querySelectorAll('#company-name-header, .site-company-name').forEach(el => {
-        el.innerHTML = brandHtml;
-      });
-      document.querySelectorAll('.site-footer-company-name').forEach(el => {
-        el.innerHTML = footerBrandHtml;
-      });
-    }
-
-    // 2. Cập nhật Slogan thương hiệu (Header & Footer)
-    if (s.company_slogan && String(s.company_slogan).trim()) {
-      const slogan = String(s.company_slogan).trim();
-      document.querySelectorAll('#company-slogan-header, .site-company-slogan').forEach(el => {
-        el.textContent = slogan;
-      });
-      document.querySelectorAll('.site-footer-slogan').forEach(el => {
-        el.textContent = slogan;
-      });
-    }
-
-    if (s.phone) {
-      document.querySelectorAll('#header-phone, .header-phone-val').forEach(el => {
-        el.textContent = s.phone;
-        if (el.tagName === 'A') el.href = `tel:${s.phone.replace(/[^0-9]/g, '')}`;
-      });
-      document.querySelectorAll('#footer-phone').forEach(el => {
-        el.textContent = s.phone;
-      });
-      const cPhone = document.getElementById('contact-page-phone');
-      if (cPhone) {
-        cPhone.textContent = s.phone;
-        cPhone.href = `tel:${s.phone.replace(/[^0-9]/g, '')}`;
-      }
-    }
-
-    if (s.email) {
-      document.querySelectorAll('#footer-email').forEach(el => {
-        el.textContent = s.email;
-      });
-      const cEmail = document.getElementById('contact-page-email');
-      if (cEmail) {
-        cEmail.textContent = s.email;
-        cEmail.href = `mailto:${s.email}`;
-      }
-    }
-
-    if (s.address) {
-      document.querySelectorAll('#footer-address').forEach(el => {
-        el.textContent = s.address;
-      });
-      const cAddr = document.getElementById('contact-page-address');
-      if (cAddr) cAddr.textContent = s.address;
-    }
-
-    if (s.working_hours) {
-      const cHours = document.getElementById('contact-page-hours');
-      if (cHours) {
-        const lines = s.working_hours.split(/\n|\|/).map(l => l.trim()).filter(Boolean);
-        cHours.innerHTML = lines.map(line => `<p>${line}</p>`).join('');
-      }
-    }
-
-    if (s.about_why_choose) {
-      const wDesc = document.getElementById('about-why-desc');
-      if (wDesc) {
-        const isWhyHtml = /<[a-z][\s\S]*>/i.test(s.about_why_choose);
-        wDesc.style.whiteSpace = isWhyHtml ? 'normal' : 'pre-line';
-        wDesc.innerHTML = s.about_why_choose;
-        wDesc.classList.remove('hidden');
-      }
-    }
-
-    if (s.about_title) {
-      const aTitle = document.getElementById('about-title');
-      if (aTitle) aTitle.textContent = s.about_title;
-      const aUsTitle = document.getElementById('about-us-title');
-      if (aUsTitle) aUsTitle.textContent = s.about_title;
-    }
-
-    if (s.about_history) {
-      let rawHistory = String(s.about_history).trim();
-      if (rawHistory.includes('<style') && !rawHistory.includes('</style>')) {
-        rawHistory += '\n</style>';
-      }
-      window.fullAboutHistoryContent = rawHistory;
-      const isRichHtml = /<div\b|<article\b|<section\b|<style\b|company-intro-card/i.test(rawHistory);
-
-      const aHist = document.getElementById('about-history');
-      if (aHist) {
-        if (isRichHtml) {
-          const cleanHtml = rawHistory.replace(/<style\b[^>]*>[\s\S]*?(<\/style>|$)/gi, '');
-          const temp = document.createElement('div');
-          temp.innerHTML = cleanHtml;
-          const paragraphs = Array.from(temp.querySelectorAll('p'))
-            .map(p => p.textContent.trim())
-            .filter(Boolean);
-          const summary = paragraphs.length > 0 
-            ? paragraphs.slice(0, 3).join('\n\n') 
-            : temp.textContent.trim();
-          aHist.style.whiteSpace = 'pre-line';
-          aHist.style.display = '-webkit-box';
-          aHist.style.webkitLineClamp = '4';
-          aHist.style.webkitBoxOrient = 'vertical';
-          aHist.style.overflow = 'hidden';
-          aHist.textContent = summary;
-        } else {
-          aHist.style.whiteSpace = 'pre-line';
-          aHist.style.display = '-webkit-box';
-          aHist.style.webkitLineClamp = '4';
-          aHist.style.webkitBoxOrient = 'vertical';
-          aHist.style.overflow = 'hidden';
-          aHist.innerHTML = rawHistory;
-        }
-      }
-
-      const aUsDesc = document.getElementById('about-us-desc');
-      if (aUsDesc) {
-        if (isRichHtml) {
-          aUsDesc.style.whiteSpace = 'normal';
-          const colLeft = document.getElementById('about-us-col-left');
-          const colRight = document.getElementById('about-us-col-right');
-          const gridEl = document.getElementById('about-us-grid');
-          if (colLeft) colLeft.className = 'w-full';
-          if (colRight) colRight.classList.add('hidden');
-          if (gridEl) gridEl.className = 'w-full';
-          if (/<h[1-3]\b|class=["'][^"']*company-title[^"']*["']/i.test(rawHistory)) {
-            const aUsTitle = document.getElementById('about-us-title');
-            if (aUsTitle) aUsTitle.classList.add('hidden');
-          }
-        } else {
-          aUsDesc.style.whiteSpace = 'pre-line';
-        }
-        aUsDesc.innerHTML = rawHistory;
-      }
-    }
-
-    if (s.about_values) {
-      const aVal = document.getElementById('about-values');
-      if (aVal) {
-        // Luôn ẩn trên Landing page theo yêu cầu người dùng
-        aVal.classList.add('hidden');
-      }
-      const aValDesc = document.getElementById('about-values-desc');
-      if (aValDesc) {
-        const isValHtml = /<[a-z][\s\S]*>/i.test(s.about_values);
-        aValDesc.style.whiteSpace = isValHtml ? 'normal' : 'pre-line';
-        aValDesc.innerHTML = s.about_values;
-      }
-    }
-
-    // Dynamic Logo (Header & Footer)
-    if (s.logo_url && String(s.logo_url).trim()) {
-      const logoUrl = String(s.logo_url).trim();
-      document.querySelectorAll('.site-logo-img').forEach(img => {
-        img.src = logoUrl;
-        img.classList.remove('hidden');
-      });
-      document.querySelectorAll('.site-logo-icon').forEach(icon => {
-        icon.classList.add('hidden');
-      });
-      document.querySelectorAll('.footer-logo-img').forEach(img => {
-        img.src = logoUrl;
-        img.classList.remove('hidden');
-      });
-      document.querySelectorAll('.footer-logo-icon').forEach(icon => {
-        icon.classList.add('hidden');
-      });
-    } else {
-      document.querySelectorAll('.site-logo-img').forEach(img => {
-        img.classList.add('hidden');
-      });
-      document.querySelectorAll('.site-logo-icon').forEach(icon => {
-        icon.classList.remove('hidden');
-      });
-      document.querySelectorAll('.footer-logo-img').forEach(img => {
-        img.classList.add('hidden');
-      });
-      document.querySelectorAll('.footer-logo-icon').forEach(icon => {
-        icon.classList.remove('hidden');
-      });
-    }
-
-    if (s.maps_embed) {
-      const fMap = document.getElementById('footer-map-iframe');
-      if (fMap) fMap.src = s.maps_embed;
-    }
-
-    // Cập nhật Banner động cho các trang
-    if (s.banner_home) {
-      const bHome = document.getElementById('page-banner-home');
-      if (bHome) bHome.src = s.banner_home;
-    }
-    if (s.banner_about) {
-      const bAbout = document.getElementById('page-banner-about');
-      if (bAbout) bAbout.src = s.banner_about;
-    }
-    if (s.banner_products) {
-      document.querySelectorAll('#page-banner-products, #page-banner-product-detail').forEach(el => {
-        el.src = s.banner_products;
-      });
-    }
-    if (s.banner_blogs) {
-      document.querySelectorAll('#page-banner-blogs, #page-banner-blog-detail').forEach(el => {
-        el.src = s.banner_blogs;
-      });
-    }
-    if (s.banner_contact) {
-      const bContact = document.getElementById('page-banner-contact');
-      if (bContact) bContact.src = s.banner_contact;
-    }
-
-    // Đồng bộ cấu hình Loại Báo Giá / Liên Hệ vào trang Contact và Modal Liên Hệ
-    if (s.quote_types) {
-      try {
-        const list = typeof s.quote_types === 'string' ? JSON.parse(s.quote_types) : s.quote_types;
-        if (Array.isArray(list) && list.length > 0) {
-          // 1. Đồng bộ thẻ <select id="form-type"> trên trang Contact
-          const typeSelect = document.getElementById('form-type');
-          if (typeSelect) {
-            const currentVal = typeSelect.value;
-            let optionsHtml = `<option value=""${!currentVal ? ' selected' : ''}>-- Chọn loại --</option>\n`;
-            list.forEach((item) => {
-              const name = typeof item === 'string' ? item : item.name;
-              const isBg = name.toLowerCase().includes('báo giá') || name.toLowerCase().includes('bao gia');
-              const show = isBg ? 'true' : 'false';
-              const selected = (currentVal && currentVal === name) ? ' selected' : '';
-              optionsHtml += `                  <option value="${name}" data-show-products="${show}"${selected}>${name}</option>\n`;
-            });
-            typeSelect.innerHTML = optionsHtml;
-            if (typeof toggleProductInterest === 'function') toggleProductInterest();
-            if (typeof syncCustomTypeLabel === 'function') syncCustomTypeLabel();
-          }
-
-          // 2. Đồng bộ các radio buttons trong Modal Liên hệ (Landing Page)
-          const modalTypeContainer = document.getElementById('contact-modal-type-group');
-          if (modalTypeContainer) {
-            modalTypeContainer.innerHTML = list.map((item, idx) => {
-              const name = typeof item === 'string' ? item : item.name;
-              const isBg = name.toLowerCase().includes('báo giá') || name.toLowerCase().includes('bao gia');
-              const show = isBg ? 'true' : 'false';
-              return `
-                <label class="inline-flex items-center space-x-2 cursor-pointer font-bold text-xs sm:text-sm text-slate-700">
-                  <input type="radio" name="contact-type" value="${name}" data-show-products="${show}" ${idx === 0 ? 'checked' : ''} class="text-[#c8102e] focus:ring-[#c8102e] w-4 h-4">
-                  <span>${name}</span>
-                </label>
-              `;
-            }).join('');
-
-            modalTypeContainer.querySelectorAll('input[name="contact-type"]').forEach(r => {
-              r.addEventListener('change', (e) => {
-                const quoteContainer = document.getElementById('quote-product-container');
-                const val = (e.target.value || '').toLowerCase().trim();
-                const isShow = val.includes('báo giá') || val.includes('bao gia');
-                if (quoteContainer) {
-                  if (isShow) quoteContainer.classList.remove('hidden');
-                  else quoteContainer.classList.add('hidden');
-                }
-              });
-            });
-          }
-        }
-      } catch (e) {
-        console.error('Lỗi phân tích quote_types:', e);
-      }
-    }
+    applySettingsData(s);
   } catch (err) {
-    console.error('Lỗi khi tải settings:', err);
+    console.warn('Lỗi khi tải cài đặt hệ thống:', err);
   }
 }
 
