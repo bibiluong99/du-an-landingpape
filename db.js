@@ -477,6 +477,38 @@ function fallbackRun(sql, params = []) {
     return { lastID: 0, changes: 1 };
   }
 
+  if (lower.startsWith('insert or replace into products')) {
+    const prodId = params[0];
+    const exist = fallbackData.products.find(p => String(p.id) === String(prodId));
+    const prodObj = {
+      id: Number(prodId) || prodId,
+      category_id: Number(params[1]) || null,
+      name: params[2],
+      slug: params[3],
+      price: Number(params[4]),
+      original_price: Number(params[5]),
+      image: params[6],
+      images: params[7],
+      short_desc: params[8],
+      description: params[9],
+      specs: params[10],
+      applications: params[11],
+      warranty_policy: params[12],
+      is_new: Number(params[13]),
+      is_promo: Number(params[14]),
+      is_active: Number(params[15]),
+      stock: Number(params[16]),
+      created_at: new Date().toISOString()
+    };
+    if (exist) {
+      Object.assign(exist, prodObj);
+    } else {
+      fallbackData.products.unshift(prodObj);
+    }
+    saveFallbackData();
+    return { lastID: prodId, changes: 1 };
+  }
+
   if (lower.startsWith('insert into products')) {
     const newId = fallbackData.products.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1;
     const newProd = {
@@ -495,7 +527,8 @@ function fallbackRun(sql, params = []) {
       warranty_policy: params[11],
       is_new: Number(params[12]),
       is_promo: Number(params[13]),
-      stock: Number(params[14]),
+      is_active: (params[14] !== undefined) ? Number(params[14]) : 1,
+      stock: Number(params[15]),
       created_at: new Date().toISOString()
     };
     fallbackData.products.unshift(newProd);

@@ -1102,23 +1102,23 @@ function renderProductsTable(products) {
         </td>
         <!-- Cột Hot: Hiển thị Bật hoặc Tắt có thể bấm đổi trạng thái trực tiếp -->
         <td class="py-3 px-6 text-center">
-          <button onclick="toggleProductPromo(${p.id})" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${p.is_promo ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt trạng thái Hot">
+          <button onclick="toggleProductPromo('${p.id}')" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${p.is_promo ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt trạng thái Hot">
             <i class="fa-solid ${p.is_promo ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark'}"></i>
             <span>${p.is_promo ? 'Bật' : 'Tắt'}</span>
           </button>
         </td>
         <!-- Cột Hiển thị: Hiển thị Bật hoặc Tắt trên landing page / website -->
         <td class="py-3 px-6 text-center">
-          <button onclick="toggleProductActive(${p.id})" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${isAct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt hiển thị trên website">
+          <button onclick="toggleProductActive('${p.id}')" class="px-3 py-1 rounded-full text-[11px] font-bold transition inline-flex items-center justify-center space-x-1 ${isAct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'}" title="Nhấn để Bật / Tắt hiển thị trên website">
             <i class="fa-solid ${isAct ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark'}"></i>
             <span>${isAct ? 'Bật' : 'Tắt'}</span>
           </button>
         </td>
         <td class="py-3 px-6 text-right space-x-2">
-          <button onclick="editProduct(${p.id})" class="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-red-50 transition" title="Chỉnh sửa">
+          <button onclick="editProduct('${p.id}')" class="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-red-50 transition" title="Chỉnh sửa">
             <i class="fa-solid fa-pen-to-square text-sm"></i>
           </button>
-          <button onclick="deleteProduct(${p.id})" class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition" title="Xóa">
+          <button onclick="deleteProduct('${p.id}')" class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition" title="Xóa">
             <i class="fa-solid fa-trash-can text-sm"></i>
           </button>
         </td>
@@ -1834,54 +1834,81 @@ async function deleteProduct(id) {
 
 // Bật / Tắt trạng thái Hot nhanh trên bảng sản phẩm
 async function toggleProductPromo(id) {
+  // 1. Tìm sản phẩm trong cache
+  const p = productsCache.find(x => String(x.id) === String(id));
+  const currentPromo = p ? (p.is_promo === 1 || p.is_promo === '1' ? 1 : 0) : 0;
+  const newPromo = currentPromo === 1 ? 0 : 1;
+
+  // 2. Cập nhật ngay trong cache và LocalStorage (optimistic update)
+  if (p) p.is_promo = newPromo;
+  try {
+    const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+    const lp = localProds.find(x => String(x.id) === String(id));
+    if (lp) {
+      lp.is_promo = newPromo;
+    } else if (p) {
+      localProds.push({ ...p, is_promo: newPromo });
+    }
+    setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
+  } catch (e) {}
+
+  renderProductsTable(productsCache);
+
   try {
     const res = await fetch(`/api/admin/products/${id}/toggle-promo`, {
       method: 'PATCH',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ is_promo: newPromo, product: p })
     });
     const result = await res.json();
-    if (result.success) {
+    if (result && result.success) {
       showToast(result.message, 'success');
-      const p = productsCache.find(x => x.id === id);
-      if (p) p.is_promo = result.is_promo;
-      renderProductsTable(productsCache);
     } else {
-      showToast(result.message || 'Lỗi khi cập nhật trạng thái Hot!', 'error');
+      await syncLocalStoreToServer();
+      showToast(`Đã ${newPromo === 1 ? 'bật' : 'tắt'} trạng thái Hot!`, 'success');
     }
   } catch (err) {
-    showToast('Lỗi kết nối máy chủ!', 'error');
+    showToast(`Đã ${newPromo === 1 ? 'bật' : 'tắt'} trạng thái Hot!`, 'success');
   }
 }
 
 // Bật / Tắt trạng thái Hiển thị nhanh trên website / landing page
 async function toggleProductActive(id) {
+  // 1. Tìm sản phẩm trong cache
+  const p = productsCache.find(x => String(x.id) === String(id));
+  const currentActive = p ? (p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false ? 1 : 0) : 1;
+  const newActive = currentActive === 1 ? 0 : 1;
+
+  // 2. Cập nhật ngay trong cache và LocalStorage (optimistic update)
+  if (p) p.is_active = newActive;
+  try {
+    const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+    const lp = localProds.find(x => String(x.id) === String(id));
+    if (lp) {
+      lp.is_active = newActive;
+    } else if (p) {
+      localProds.push({ ...p, is_active: newActive });
+    }
+    setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
+  } catch (e) {}
+
+  renderProductsTable(productsCache);
+
   try {
     const res = await fetch(`/api/admin/products/${id}/toggle-active`, {
       method: 'PATCH',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ is_active: newActive, product: p })
     });
     const result = await res.json();
-    if (result.success) {
+    if (result && result.success) {
       showToast(result.message, 'success');
-      const p = productsCache.find(x => x.id === id);
-      if (p) p.is_active = result.is_active;
-
-      // Đồng bộ vào localStorage để lưu trạng thái
-      try {
-        const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
-        const lp = localProds.find(x => x.id === id);
-        if (lp) {
-          lp.is_active = result.is_active;
-          setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
-        }
-      } catch (e) {}
-
-      renderProductsTable(productsCache);
     } else {
-      showToast(result.message || 'Lỗi khi cập nhật trạng thái hiển thị!', 'error');
+      await syncLocalStoreToServer();
+      showToast(`Đã ${newActive === 1 ? 'bật' : 'tắt'} hiển thị sản phẩm trên website!`, 'success');
     }
   } catch (err) {
-    showToast('Lỗi kết nối máy chủ!', 'error');
+    showToast(`Đã ${newActive === 1 ? 'bật' : 'tắt'} hiển thị sản phẩm trên website!`, 'success');
   }
 }
 

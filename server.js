@@ -1269,12 +1269,48 @@ app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
 
 app.patch('/api/admin/products/:id/toggle-active', requireAdmin, async (req, res) => {
   try {
-    const prod = await get('SELECT is_active FROM products WHERE id = ?', [req.params.id]);
+    let prod = await get('SELECT is_active FROM products WHERE id = ?', [req.params.id]);
+
+    // Nếu sản phẩm chưa có trong DB (ví dụ sản phẩm tạo offline trong localStorage), tự động thêm vào
+    if (!prod && req.body && req.body.product) {
+      const p = req.body.product;
+      const targetActive = req.body.is_active !== undefined ? (req.body.is_active ? 1 : 0) : 1;
+      await run(`
+        INSERT OR REPLACE INTO products (
+          id, category_id, name, slug, price, original_price, image, images,
+          short_desc, description, specs, applications, warranty_policy, is_new, is_promo, is_active, stock
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      `, [
+        req.params.id,
+        p.category_id || null,
+        p.name || 'Sản phẩm mới',
+        p.slug || ('prod-' + req.params.id),
+        parseFloat(p.price) || 0,
+        p.original_price ? parseFloat(p.original_price) : null,
+        p.image || '',
+        typeof p.images === 'object' ? JSON.stringify(p.images) : (p.images || null),
+        p.short_desc || '',
+        p.description || '',
+        typeof p.specs === 'object' ? JSON.stringify(p.specs) : (p.specs || ''),
+        p.applications || '',
+        p.warranty_policy || '',
+        p.is_new ? 1 : 0,
+        p.is_promo ? 1 : 0,
+        targetActive
+      ]);
+      return res.json({
+        success: true,
+        message: `Đã ${targetActive === 1 ? 'bật' : 'tắt'} hiển thị sản phẩm trên website!`,
+        is_active: targetActive
+      });
+    }
+
     if (!prod) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm!' });
     }
+
     const currentVal = (prod.is_active === 0 || prod.is_active === '0' || prod.is_active === false) ? 0 : 1;
-    const newValue = currentVal === 1 ? 0 : 1;
+    const newValue = req.body && req.body.is_active !== undefined ? (req.body.is_active ? 1 : 0) : (currentVal === 1 ? 0 : 1);
     await run('UPDATE products SET is_active = ? WHERE id = ?', [newValue, req.params.id]);
     res.json({
       success: true,
@@ -1288,11 +1324,47 @@ app.patch('/api/admin/products/:id/toggle-active', requireAdmin, async (req, res
 
 app.patch('/api/admin/products/:id/toggle-promo', requireAdmin, async (req, res) => {
   try {
-    const prod = await get('SELECT is_promo FROM products WHERE id = ?', [req.params.id]);
+    let prod = await get('SELECT is_promo FROM products WHERE id = ?', [req.params.id]);
+
+    // Nếu sản phẩm chưa có trong DB, tự động thêm vào
+    if (!prod && req.body && req.body.product) {
+      const p = req.body.product;
+      const targetPromo = req.body.is_promo !== undefined ? (req.body.is_promo ? 1 : 0) : 1;
+      await run(`
+        INSERT OR REPLACE INTO products (
+          id, category_id, name, slug, price, original_price, image, images,
+          short_desc, description, specs, applications, warranty_policy, is_new, is_promo, is_active, stock
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      `, [
+        req.params.id,
+        p.category_id || null,
+        p.name || 'Sản phẩm mới',
+        p.slug || ('prod-' + req.params.id),
+        parseFloat(p.price) || 0,
+        p.original_price ? parseFloat(p.original_price) : null,
+        p.image || '',
+        typeof p.images === 'object' ? JSON.stringify(p.images) : (p.images || null),
+        p.short_desc || '',
+        p.description || '',
+        typeof p.specs === 'object' ? JSON.stringify(p.specs) : (p.specs || ''),
+        p.applications || '',
+        p.warranty_policy || '',
+        p.is_new ? 1 : 0,
+        targetPromo,
+        p.is_active !== undefined ? (p.is_active ? 1 : 0) : 1
+      ]);
+      return res.json({
+        success: true,
+        message: `Đã ${targetPromo === 1 ? 'bật' : 'tắt'} trạng thái Hot cho sản phẩm!`,
+        is_promo: targetPromo
+      });
+    }
+
     if (!prod) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm!' });
     }
-    const newValue = prod.is_promo === 1 ? 0 : 1;
+    const currentVal = prod.is_promo === 1 ? 1 : 0;
+    const newValue = req.body && req.body.is_promo !== undefined ? (req.body.is_promo ? 1 : 0) : (currentVal === 1 ? 0 : 1);
     await run('UPDATE products SET is_promo = ? WHERE id = ?', [newValue, req.params.id]);
     res.json({
       success: true,
