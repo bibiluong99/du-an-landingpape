@@ -501,6 +501,12 @@
               </div>
             </div>
 
+            <!-- Hàng 3: Địa chỉ (Không bắt buộc) -->
+            <div class="relative flex items-center">
+              <i class="fa-solid fa-location-dot absolute left-4 text-slate-400 text-sm"></i>
+              <input type="text" id="form-address" placeholder="Địa chỉ (không bắt buộc)" class="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 focus:border-[#c8102e] outline-none text-xs sm:text-sm bg-slate-50/40 transition">
+            </div>
+
             <!-- Sản phẩm quan tâm (tùy chọn) - Chỉ hiển thị khi chọn loại liên hệ có cấu hình hiển thị sản phẩm -->
             <div id="product-interest-container" style="display: none;" class="space-y-4 pt-1 transition-all duration-300 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-red-100/90 shadow-2xs">
               
@@ -1272,6 +1278,7 @@
       const fullname = document.getElementById('form-fullname').value.trim();
       const phone = document.getElementById('form-phone').value.trim();
       const email = document.getElementById('form-email').value.trim();
+      const address = document.getElementById('form-address') ? document.getElementById('form-address').value.trim() : '';
       const type = document.getElementById('form-type').value;
       const message = document.getElementById('form-message').value.trim();
 
@@ -1355,6 +1362,7 @@
             fullname,
             phone,
             email,
+            address,
             type,
             product_name: products,
             message

@@ -4,6 +4,12 @@ const fs = require('fs');
 const cors = require('cors');
 const multer = require('multer');
 const crypto = require('crypto');
+let nodemailer;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  console.warn('Nodemailer chưa sẵn sàng:', e.message);
+}
 const { query, get, run, hashPassword, initDB, syncStoreData } = require('./db');
 
 const app = express();
@@ -764,7 +770,7 @@ app.get('/api/blogs/:id', async (req, res) => {
 // 7. Gửi thông tin Form liên hệ
 app.post('/api/contacts', async (req, res) => {
   try {
-    const { fullname, phone, email, type, product_name, message } = req.body;
+    const { fullname, phone, email, address, type, product_name, message } = req.body;
 
     if (!fullname || !phone || !email || !message) {
       return res.status(400).json({
@@ -776,8 +782,8 @@ app.post('/api/contacts', async (req, res) => {
     const contactType = type && type.trim() !== '' ? type.trim() : 'Báo giá sản phẩm';
 
     const result = await run(
-      'INSERT INTO contacts (fullname, phone, email, type, product_name, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [fullname.trim(), phone.trim(), (email || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới']
+      'INSERT INTO contacts (fullname, phone, email, address, type, product_name, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [fullname.trim(), phone.trim(), (email || '').trim(), (address || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới']
     );
 
     res.json({
@@ -1567,7 +1573,18 @@ app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
     }
 
     sql += ' ORDER BY created_at DESC, id DESC';
-    const contacts = await query(sql, params);
+    let contacts = await query(sql, params);
+
+    // Đảm bảo lọc thứ cấp chính xác 100%
+    if (Array.isArray(contacts)) {
+      if (status && status !== 'all') {
+        contacts = contacts.filter(c => c.status === status);
+      }
+      if (type && type !== 'all') {
+        contacts = contacts.filter(c => c.type === type || (c.type && c.type.includes(type)));
+      }
+    }
+
     res.json({ success: true, data: contacts });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -1602,6 +1619,155 @@ app.put('/api/admin/contacts/:id/quote-sent', requireAdmin, async (req, res) => 
     res.json({ success: true, message: 'Đã gửi báo giá thành công!', status: newStatus });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Gửi báo giá qua Gmail kèm file PDF đến khách hàng
+app.post('/api/admin/contacts/:id/send-quote-email', requireAdmin, async (req, res) => {
+  try {
+    const contactId = req.params.id;
+    const { pdfBase64, contractNo, buyerEmail, buyerName, quoteTotal, notes, companyName } = req.body;
+
+    const contact = await get('SELECT * FROM contacts WHERE id = ?', [contactId]);
+    if (!contact) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy thông tin liên hệ!' });
+    }
+
+    const targetEmail = (buyerEmail || contact.email || '').trim();
+    if (!targetEmail) {
+      return res.status(400).json({ success: false, message: 'Khách hàng không có địa chỉ email!' });
+    }
+
+    // Lấy cấu hình SMTP từ settings hoặc biến môi trường
+    const smtpUserRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_user']);
+    const smtpPassRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_pass']);
+    const smtpHostRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_host']);
+    const smtpPortRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_port']);
+    const companyNameRow = await get('SELECT value FROM settings WHERE key = ?', ['company_name']);
+
+    const smtpUser = (smtpUserRow && smtpUserRow.value ? smtpUserRow.value : '').trim() || process.env.SMTP_USER || process.env.GMAIL_USER || '';
+    const smtpPass = (smtpPassRow && smtpPassRow.value ? smtpPassRow.value : '').trim() || process.env.SMTP_PASS || process.env.GMAIL_PASS || '';
+    const smtpHost = (smtpHostRow && smtpHostRow.value ? smtpHostRow.value : '').trim() || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = Number((smtpPortRow && smtpPortRow.value) || process.env.SMTP_PORT || 465);
+    const firmName = companyName || (companyNameRow && companyNameRow.value) || 'Điện Việt';
+
+    // Cập nhật trạng thái liên hệ sang "Đang xử lý" và quote_sent = 1
+    const newStatus = contact.status === 'Mới' ? 'Đang xử lý' : contact.status;
+    await run('UPDATE contacts SET quote_sent = 1, status = ? WHERE id = ?', [newStatus, contactId]);
+
+    // Nếu chưa cấu hình tài khoản Gmail gửi thư hoặc mật khẩu ứng dụng
+    if (!smtpUser || !smtpPass) {
+      return res.json({
+        success: true,
+        smtpConfigured: false,
+        sent: false,
+        status: newStatus,
+        message: 'Chưa cấu hình tài khoản Gmail gửi thư trong Cấu Hình Website.'
+      });
+    }
+
+    if (!nodemailer) {
+      return res.json({
+        success: true,
+        smtpConfigured: false,
+        sent: false,
+        status: newStatus,
+        message: 'Thư viện nodemailer chưa sẵn sàng trên máy chủ.'
+      });
+    }
+
+    // Khởi tạo Nodemailer Transporter
+    const cleanPass = smtpPass.replace(/\s+/g, '');
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: cleanPass
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000
+    });
+
+    const safeContractNo = contractNo || `BG-${contactId}`;
+    const customerName = buyerName || contact.fullname || 'Quý khách hàng';
+
+    // Nội dung HTML email báo giá chuyên nghiệp
+    const emailHtml = `
+      <div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; max-width: 650px; margin: 0 auto; color: #1e293b; line-height: 1.6; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #c8102e; color: #ffffff; padding: 24px 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 22px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${firmName}</h1>
+          <p style="margin: 6px 0 0; font-size: 13.5px; opacity: 0.95;">BẢNG BÁO GIÁ THIẾT BỊ ĐIỆN & VẬT TƯ</p>
+        </div>
+        <div style="padding: 26px 22px;">
+          <p style="font-size: 15px; margin-top: 0;">Kính gửi <strong>${customerName}</strong>,</p>
+          <p style="font-size: 14px; color: #475569;">
+            ${firmName} trân trọng cảm ơn Quý khách đã quan tâm và liên hệ yêu cầu báo giá sản phẩm, thiết bị điện.
+            Chúng tôi xin gửi đến Quý khách bảng báo giá chi tiết theo yêu cầu <strong>(Số: ${safeContractNo})</strong>.
+          </p>
+          ${quoteTotal ? `
+          <div style="background: #f8fafc; border-left: 4px solid #c8102e; padding: 14px 18px; margin: 20px 0; border-radius: 4px;">
+            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Tổng giá trị báo giá:</div>
+            <div style="font-size: 20px; font-weight: bold; color: #c8102e; margin-top: 4px;">${quoteTotal}</div>
+          </div>
+          ` : ''}
+          <p style="font-size: 14px; color: #334155;">
+            📄 <strong>File báo giá chính thức định dạng PDF đã được đính kèm ở thư này.</strong> Quý khách có thể tải về để xem chi tiết hoặc in ấn trực tiếp.
+          </p>
+          ${notes ? `
+          <div style="font-size: 12.5px; color: #64748b; background: #fffbeb; border: 1px dashed #f59e0b; padding: 12px; border-radius: 8px; margin: 18px 0; white-space: pre-line;">
+            <strong>Ghi chú:</strong><br>${notes}
+          </div>
+          ` : ''}
+          <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+            <p style="margin: 4px 0;">Nếu cần thêm thông tin kỹ thuật hoặc trao đổi chiết khấu số lượng lớn, xin vui lòng phản hồi email này hoặc liên hệ qua Hotline.</p>
+            <p style="margin: 4px 0;">Trân trọng cảm ơn và kính chúc Quý khách nhiều thành công!</p>
+          </div>
+        </div>
+        <div style="background-color: #f1f5f9; padding: 14px 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+          <strong>${firmName}</strong> - Cam kết sản phẩm chính hãng, bảo hành uy tín.
+        </div>
+      </div>
+    `;
+
+    const attachments = [];
+    if (pdfBase64) {
+      const cleanBase64 = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
+      const pdfBuffer = Buffer.from(cleanBase64, 'base64');
+      attachments.push({
+        filename: `Bao_Gia_${safeContractNo}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      });
+    }
+
+    const mailOptions = {
+      from: `"${firmName}" <${smtpUser}>`,
+      to: targetEmail,
+      subject: `[BÁO GIÁ] ${firmName} gửi Báo giá thiết bị điện - Số: ${safeContractNo}`,
+      html: emailHtml,
+      attachments
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      success: true,
+      smtpConfigured: true,
+      sent: true,
+      status: newStatus,
+      message: `Đã gửi báo giá kèm file PDF đến Gmail ${targetEmail} thành công!`
+    });
+  } catch (error) {
+    console.error('Lỗi khi gửi email báo giá:', error);
+    res.status(500).json({
+      success: false,
+      smtpConfigured: true,
+      sent: false,
+      message: `Không thể gửi email: ${error.message}`
+    });
   }
 });
 

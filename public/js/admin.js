@@ -2324,18 +2324,26 @@ function renderContactsTable() {
   const tbody = document.getElementById('contacts-table-body');
   if (!tbody) return;
 
-  if (contactsCache.length === 0) {
+  let filtered = Array.isArray(contactsCache) ? [...contactsCache] : [];
+  if (currentContactStatusFilter && currentContactStatusFilter !== 'all') {
+    filtered = filtered.filter(c => c.status === currentContactStatusFilter);
+  }
+  if (currentContactTypeFilter && currentContactTypeFilter !== 'all') {
+    filtered = filtered.filter(c => c.type === currentContactTypeFilter || (c.type && c.type.includes(currentContactTypeFilter)));
+  }
+
+  if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Không có phản hồi nào trong mục này.</td></tr>`;
     renderAdminPagination('contacts-pagination', 1, 0, ADMIN_PAGE_SIZE, 'changeContactsPage');
     return;
   }
 
-  const totalItems = contactsCache.length;
+  const totalItems = filtered.length;
   const totalPages = Math.ceil(totalItems / ADMIN_PAGE_SIZE) || 1;
   if (contactsPage > totalPages) contactsPage = totalPages;
   if (contactsPage < 1) contactsPage = 1;
 
-  const pagedItems = contactsCache.slice((contactsPage - 1) * ADMIN_PAGE_SIZE, contactsPage * ADMIN_PAGE_SIZE);
+  const pagedItems = filtered.slice((contactsPage - 1) * ADMIN_PAGE_SIZE, contactsPage * ADMIN_PAGE_SIZE);
 
   tbody.innerHTML = pagedItems.map(c => `
     <tr class="hover:bg-slate-50 transition">
@@ -2484,6 +2492,7 @@ function viewContactDetail(id) {
         <div><span class="text-slate-500 font-medium">Họ và tên:</span> <strong class="text-slate-900 ml-1">${escapeHtml(c.fullname)}</strong></div>
         <div><span class="text-slate-500 font-medium">Số điện thoại:</span> <a href="tel:${escapeHtml(c.phone)}" class="text-[#c8102e] font-black hover:underline ml-1 font-mono">${escapeHtml(c.phone)}</a></div>
         <div><span class="text-slate-500 font-medium">Email:</span> <strong class="text-slate-900 ml-1">${escapeHtml(c.email || 'Không cung cấp')}</strong></div>
+        <div><span class="text-slate-500 font-medium">Địa chỉ:</span> <strong class="text-slate-900 ml-1">${escapeHtml(c.address || 'Không cung cấp')}</strong></div>
         <div>
           <span class="text-slate-500 font-medium">Trạng thái:</span> 
           <span class="ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${c.status === 'Mới' ? 'bg-amber-100 text-amber-800' : (c.status === 'Đang xử lý' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800')}">
@@ -2975,13 +2984,83 @@ async function submitSendQuoteContract() {
   // Đồng bộ thông tin người dùng vừa nhập trong form
   syncQuoteEditInputsToState();
 
+  const buyerEmail = (currentQuoteContract.buyerEmail || '').trim();
+  if (!buyerEmail) {
+    showToast('Khách hàng chưa có địa chỉ email để gửi báo giá! Vui lòng nhập email khách hàng trong mục Khách hàng.', 'warning', 4500);
+    return;
+  }
+
+  const btnSend = document.getElementById('btn-submit-send-quote');
+  const originalBtnHtml = btnSend ? btnSend.innerHTML : '';
+  if (btnSend) {
+    btnSend.disabled = true;
+    btnSend.classList.add('opacity-75', 'cursor-not-allowed');
+    btnSend.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-base"></i><span>Đang tạo PDF & gửi Gmail...</span>`;
+  }
+
   try {
-    const res = await fetch(`/api/admin/contacts/${contactId}/quote-sent`, {
-      method: 'PUT',
-      headers: getAuthHeaders()
+    // 1. Chuẩn bị nội dung render báo giá
+    renderQuotePreviewHtml();
+    const printableEl = document.getElementById('quote-contract-printable');
+
+    let pdfBase64 = '';
+    let pdfBlobUri = '';
+
+    // Tạo file PDF chất lượng cao bằng html2pdf
+    if (typeof html2pdf !== 'undefined' && printableEl) {
+      try {
+        const clone = printableEl.cloneNode(true);
+        clone.style.width = '800px';
+        clone.style.padding = '25px';
+        clone.style.background = '#ffffff';
+        clone.style.color = '#000000';
+        clone.style.position = 'fixed';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        document.body.appendChild(clone);
+
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfWorker = html2pdf().set(opt).from(clone);
+        pdfBase64 = await pdfWorker.outputPdf('datauristring');
+        pdfBlobUri = await pdfWorker.outputPdf('bloburi');
+
+        document.body.removeChild(clone);
+      } catch (pdfErr) {
+        console.warn('Lỗi khi render PDF qua html2pdf:', pdfErr);
+      }
+    }
+
+    const subtotal = (currentQuoteContract.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
+    const vatAmount = Math.round(subtotal * ((currentQuoteContract.vatPercent || 0) / 100));
+    const grandTotal = subtotal + vatAmount;
+
+    // 2. Gửi yêu cầu gửi email báo giá kèm PDF đến máy chủ
+    const res = await fetch(`/api/admin/contacts/${contactId}/send-quote-email`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        pdfBase64,
+        contractNo: currentQuoteContract.contractNo,
+        buyerEmail,
+        buyerName: currentQuoteContract.buyerRep,
+        quoteTotal: formatVND(grandTotal),
+        notes: currentQuoteContract.quoteNotes,
+        companyName: currentQuoteContract.sellerCompany
+      })
     });
 
     const result = await res.json();
+
     if (result.success) {
       const contact = contactsCache.find(x => x.id === contactId);
       if (contact) {
@@ -2991,7 +3070,27 @@ async function submitSendQuoteContract() {
         }
       }
 
-      showToast('Gửi báo giá thành công!', 'success');
+      if (result.smtpConfigured && result.sent) {
+        showToast(result.message || `Đã gửi báo giá kèm file PDF đến Gmail ${buyerEmail} thành công!`, 'success', 5000);
+      } else {
+        // Nếu máy chủ chưa cấu hình SMTP: Tự động tải file PDF và mở Gmail Web soạn thư cho Admin
+        if (pdfBlobUri || pdfBase64) {
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pdfBlobUri || pdfBase64;
+          downloadLink.download = `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }
+
+        const safeSubject = encodeURIComponent(`[BÁO GIÁ] ${currentQuoteContract.sellerCompany || 'Điện Việt'} gửi Báo giá thiết bị điện - Số: ${currentQuoteContract.contractNo || ''}`);
+        const safeBody = encodeURIComponent(`Kính gửi ${currentQuoteContract.buyerRep || 'Quý khách hàng'},\n\nĐiện Việt xin gửi tới Quý khách bảng báo giá chi tiết thiết bị điện theo yêu cầu (file PDF đính kèm).\nTổng giá trị: ${formatVND(grandTotal)}\n\nQuý khách vui lòng kiểm tra file PDF đính kèm hoặc phản hồi email này nếu cần hỗ trợ thêm.\n\nTrân trọng cảm ơn!`);
+        const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(buyerEmail)}&su=${safeSubject}&body=${safeBody}`;
+        window.open(composeUrl, '_blank');
+
+        showToast(`Đã xuất PDF báo giá & mở Gmail gửi tới ${buyerEmail}! (Để hệ thống tự động gửi ngầm, hãy nhập Mật khẩu ứng dụng Gmail tại Cấu hình Website)`, 'info', 7000);
+      }
+
       closeQuoteContractModal();
       viewContactDetail(contactId);
       renderContactsTable();
@@ -3000,14 +3099,13 @@ async function submitSendQuoteContract() {
     }
   } catch (err) {
     console.error('Lỗi khi gửi báo giá:', err);
-    const contact = contactsCache.find(x => x.id === contactId);
-    if (contact) {
-      contact.quote_sent = 1;
+    showToast('Lỗi khi gửi báo giá: ' + err.message, 'error');
+  } finally {
+    if (btnSend) {
+      btnSend.disabled = false;
+      btnSend.classList.remove('opacity-75', 'cursor-not-allowed');
+      btnSend.innerHTML = originalBtnHtml;
     }
-    showToast('Đã gửi báo giá thành công!', 'success');
-    closeQuoteContractModal();
-    viewContactDetail(contactId);
-    renderContactsTable();
   }
 }
 
@@ -3360,6 +3458,7 @@ function renderQuoteContractModal() {
       <div class="pt-2">
         <button 
           type="button" 
+          id="btn-submit-send-quote"
           onclick="submitSendQuoteContract()" 
           class="w-full py-3.5 bg-[#c8102e] hover:bg-red-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
         >
@@ -3870,6 +3969,8 @@ async function loadSettings() {
     if (s.shopee_link && document.getElementById('set-shopee')) document.getElementById('set-shopee').value = s.shopee_link;
     if (s.maps_embed && document.getElementById('set-maps')) document.getElementById('set-maps').value = s.maps_embed;
     if (s.working_hours && document.getElementById('set-working-hours')) document.getElementById('set-working-hours').value = s.working_hours;
+    if (s.smtp_user && document.getElementById('set-smtp-user')) document.getElementById('set-smtp-user').value = s.smtp_user;
+    if (s.smtp_pass && document.getElementById('set-smtp-pass')) document.getElementById('set-smtp-pass').value = s.smtp_pass;
     
     // Logo
     const logoInput = document.getElementById('set-logo-url');
@@ -3997,7 +4098,9 @@ async function saveBusinessSettings() {
     facebook_link: document.getElementById('set-fb')?.value.trim() || '',
     shopee_link: document.getElementById('set-shopee')?.value.trim() || '',
     maps_embed: document.getElementById('set-maps')?.value.trim() || '',
-    working_hours: document.getElementById('set-working-hours')?.value.trim() || ''
+    working_hours: document.getElementById('set-working-hours')?.value.trim() || '',
+    smtp_user: document.getElementById('set-smtp-user')?.value.trim() || '',
+    smtp_pass: document.getElementById('set-smtp-pass')?.value.trim() || ''
   };
 
   try {
@@ -5352,5 +5455,21 @@ window.togglePriceProductSelection = togglePriceProductSelection;
 window.handlePriceTypeChange = handlePriceTypeChange;
 window.handlePriceValueInput = handlePriceValueInput;
 window.updatePricePreview = updatePricePreview;
+function toggleSmtpPassVisibility() {
+  const inp = document.getElementById('set-smtp-pass');
+  const icon = document.getElementById('toggle-smtp-pass-icon');
+  if (!inp || !icon) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    inp.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+window.toggleSmtpPassVisibility = toggleSmtpPassVisibility;
 window.handleBatchPriceAdjustment = handleBatchPriceAdjustment;
 

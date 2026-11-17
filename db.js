@@ -179,6 +179,19 @@ function fallbackQuery(sql, params = []) {
       const found = list.find(c => String(c.id) === String(params[0]));
       return found ? [found] : [];
     }
+    if (lower.includes('status = ?')) {
+      const statusParam = params.find(p => ['Mới', 'Đang xử lý', 'Đã xử lý'].includes(p)) || params[params.length - 1];
+      if (statusParam && statusParam !== 'all') {
+        list = list.filter(c => c.status === statusParam);
+      }
+    }
+    if (lower.includes('type = ?') || lower.includes('type like ?')) {
+      const typeParam = params.find(p => !['Mới', 'Đang xử lý', 'Đã xử lý'].includes(p) && !String(p).includes('%'));
+      if (typeParam && typeParam !== 'all') {
+        list = list.filter(c => c.type === typeParam || (c.type && c.type.includes(typeParam)));
+      }
+    }
+    list.sort((a, b) => Number(b.id) - Number(a.id));
     return list;
   }
 
@@ -606,16 +619,18 @@ function fallbackRun(sql, params = []) {
 
   if (lower.startsWith('insert into contacts')) {
     const newId = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
+    const hasAddress = params.length >= 8;
     fallbackData.contacts.unshift({
       id: newId,
       fullname: params[0],
       phone: params[1],
       email: params[2],
-      type: params[3],
-      product_name: params[4] || '',
-      message: params[5] || '',
+      address: hasAddress ? params[3] : '',
+      type: hasAddress ? params[4] : params[3],
+      product_name: hasAddress ? (params[5] || '') : (params[4] || ''),
+      message: hasAddress ? (params[6] || '') : (params[5] || ''),
       ip_address: '127.0.0.1',
-      status: 'Mới',
+      status: hasAddress ? (params[7] || 'Mới') : (params[6] || 'Mới'),
       created_at: new Date().toISOString()
     });
     saveFallbackData();
@@ -818,6 +833,7 @@ const initDB = async () => {
         fullname VARCHAR(150) NOT NULL,
         phone VARCHAR(30) NOT NULL,
         email VARCHAR(150),
+        address TEXT,
         type VARCHAR(100) NOT NULL,
         product_name TEXT,
         message TEXT NOT NULL,
@@ -825,6 +841,13 @@ const initDB = async () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Tự động bổ sung cột address nếu database đã tồn tại từ trước
+    try {
+      await run('ALTER TABLE contacts ADD COLUMN address TEXT');
+    } catch (e) {
+      // Đã có cột address
+    }
 
     // Tự động bổ sung cột product_name nếu database đã tồn tại từ trước
     try {
