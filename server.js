@@ -786,10 +786,25 @@ app.post('/api/contacts', async (req, res) => {
       [fullname.trim(), phone.trim(), (email || '').trim(), (address || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới']
     );
 
+    const newContact = {
+      id: result.lastID,
+      fullname: fullname.trim(),
+      phone: phone.trim(),
+      email: (email || '').trim(),
+      address: (address || '').trim(),
+      type: contactType,
+      product_name: (product_name || '').trim(),
+      message: message.trim(),
+      status: 'Mới',
+      quote_sent: 0,
+      created_at: new Date().toISOString()
+    };
+
     res.json({
       success: true,
       message: 'Cảm ơn quý khách đã gửi thông tin! Chúng tôi sẽ phản hồi trong thời gian sớm nhất.',
-      id: result.lastID
+      id: result.lastID,
+      data: newContact
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

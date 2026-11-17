@@ -1436,7 +1436,7 @@ const seedData = async () => {
   }
 };
 
-async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds }) {
+async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds, customContacts, deletedContactIds }) {
   let updated = false;
 
   // 1. Categories
@@ -1575,6 +1575,55 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
     if (!useFallback && db) {
       try {
         deletedBlogIds.forEach(id => db.run(`DELETE FROM blogs WHERE id = ?`, [id]));
+      } catch (e) {}
+    }
+  }
+
+  // 7. Contacts (Đồng bộ danh sách liên hệ khách hàng)
+  if (Array.isArray(customContacts) && customContacts.length > 0) {
+    for (const c of customContacts) {
+      const exist = fallbackData.contacts.find(x => String(x.id) === String(c.id));
+      if (!exist) {
+        fallbackData.contacts.unshift(c);
+        updated = true;
+      } else {
+        Object.assign(exist, c);
+        updated = true;
+      }
+
+      if (!useFallback && db) {
+        try {
+          db.run(
+            `INSERT OR REPLACE INTO contacts (id, fullname, phone, email, address, type, product_name, message, status, quote_sent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              c.id,
+              c.fullname,
+              c.phone,
+              c.email || '',
+              c.address || '',
+              c.type,
+              c.product_name || '',
+              c.message || '',
+              c.status || 'Mới',
+              c.quote_sent || 0,
+              c.created_at || new Date().toISOString()
+            ]
+          );
+        } catch (e) {}
+      }
+    }
+  }
+
+  // 8. Deleted Contacts
+  if (Array.isArray(deletedContactIds) && deletedContactIds.length > 0) {
+    const before = fallbackData.contacts.length;
+    fallbackData.contacts = fallbackData.contacts.filter(c => !deletedContactIds.includes(Number(c.id)) && !deletedContactIds.includes(String(c.id)));
+    if (fallbackData.contacts.length !== before) updated = true;
+
+    if (!useFallback && db) {
+      try {
+        deletedContactIds.forEach(id => db.run(`DELETE FROM contacts WHERE id = ?`, [id]));
       } catch (e) {}
     }
   }

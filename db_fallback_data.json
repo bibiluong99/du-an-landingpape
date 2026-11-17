@@ -738,10 +738,24 @@
   ],
   "contacts": [
     {
+      "id": 10,
+      "fullname": "Lương Bội Bội",
+      "phone": "0764333998",
+      "email": "luongboiboi29399@gmail.com",
+      "address": "Số 123 Nguyễn Văn Cừ, Long Biên, Hà Nội",
+      "type": "Báo giá sản phẩm",
+      "product_name": "Dây điện đơn ruột đồng Cadivi CV 1.5 mm² (Cu/PVC), Dây điện đơn Cadivi CV 2.5 mm² ruột đồng dẫn điện (Cu/PVC)",
+      "message": "Báo giá",
+      "status": "Mới",
+      "created_at": "2026-11-17 20:53:48",
+      "quote_sent": 0
+    },
+    {
       "id": 7,
       "fullname": "Test 01",
       "phone": "0987654321",
       "email": "aaa@gmail.com",
+      "address": "",
       "type": "Báo giá sản phẩm",
       "product_name": "Dây điện mềm 0.75mm² (Loại SP: Dây điện đôi mềm)",
       "message": "Nhận báo giá",
@@ -754,6 +768,7 @@
       "fullname": "Test 012",
       "phone": "09876543321",
       "email": "aaaa@gmail.com",
+      "address": "",
       "type": "Báo giá sản phẩm",
       "product_name": "Dây điện mềm 0.75mm², Dây điện LS 1.5mm², Dây điện CVV 3x1.5mm², Dây điện Cadivi 2.5mm² (Loại SP: Dây điện)",
       "message": "Bao gia",

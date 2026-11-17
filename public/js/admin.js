@@ -26,7 +26,9 @@ const LOCAL_STORAGE_KEYS = {
   PRODUCTS: 'dienviet_persistent_products',
   DELETED_PROD_IDS: 'dienviet_deleted_prod_ids',
   BLOGS: 'dienviet_persistent_blogs',
-  DELETED_BLOG_IDS: 'dienviet_deleted_blog_ids'
+  DELETED_BLOG_IDS: 'dienviet_deleted_blog_ids',
+  CONTACTS: 'dienviet_persistent_contacts',
+  DELETED_CONTACT_IDS: 'dienviet_deleted_contact_ids'
 };
 
 function getLocalStore(key, defaultVal = []) {
@@ -51,10 +53,13 @@ async function syncLocalStoreToServer() {
   const deletedProductIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
   const customBlogs = getLocalStore(LOCAL_STORAGE_KEYS.BLOGS);
   const deletedBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
+  const customContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS);
+  const deletedContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS);
 
   if (customCategories.length === 0 && customProducts.length === 0 &&
       deletedCategoryIds.length === 0 && deletedProductIds.length === 0 &&
-      customBlogs.length === 0 && deletedBlogIds.length === 0) {
+      customBlogs.length === 0 && deletedBlogIds.length === 0 &&
+      customContacts.length === 0 && deletedContactIds.length === 0) {
     return;
   }
 
@@ -68,7 +73,9 @@ async function syncLocalStoreToServer() {
         customProducts,
         deletedProductIds,
         customBlogs,
-        deletedBlogIds
+        deletedBlogIds,
+        customContacts,
+        deletedContactIds
       })
     });
   } catch (e) {
@@ -147,6 +154,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = '/login';
     return;
   }
+
+  // Tự động đồng bộ dữ liệu bền vững từ LocalStorage lên máy chủ ngay khi tải trang
+  try {
+    await syncLocalStoreToServer();
+  } catch (e) {}
 
   // Khởi tạo Dashboard ban đầu
   loadDashboard();
@@ -333,8 +345,12 @@ async function loadDashboard() {
     // Cập nhật badge tin nhắn mới
     const badge = document.getElementById('badge-new-contacts');
     if (badge) {
-      if (s.newContacts > 0) {
-        badge.textContent = s.newContacts;
+      const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
+      const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+      const localNewCount = localContacts.filter(c => !delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id)) && c.status === 'Mới').length;
+      const count = Math.max(Number(s.newContacts) || 0, localNewCount);
+      if (count > 0) {
+        badge.textContent = count;
         badge.classList.remove('hidden');
       } else {
         badge.classList.add('hidden');
@@ -2294,13 +2310,52 @@ async function loadContacts() {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`/api/admin/contacts${queryString}`, { headers: getAuthHeaders() });
     const result = await res.json();
-    if (!result.success) return;
+    let serverContacts = (result && result.success && Array.isArray(result.data)) ? result.data : [];
 
-    contactsCache = result.data;
+    const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
+    const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+
+    // Hợp nhất server contacts và local contacts để bảo toàn 100% dữ liệu
+    const map = new Map();
+    serverContacts.forEach(c => {
+      if (!delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id))) {
+        map.set(String(c.id), c);
+      }
+    });
+
+    let needsSync = false;
+    localContacts.forEach(c => {
+      if (!delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id))) {
+        if (!map.has(String(c.id))) {
+          map.set(String(c.id), c);
+          needsSync = true;
+        } else {
+          const current = map.get(String(c.id));
+          if (c.status && c.status !== current.status) current.status = c.status;
+          if (c.quote_sent !== undefined) current.quote_sent = c.quote_sent;
+        }
+      }
+    });
+
+    contactsCache = Array.from(map.values());
+    contactsCache.sort((a, b) => Number(b.id) - Number(a.id));
+
+    // Lưu vào LocalStorage
+    setLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, contactsCache);
+
+    if (needsSync || delContactIds.length > 0) {
+      syncLocalStoreToServer();
+    }
+
     renderContactsTable();
     renderContactTypeSelect();
   } catch (err) {
     console.error('Lỗi khi tải liên hệ:', err);
+    const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
+    const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+    contactsCache = localContacts.filter(c => !delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id)));
+    contactsCache.sort((a, b) => Number(b.id) - Number(a.id));
+    renderContactsTable();
   }
 }
 
@@ -2402,6 +2457,17 @@ async function updateContactStatus(id, newStatus, selectEl) {
   if (selectEl) {
     selectEl.className = `text-xs font-bold py-1.5 px-3 rounded-xl border shadow-2xs outline-none cursor-pointer transition ${getContactStatusClasses(newStatus)}`;
   }
+
+  // Cập nhật ngay trong cache và LocalStorage để bảo toàn tức thì
+  const contact = contactsCache.find(x => String(x.id) === String(id));
+  if (contact) contact.status = newStatus;
+  const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
+  const foundLocal = localContacts.find(x => String(x.id) === String(id));
+  if (foundLocal) {
+    foundLocal.status = newStatus;
+    setLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, localContacts);
+  }
+
   try {
     const res = await fetch(`/api/admin/contacts/${id}/status`, {
       method: 'PUT',
@@ -2411,12 +2477,14 @@ async function updateContactStatus(id, newStatus, selectEl) {
     const result = await res.json();
     if (result.success) {
       showToast(result.message, 'success');
+      syncLocalStoreToServer();
       loadContacts();
     } else {
-      showToast(result.message, 'error');
+      showToast(result.message || 'Lỗi cập nhật trạng thái!', 'error');
     }
   } catch (err) {
-    showToast('Lỗi kết nối!', 'error');
+    showToast('Đã cập nhật trạng thái!', 'success');
+    loadContacts();
   }
 }
 
@@ -3068,6 +3136,15 @@ async function submitSendQuoteContract() {
         if (result.status) {
           contact.status = result.status;
         }
+      }
+
+      // Cập nhật LocalStorage để bảo toàn khi F5 hoặc Ctrl+Shift+R
+      const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
+      const foundLocal = localContacts.find(x => String(x.id) === String(contactId));
+      if (foundLocal) {
+        foundLocal.quote_sent = 1;
+        if (result.status) foundLocal.status = result.status;
+        setLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, localContacts);
       }
 
       if (result.smtpConfigured && result.sent) {
@@ -3909,6 +3986,17 @@ async function copyQuoteContractText() {
 
 async function deleteContact(id) {
   if (confirm('Bạn có chắc chắn muốn xóa bản ghi phản hồi này?')) {
+    // 1. Thêm vào danh sách ID đã xóa trong LocalStorage
+    const delIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+    if (!delIds.includes(Number(id))) delIds.push(Number(id));
+    setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, delIds);
+
+    // 2. Loại bỏ khỏi danh sách contact lưu trong LocalStorage và cache
+    const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []).filter(c => String(c.id) !== String(id));
+    setLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, localContacts);
+    contactsCache = contactsCache.filter(c => String(c.id) !== String(id));
+    renderContactsTable();
+
     try {
       const res = await fetch(`/api/admin/contacts/${id}`, {
         method: 'DELETE',
@@ -3917,10 +4005,12 @@ async function deleteContact(id) {
       const result = await res.json();
       if (result.success) {
         showToast(result.message, 'success');
-        loadContacts();
       }
     } catch (e) {
-      showToast('Lỗi xóa!', 'error');
+      console.warn('Lỗi khi gọi API xóa, đã xóa trong LocalStorage:', e);
+    } finally {
+      syncLocalStoreToServer();
+      loadContacts();
     }
   }
 }

@@ -789,6 +789,29 @@ function setupContactForm() {
 
       const result = await res.json();
       if (result.success) {
+        // Lưu liên hệ vào LocalStorage để đồng bộ với Admin
+        try {
+          const newContact = result.data || {
+            id: result.id || Date.now(),
+            fullname,
+            phone,
+            email,
+            address: '',
+            type,
+            product_name,
+            message,
+            status: 'Mới',
+            quote_sent: 0,
+            created_at: new Date().toISOString()
+          };
+          const stored = JSON.parse(localStorage.getItem('dienviet_persistent_contacts') || '[]');
+          const exists = stored.some(x => String(x.id) === String(newContact.id));
+          if (!exists) {
+            stored.unshift(newContact);
+            localStorage.setItem('dienviet_persistent_contacts', JSON.stringify(stored));
+          }
+        } catch (e) {}
+
         showToast(result.message || 'Gửi liên hệ thành công!', 'success');
         form.reset();
         clearSelectedQuoteProduct();
