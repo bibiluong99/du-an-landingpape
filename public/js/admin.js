@@ -131,8 +131,9 @@ let currentContactStatusFilter = 'all';
 // 1. KIỂM TRA PHIÊN XÁC THỰC KHI KHỞI ĐỘNG
 // ========================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  const currentFullUrl = window.location.pathname + window.location.search + window.location.hash;
   if (!token) {
-    window.location.href = '/login';
+    window.location.href = '/login?redirect=' + encodeURIComponent(currentFullUrl);
     return;
   }
 
@@ -142,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!data.success) {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      window.location.href = '/login';
+      window.location.href = '/login?redirect=' + encodeURIComponent(currentFullUrl);
       return;
     }
 
@@ -160,11 +161,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     await syncLocalStoreToServer();
   } catch (e) {}
 
-  // Khởi tạo Dashboard ban đầu
-  loadDashboard();
+  // Kiểm tra tham số URL để mở trực tiếp tab tương ứng (VD: /admin?tab=contacts hoặc /admin#contacts)
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetTab = urlParams.get('tab') || window.location.hash.replace('#', '');
+  if (targetTab && ['dashboard', 'categories', 'products', 'blogs', 'contacts', 'settings'].includes(targetTab)) {
+    switchTab(targetTab);
+  } else {
+    loadDashboard();
+  }
   loadSettings();
   ensureProductsLoaded();
   ensureCategoriesLoaded();
+
+  // Lắng nghe sự kiện storage để đồng bộ tức thì giữa các tab khi khách hàng gửi liên hệ ở tab khác
+  window.addEventListener('storage', (e) => {
+    if (e.key === LOCAL_STORAGE_KEYS.CONTACTS) {
+      const activeSection = document.getElementById('tab-contacts');
+      if (activeSection && !activeSection.classList.contains('hidden')) {
+        loadContacts();
+      }
+      loadDashboard();
+    }
+  });
 
   // Setup sidebar mobile toggle
   const toggleBtn = document.getElementById('toggle-sidebar-btn');

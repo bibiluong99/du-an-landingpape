@@ -812,10 +812,13 @@ function setupContactForm() {
           }
         } catch (e) {}
 
-        showToast(result.message || 'Gửi liên hệ thành công!', 'success');
+        showToast('Gửi liên hệ thành công! Đang chuyển đến trang quản lý liên hệ...', 'success');
         form.reset();
         clearSelectedQuoteProduct();
-        setTimeout(() => closeContactModal(), 600);
+        setTimeout(() => {
+          closeContactModal();
+          window.location.href = '/admin?tab=contacts';
+        }, 1000);
       } else {
         showToast(result.message || 'Lỗi khi gửi!', 'error');
       }

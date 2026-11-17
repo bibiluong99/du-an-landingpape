@@ -1394,12 +1394,33 @@
             }
           } catch (e) {}
 
-          const successMsg = result.message || 'Cảm ơn bạn! Yêu cầu liên hệ đã được gửi thành công.';
+          const successMsg = 'Gửi yêu cầu liên hệ thành công! Đang chuyển đến trang Quản lý Liên hệ ở Admin...';
           showContactToast(successMsg, 'success');
 
           // Hiển thị thông báo banner nổi bật ngay phía trên form và cuộn mượt đến
           const successAlert = document.getElementById('contact-success-alert');
           if (successAlert) {
+            successAlert.innerHTML = `
+              <div class="flex items-start justify-between">
+                <div class="flex items-start space-x-3">
+                  <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-check text-base"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-emerald-800 text-sm sm:text-base">Gửi yêu cầu liên hệ thành công!</h4>
+                    <p class="text-xs sm:text-sm text-emerald-700 mt-1 leading-relaxed">
+                      Thông tin yêu cầu đã được tiếp nhận. Đang chuyển hướng bạn đến <strong>Quản lý Liên hệ ở Admin</strong>...
+                    </p>
+                    <div class="mt-2.5">
+                      <a href="/admin?tab=contacts" class="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#c8102e] hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+                        <span>Chuyển đến trang Quản lý Liên hệ ngay</span>
+                        <i class="fa-solid fa-arrow-right text-[11px]"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
             successAlert.classList.remove('hidden');
             successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
@@ -1408,6 +1429,11 @@
           clearAllSelectedProducts();
           clearCategoryFilters();
           toggleProductInterest();
+
+          // Tự động chuyển hướng đến trang Quản lý Liên hệ ở Admin
+          setTimeout(() => {
+            window.location.href = '/admin?tab=contacts';
+          }, 1000);
         } else {
           showContactToast(result.message || 'Có lỗi xảy ra, vui lòng thử lại!', 'error');
         }
