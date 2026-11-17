@@ -1324,12 +1324,117 @@ const seedData = async () => {
   }
 };
 
+async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds }) {
+  let updated = false;
+
+  // 1. Categories
+  if (Array.isArray(customCategories) && customCategories.length > 0) {
+    for (const cat of customCategories) {
+      const exist = fallbackData.categories.find(c => String(c.id) === String(cat.id));
+      if (!exist) {
+        fallbackData.categories.push(cat);
+        updated = true;
+      } else {
+        Object.assign(exist, cat);
+        updated = true;
+      }
+
+      if (!useFallback && db) {
+        try {
+          db.run(
+            `INSERT OR REPLACE INTO categories (id, name, slug, description, image, show_in_slider, sort_order, parent_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [cat.id, cat.name, cat.slug || '', cat.description || '', cat.image || '', cat.show_in_slider ? 1 : 0, cat.sort_order || 0, cat.parent_id || null, cat.created_at || new Date().toISOString()]
+          );
+        } catch (e) {}
+      }
+    }
+  }
+
+  // 2. Deleted Categories
+  if (Array.isArray(deletedCategoryIds) && deletedCategoryIds.length > 0) {
+    const before = fallbackData.categories.length;
+    fallbackData.categories = fallbackData.categories.filter(c => !deletedCategoryIds.includes(Number(c.id)) && !deletedCategoryIds.includes(String(c.id)));
+    if (fallbackData.categories.length !== before) updated = true;
+
+    if (!useFallback && db) {
+      try {
+        deletedCategoryIds.forEach(id => db.run(`DELETE FROM categories WHERE id = ?`, [id]));
+      } catch (e) {}
+    }
+  }
+
+  // 3. Products
+  if (Array.isArray(customProducts) && customProducts.length > 0) {
+    for (const prod of customProducts) {
+      const exist = fallbackData.products.find(p => String(p.id) === String(prod.id));
+      if (!exist) {
+        fallbackData.products.unshift(prod);
+        updated = true;
+      } else {
+        Object.assign(exist, prod);
+        updated = true;
+      }
+
+      if (!useFallback && db) {
+        try {
+          db.run(
+            `INSERT OR REPLACE INTO products (id, category_id, name, slug, price, original_price, image, images, short_desc, description, specs, applications, warranty_policy, is_new, is_promo, stock, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              prod.id,
+              prod.category_id || null,
+              prod.name,
+              prod.slug || '',
+              prod.price || 0,
+              prod.original_price || null,
+              prod.image || '',
+              typeof prod.images === 'object' ? JSON.stringify(prod.images) : (prod.images || ''),
+              prod.short_desc || '',
+              prod.description || '',
+              typeof prod.specs === 'object' ? JSON.stringify(prod.specs) : (prod.specs || ''),
+              prod.applications || '',
+              prod.warranty_policy || '',
+              prod.is_new ? 1 : 0,
+              prod.is_promo ? 1 : 0,
+              prod.stock || null,
+              prod.created_at || new Date().toISOString()
+            ]
+          );
+        } catch (e) {}
+      }
+    }
+  }
+
+  // 4. Deleted Products
+  if (Array.isArray(deletedProductIds) && deletedProductIds.length > 0) {
+    const before = fallbackData.products.length;
+    fallbackData.products = fallbackData.products.filter(p => !deletedProductIds.includes(Number(p.id)) && !deletedProductIds.includes(String(p.id)));
+    if (fallbackData.products.length !== before) updated = true;
+
+    if (!useFallback && db) {
+      try {
+        deletedProductIds.forEach(id => db.run(`DELETE FROM products WHERE id = ?`, [id]));
+      } catch (e) {}
+    }
+  }
+
+  if (updated) {
+    saveFallbackData();
+  }
+
+  return { success: true };
+}
+
 module.exports = {
   db,
   query,
   get,
   run,
   hashPassword,
-  initDB
+  initDB,
+  syncStoreData,
+  fallbackData,
+  saveFallbackData
 };
 

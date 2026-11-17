@@ -16,6 +16,58 @@ function getAuthHeaders(contentType = 'application/json') {
   return headers;
 }
 
+// ========================================================
+// QUẢN LÝ DỮ LIỆU ĐỒNG BỘ LOCALSTORAGE & SERVER
+// Giúp dữ liệu tạo/sửa luôn được bảo toàn 100% khi F5 hoặc Ctrl+Shift+R
+// ========================================================
+const LOCAL_STORAGE_KEYS = {
+  CATEGORIES: 'dienviet_persistent_categories',
+  DELETED_CAT_IDS: 'dienviet_deleted_cat_ids',
+  PRODUCTS: 'dienviet_persistent_products',
+  DELETED_PROD_IDS: 'dienviet_deleted_prod_ids'
+};
+
+function getLocalStore(key, defaultVal = []) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : defaultVal;
+  } catch (e) {
+    return defaultVal;
+  }
+}
+
+function setLocalStore(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {}
+}
+
+async function syncLocalStoreToServer() {
+  const customCategories = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+  const deletedCategoryIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
+  const customProducts = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+  const deletedProductIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
+
+  if (customCategories.length === 0 && customProducts.length === 0 && deletedCategoryIds.length === 0 && deletedProductIds.length === 0) {
+    return;
+  }
+
+  try {
+    await fetch('/api/admin/sync-store', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        customCategories,
+        deletedCategoryIds,
+        customProducts,
+        deletedProductIds
+      })
+    });
+  } catch (e) {
+    console.warn('Lưu ý syncLocalStoreToServer:', e);
+  }
+}
+
 // Format VNĐ
 function formatVND(amount) {
   if (!amount && amount !== 0) return '0 ₫';
@@ -429,7 +481,31 @@ async function loadCategories() {
     const result = await res.json();
     if (!result.success) return;
 
-    categoriesCache = result.data;
+    let serverCats = result.data || [];
+    const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+    const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
+
+    // Lọc bỏ các ID đã bị xóa
+    serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+
+    // Hợp nhất các danh mục từ LocalStorage nếu server chưa có
+    let needsSync = false;
+    localCats.forEach(lc => {
+      if (delCatIds.includes(Number(lc.id)) || delCatIds.includes(String(lc.id))) return;
+      const exist = serverCats.find(sc => String(sc.id) === String(lc.id));
+      if (!exist) {
+        serverCats.push(lc);
+        needsSync = true;
+      } else {
+        Object.assign(exist, lc);
+      }
+    });
+
+    categoriesCache = serverCats;
+
+    if (needsSync || delCatIds.length > 0) {
+      syncLocalStoreToServer();
+    }
 
     if (categoriesCache.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên!</td></tr>`;
@@ -718,6 +794,14 @@ async function deleteCategory(id) {
       const result = await res.json();
       if (result.success) {
         showToast(result.message, 'success');
+
+        const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES).filter(c => String(c.id) !== String(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
+
+        const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
+        if (!delCatIds.includes(Number(id))) delCatIds.push(Number(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS, delCatIds);
+
         loadCategories();
       } else {
         showToast(result.message, 'error');
@@ -758,7 +842,31 @@ async function loadCategoriesForDropdown() {
     const res = await fetch('/api/admin/categories', { headers: getAuthHeaders() });
     const result = await res.json();
     if (result.success && Array.isArray(result.data)) {
-      categoriesCache = result.data;
+      let serverCats = result.data || [];
+    const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+    const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
+
+    // Lọc bỏ các ID đã bị xóa
+    serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+
+    // Hợp nhất các danh mục từ LocalStorage nếu server chưa có
+    let needsSync = false;
+    localCats.forEach(lc => {
+      if (delCatIds.includes(Number(lc.id)) || delCatIds.includes(String(lc.id))) return;
+      const exist = serverCats.find(sc => String(sc.id) === String(lc.id));
+      if (!exist) {
+        serverCats.push(lc);
+        needsSync = true;
+      } else {
+        Object.assign(exist, lc);
+      }
+    });
+
+    categoriesCache = serverCats;
+
+    if (needsSync || delCatIds.length > 0) {
+      syncLocalStoreToServer();
+    }
       
       const optHtml = buildCategoryDropdownHtml(false);
       if (select) select.innerHTML = optHtml;
@@ -787,8 +895,30 @@ async function loadProducts() {
     const result = await res.json();
     if (!result.success) return;
 
-    productsCache = result.data;
+    let serverProds = result.data || [];
+    const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+    const delProdIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
+
+    serverProds = serverProds.filter(p => !delProdIds.includes(Number(p.id)) && !delProdIds.includes(String(p.id)));
+
+    let needsSync = false;
+    localProds.forEach(lp => {
+      if (delProdIds.includes(Number(lp.id)) || delProdIds.includes(String(lp.id))) return;
+      const exist = serverProds.find(sp => String(sp.id) === String(lp.id));
+      if (!exist) {
+        serverProds.unshift(lp);
+        needsSync = true;
+      } else {
+        Object.assign(exist, lp);
+      }
+    });
+
+    productsCache = serverProds;
     renderProductsTable(productsCache);
+
+    if (needsSync || delProdIds.length > 0) {
+      syncLocalStoreToServer();
+    }
   } catch (err) {
     console.error('Lỗi khi tải sản phẩm:', err);
   }
@@ -800,7 +930,22 @@ async function ensureProductsLoaded() {
     const res = await fetch('/api/admin/products', { headers: getAuthHeaders() });
     const result = await res.json();
     if (result.success && Array.isArray(result.data)) {
-      productsCache = result.data;
+      let serverProds = result.data || [];
+      const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+      const delProdIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
+
+      serverProds = serverProds.filter(p => !delProdIds.includes(Number(p.id)) && !delProdIds.includes(String(p.id)));
+
+      localProds.forEach(lp => {
+        if (delProdIds.includes(Number(lp.id)) || delProdIds.includes(String(lp.id))) return;
+        const exist = serverProds.find(sp => String(sp.id) === String(lp.id));
+        if (!exist) {
+          serverProds.unshift(lp);
+        } else {
+          Object.assign(exist, lp);
+        }
+      });
+      productsCache = serverProds;
     }
   } catch (e) {
     console.error('Lỗi nạp sản phẩm:', e);
@@ -814,7 +959,31 @@ async function ensureCategoriesLoaded() {
     const res = await fetch('/api/admin/categories', { headers: getAuthHeaders() });
     const result = await res.json();
     if (result.success && Array.isArray(result.data)) {
-      categoriesCache = result.data;
+      let serverCats = result.data || [];
+    const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+    const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
+
+    // Lọc bỏ các ID đã bị xóa
+    serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+
+    // Hợp nhất các danh mục từ LocalStorage nếu server chưa có
+    let needsSync = false;
+    localCats.forEach(lc => {
+      if (delCatIds.includes(Number(lc.id)) || delCatIds.includes(String(lc.id))) return;
+      const exist = serverCats.find(sc => String(sc.id) === String(lc.id));
+      if (!exist) {
+        serverCats.push(lc);
+        needsSync = true;
+      } else {
+        Object.assign(exist, lc);
+      }
+    });
+
+    categoriesCache = serverCats;
+
+    if (needsSync || delCatIds.length > 0) {
+      syncLocalStoreToServer();
+    }
     }
   } catch (e) {
     console.error('Lỗi nạp danh mục:', e);
@@ -1574,6 +1743,14 @@ async function deleteProduct(id) {
       const result = await res.json();
       if (result.success) {
         showToast(result.message, 'success');
+
+        const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS).filter(p => String(p.id) !== String(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
+
+        const delProdIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS);
+        if (!delProdIds.includes(Number(id))) delProdIds.push(Number(id));
+        setLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS, delProdIds);
+
         loadProducts();
       } else {
         showToast(result.message, 'error');
@@ -4573,6 +4750,27 @@ function setupForms() {
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
+
+          const newCatId = result.id || id || Date.now();
+          const savedCat = {
+            id: Number(newCatId) || newCatId,
+            name,
+            description,
+            image,
+            show_in_slider,
+            parent_id: parent_id ? Number(parent_id) : null,
+            created_at: new Date().toISOString()
+          };
+
+          const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+          const idx = localCats.findIndex(c => String(c.id) === String(savedCat.id));
+          if (idx >= 0) localCats[idx] = savedCat;
+          else localCats.push(savedCat);
+          setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
+
+          const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS).filter(x => String(x) !== String(savedCat.id));
+          setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS, delCatIds);
+
           closeCategoryModal();
           loadCategories();
         } else {
@@ -4632,6 +4830,27 @@ function setupForms() {
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
+
+          const newProdId = result.id || id || Date.now();
+          const savedProd = {
+            id: Number(newProdId) || newProdId,
+            ...payload,
+            id: Number(newProdId) || newProdId,
+            category_id: Number(category_id),
+            price: Number(price),
+            original_price: original_price ? Number(original_price) : null,
+            created_at: new Date().toISOString()
+          };
+
+          const localProds = getLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS);
+          const idx = localProds.findIndex(p => String(p.id) === String(savedProd.id));
+          if (idx >= 0) localProds[idx] = savedProd;
+          else localProds.unshift(savedProd);
+          setLocalStore(LOCAL_STORAGE_KEYS.PRODUCTS, localProds);
+
+          const delProdIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS).filter(x => String(x) !== String(savedProd.id));
+          setLocalStore(LOCAL_STORAGE_KEYS.DELETED_PROD_IDS, delProdIds);
+
           closeProductModal();
           loadProducts();
         } else {

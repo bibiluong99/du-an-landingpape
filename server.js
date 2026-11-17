@@ -4,7 +4,7 @@ const fs = require('fs');
 const cors = require('cors');
 const multer = require('multer');
 const crypto = require('crypto');
-const { query, get, run, hashPassword, initDB } = require('./db');
+const { query, get, run, hashPassword, initDB, syncStoreData } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -980,6 +980,16 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// API đồng bộ dữ liệu giữa LocalStorage Client và Serverless Store
+app.post('/api/admin/sync-store', requireAdmin, async (req, res) => {
+  try {
+    const result = await syncStoreData(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

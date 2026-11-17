@@ -408,8 +408,20 @@ async function loadCategories() {
       return;
     }
 
+    let serverCats = result.data || [];
+    try {
+      const localCats = JSON.parse(localStorage.getItem('dienviet_persistent_categories') || '[]');
+      const delCatIds = JSON.parse(localStorage.getItem('dienviet_deleted_cat_ids') || '[]');
+      serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+      localCats.forEach(lc => {
+        if (!delCatIds.includes(Number(lc.id)) && !serverCats.find(c => String(c.id) === String(lc.id))) {
+          serverCats.push(lc);
+        }
+      });
+    } catch (e) {}
+
     // Chỉ lọc các danh mục cha có trạng thái Hiển thị (show_in_slider = 1)
-    const parentCategories = result.data.filter(cat => !cat.parent_id && (cat.show_in_slider === 1 || cat.show_in_slider === undefined));
+    const parentCategories = serverCats.filter(cat => !cat.parent_id && (cat.show_in_slider === 1 || cat.show_in_slider === undefined));
     if (parentCategories.length === 0) {
       container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-medium">Chưa có danh mục nào.</div>`;
       return;
@@ -445,7 +457,18 @@ async function loadBestsellerProducts() {
       return;
     }
 
-    const products = result.data.slice(0, 5);
+    let prods = result.data || [];
+    try {
+      const localProds = JSON.parse(localStorage.getItem('dienviet_persistent_products') || '[]');
+      const delProdIds = JSON.parse(localStorage.getItem('dienviet_deleted_prod_ids') || '[]');
+      prods = prods.filter(p => !delProdIds.includes(Number(p.id)) && !delProdIds.includes(String(p.id)));
+      localProds.forEach(lp => {
+        if (lp.is_promo && !delProdIds.includes(Number(lp.id)) && !prods.find(p => String(p.id) === String(lp.id))) {
+          prods.unshift(lp);
+        }
+      });
+    } catch (e) {}
+    const products = prods.slice(0, 5);
 
     container.innerHTML = products.map((p, idx) => {
       return `

@@ -135,7 +135,18 @@ async function loadCategories() {
     const result = await res.json();
     if (!result.success || !result.data) return;
 
-    categoriesList = result.data;
+    let serverCats = result.data || [];
+    try {
+      const localCats = JSON.parse(localStorage.getItem('dienviet_persistent_categories') || '[]');
+      const delCatIds = JSON.parse(localStorage.getItem('dienviet_deleted_cat_ids') || '[]');
+      serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+      localCats.forEach(lc => {
+        if (!delCatIds.includes(Number(lc.id)) && !serverCats.find(c => String(c.id) === String(lc.id))) {
+          serverCats.push(lc);
+        }
+      });
+    } catch (e) {}
+    categoriesList = serverCats;
     
     // Nếu đang chọn category_id từ URL
     if (currentCategory && currentCategory !== 'all') {
@@ -340,7 +351,20 @@ async function fetchProducts() {
       return;
     }
 
-    allProducts = result.data;
+    let serverProds = result.data || [];
+    try {
+      const localProds = JSON.parse(localStorage.getItem('dienviet_persistent_products') || '[]');
+      const delProdIds = JSON.parse(localStorage.getItem('dienviet_deleted_prod_ids') || '[]');
+      serverProds = serverProds.filter(p => !delProdIds.includes(Number(p.id)) && !delProdIds.includes(String(p.id)));
+      localProds.forEach(lp => {
+        if (!delProdIds.includes(Number(lp.id)) && !serverProds.find(p => String(p.id) === String(lp.id))) {
+          if (!currentCategory || currentCategory === 'all' || String(lp.category_id) === String(currentCategory)) {
+            serverProds.unshift(lp);
+          }
+        }
+      });
+    } catch (e) {}
+    allProducts = serverProds;
     sortAndRenderProducts();
   } catch (err) {
     console.error('Lỗi tải sản phẩm:', err);
