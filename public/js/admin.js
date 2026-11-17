@@ -505,9 +505,18 @@ async function loadCategories() {
         serverCats.push(lc);
         needsSync = true;
       } else {
+        // Đồng bộ trạng thái mới nhất từ server vào localCats
+        if (exist.show_in_slider !== undefined) {
+          lc.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
+        }
+        if (exist.image && !lc.image) {
+          lc.image = exist.image;
+        }
         Object.assign(exist, lc);
+        exist.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
       }
     });
+    setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
 
     categoriesCache = serverCats;
 
@@ -608,7 +617,7 @@ async function loadCategories() {
             <!-- Cột 1: HÌNH ẢNH (Thụt lề ngang bằng với ảnh cha) -->
             <td class="py-2.5 px-6">
               <div class="flex items-center space-x-2.5 pl-8 sm:pl-9">
-                <img src="${child.image || parent.image || '/images/hd/cat-day-dien.jpg'}" 
+                <img src="${child.image || '/images/hd/cat-day-dien.jpg'}" 
                      alt="${child.name}" 
                      class="w-9 h-9 rounded-lg object-contain border border-amber-200/80 p-0.5 bg-white shadow-2xs shrink-0"
                      onerror="this.onerror=null; this.src='/images/hd/cat-day-dien.jpg';">
@@ -679,7 +688,7 @@ function toggleCollapseCategory(parentId) {
   }
 }
 
-// Bật/tắt nhanh hiển thị ở Slider 3s Trang chủ
+// Bật/tắt nhanh hiển thị ở Slider 3s Trang chủ & Danh mục sản phẩm
 async function toggleCategorySlider(catId) {
   try {
     const res = await fetch(`/api/admin/categories/${catId}/toggle-slider`, {
@@ -689,6 +698,29 @@ async function toggleCategorySlider(catId) {
     const result = await res.json();
     if (result.success) {
       showToast(result.message, 'success');
+
+      const newStatus = (result.show_in_slider !== undefined && result.show_in_slider !== null) ? Number(result.show_in_slider) : 0;
+      
+      // 1. Cập nhật cache giao diện admin
+      if (Array.isArray(categoriesCache)) {
+        const found = categoriesCache.find(x => String(x.id) === String(catId));
+        if (found) found.show_in_slider = newStatus;
+      }
+
+      // 2. Cập nhật LocalStorage
+      const localCats = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
+      const lCat = localCats.find(x => String(x.id) === String(catId));
+      if (lCat) {
+        lCat.show_in_slider = newStatus;
+      } else {
+        const found = categoriesCache.find(x => String(x.id) === String(catId));
+        if (found) localCats.push({ ...found, show_in_slider: newStatus });
+      }
+      setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
+
+      // 3. Đồng bộ lên Serverless Store
+      await syncLocalStoreToServer();
+
       loadCategories();
     } else {
       showToast(result.message || 'Lỗi khi cập nhật slider!', 'error');
@@ -744,8 +776,8 @@ function openCategoryModal(cat = null, defaultParentId = null) {
     title.textContent = 'Thêm Danh Mục Con';
     idInput.value = '';
     if (parentGroup) parentGroup.classList.remove('hidden');
-    // Hiển thị mặc định danh mục cha là "Chọn danh mục cha" (Hình 2)
-    if (parentSelect) parentSelect.value = '';
+    // Tự động chọn danh mục cha tương ứng
+    if (parentSelect) parentSelect.value = String(defaultParentId);
     nameInput.value = '';
     descInput.value = '';
     imgInput.value = '';
@@ -866,9 +898,18 @@ async function loadCategoriesForDropdown() {
         serverCats.push(lc);
         needsSync = true;
       } else {
+        // Đồng bộ trạng thái mới nhất từ server vào localCats
+        if (exist.show_in_slider !== undefined) {
+          lc.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
+        }
+        if (exist.image && !lc.image) {
+          lc.image = exist.image;
+        }
         Object.assign(exist, lc);
+        exist.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
       }
     });
+    setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
 
     categoriesCache = serverCats;
 
@@ -983,9 +1024,18 @@ async function ensureCategoriesLoaded() {
         serverCats.push(lc);
         needsSync = true;
       } else {
+        // Đồng bộ trạng thái mới nhất từ server vào localCats
+        if (exist.show_in_slider !== undefined) {
+          lc.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
+        }
+        if (exist.image && !lc.image) {
+          lc.image = exist.image;
+        }
         Object.assign(exist, lc);
+        exist.show_in_slider = (exist.show_in_slider === 0 || exist.show_in_slider === '0' || exist.show_in_slider === false) ? 0 : 1;
       }
     });
+    setLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES, localCats);
 
     categoriesCache = serverCats;
 
@@ -4376,6 +4426,12 @@ async function uploadImage(fileInput, targetInputId, previewImgId) {
   const file = fileInput.files[0];
   showToast('Đang xử lý & tải ảnh lên...', 'info');
 
+  const saveCatBtn = document.getElementById('save-cat-btn');
+  if (saveCatBtn && targetInputId === 'cat-image') {
+    saveCatBtn.disabled = true;
+    saveCatBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+
   try {
     const dataUrl = await compressImageToDataUrl(file, 1000, 1000, 0.82);
     if (!dataUrl) {
@@ -4398,16 +4454,25 @@ async function uploadImage(fileInput, targetInputId, previewImgId) {
     try {
       const formData = new FormData();
       formData.append('image', file);
+      const currentToken = localStorage.getItem('admin_token') || token;
       fetch('/api/admin/upload', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${currentToken}` },
         body: formData
+      }).then(r => r.json()).then(res => {
+        if (res && res.success && (res.fileUrl || res.url)) {
+          if (inputEl) inputEl.value = res.fileUrl || res.url;
+        }
       }).catch(() => {});
     } catch (e) {}
   } catch (err) {
     showToast('Lỗi khi tải ảnh!', 'error');
   } finally {
     fileInput.value = '';
+    if (saveCatBtn && targetInputId === 'cat-image') {
+      saveCatBtn.disabled = false;
+      saveCatBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
   }
 }
 
@@ -4822,6 +4887,8 @@ function setupForms() {
 
           const delCatIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS).filter(x => String(x) !== String(savedCat.id));
           setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS, delCatIds);
+
+          await syncLocalStoreToServer();
 
           closeCategoryModal();
           loadCategories();

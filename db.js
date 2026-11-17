@@ -221,7 +221,16 @@ function fallbackQuery(sql, params = []) {
       list = list.filter(c => !c.parent_id);
     }
     if (lower.includes('c.show_in_slider = 1') || lower.includes('show_in_slider = 1')) {
-      list = list.filter(c => c.show_in_slider === 1 || c.show_in_slider === null || c.show_in_slider === undefined);
+      const activeParentIds = new Set(
+        list.filter(c => !c.parent_id && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false).map(c => String(c.id))
+      );
+      list = list.filter(c => {
+        if (c.show_in_slider === 0 || c.show_in_slider === '0' || c.show_in_slider === false) return false;
+        if (c.parent_id) {
+          return activeParentIds.has(String(c.parent_id));
+        }
+        return true;
+      });
     }
 
     // Sắp xếp: danh mục cha đứng trước kèm các danh mục con theo thứ tự
@@ -263,6 +272,21 @@ function fallbackQuery(sql, params = []) {
     }
     if (lower.includes('p.is_promo = 1') || lower.includes('is_promo = 1')) {
       list = list.filter(p => p.is_promo === 1 || p.is_promo === '1');
+    }
+
+    // Lọc theo show_in_slider của danh mục nếu câu truy vấn công khai yêu cầu
+    if (lower.includes('show_in_slider = 1') || (!lower.includes('from products p left join') && !lower.includes('select p.* from products p order by p.id desc'))) {
+      const activeParentIds = new Set(
+        fallbackData.categories.filter(c => !c.parent_id && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false).map(c => String(c.id))
+      );
+      const activeCatIds = new Set(
+        fallbackData.categories.filter(c => {
+          if (c.show_in_slider === 0 || c.show_in_slider === '0' || c.show_in_slider === false) return false;
+          if (c.parent_id) return activeParentIds.has(String(c.parent_id));
+          return true;
+        }).map(c => String(c.id))
+      );
+      list = list.filter(p => !p.category_id || activeCatIds.has(String(p.category_id)));
     }
 
     // Lọc theo category_id: Hỗ trợ cả danh mục cha (lấy luôn sản phẩm thuộc danh mục con) và danh mục con
@@ -366,7 +390,7 @@ function fallbackRun(sql, params = []) {
     if (cat) {
       cat.name = name;
       cat.description = description;
-      if (image) cat.image = image;
+      if (image !== undefined && image !== null) cat.image = image;
       cat.show_in_slider = Number(show_in_slider);
       cat.sort_order = Number(sort_order);
       cat.parent_id = parent_id ? Number(parent_id) : null;

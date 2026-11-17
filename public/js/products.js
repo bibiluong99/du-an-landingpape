@@ -140,15 +140,44 @@ async function loadCategories() {
       const localCats = JSON.parse(localStorage.getItem('dienviet_persistent_categories') || '[]');
       const delCatIds = JSON.parse(localStorage.getItem('dienviet_deleted_cat_ids') || '[]');
       serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+      
+      // Đồng bộ trạng thái từ serverCats vào localCats nếu có
+      serverCats.forEach(sc => {
+        const lc = localCats.find(c => String(c.id) === String(sc.id));
+        if (lc && sc.show_in_slider !== undefined) {
+          lc.show_in_slider = sc.show_in_slider;
+        }
+      });
+
       localCats.forEach(lc => {
         if (!delCatIds.includes(Number(lc.id)) && !serverCats.find(c => String(c.id) === String(lc.id))) {
-          serverCats.push(lc);
+          // CHỈ thêm từ localStorage nếu danh mục KHÔNG BỊ TẮT (show_in_slider !== 0)
+          if (lc.show_in_slider !== 0 && lc.show_in_slider !== '0' && lc.show_in_slider !== false) {
+            serverCats.push(lc);
+          }
         }
       });
     } catch (e) {}
-    categoriesList = serverCats;
+
+    // Lọc bỏ toàn bộ danh mục đã bị tắt hiển thị (show_in_slider = 0)
+    // 1. Danh mục cha phải có show_in_slider !== 0
+    // 2. Danh mục con phải có show_in_slider !== 0 VÀ danh mục cha cũng phải đang bật
+    const activeParentIds = new Set(
+      serverCats
+        .filter(c => !c.parent_id && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false)
+        .map(c => String(c.id))
+    );
+
+    categoriesList = serverCats.filter(c => {
+      const isOff = c.show_in_slider === 0 || c.show_in_slider === '0' || c.show_in_slider === false;
+      if (isOff) return false;
+      if (c.parent_id) {
+        return activeParentIds.has(String(c.parent_id));
+      }
+      return true;
+    });
     
-    // Nếu đang chọn category_id từ URL
+    // Nếu đang chọn category_id từ URL mà danh mục này bị tắt hoặc không tồn tại
     if (currentCategory && currentCategory !== 'all') {
       const currentCatObj = categoriesList.find(c => String(c.id) === String(currentCategory));
       if (!currentCatObj) {
@@ -202,11 +231,11 @@ function renderCategoriesSidebar() {
     </div>
   `;
 
-  // 2. Danh sách các danh mục cha
-  const parents = categoriesList.filter(c => !c.parent_id);
+  // 2. Danh sách các danh mục cha đang BẬT hiển thị
+  const parents = categoriesList.filter(c => !c.parent_id && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false);
 
   const parentsHtml = parents.map(parent => {
-    const children = categoriesList.filter(c => String(c.parent_id) === String(parent.id));
+    const children = categoriesList.filter(c => String(c.parent_id) === String(parent.id) && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false);
     const hasChildren = children.length > 0;
     const isExpanded = expandedParentCats.has(String(parent.id));
     const isParentActive = String(parent.id) === String(currentCategory);
@@ -364,6 +393,13 @@ async function fetchProducts() {
         }
       });
     } catch (e) {}
+
+    // Lọc sản phẩm: Nếu sản phẩm thuộc danh mục đã bị TẮT (không có trong categoriesList khi đã load), không hiển thị
+    if (Array.isArray(categoriesList) && categoriesList.length > 0) {
+      const validCatIds = new Set(categoriesList.map(c => String(c.id)));
+      serverProds = serverProds.filter(p => !p.category_id || validCatIds.has(String(p.category_id)));
+    }
+
     allProducts = serverProds;
     sortAndRenderProducts();
   } catch (err) {

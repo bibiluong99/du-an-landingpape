@@ -434,15 +434,26 @@ async function loadCategories() {
       const localCats = JSON.parse(localStorage.getItem('dienviet_persistent_categories') || '[]');
       const delCatIds = JSON.parse(localStorage.getItem('dienviet_deleted_cat_ids') || '[]');
       serverCats = serverCats.filter(c => !delCatIds.includes(Number(c.id)) && !delCatIds.includes(String(c.id)));
+      
+      // Đồng bộ trạng thái show_in_slider từ server vào localCats nếu có
+      serverCats.forEach(sc => {
+        const lc = localCats.find(c => String(c.id) === String(sc.id));
+        if (lc && sc.show_in_slider !== undefined) {
+          lc.show_in_slider = sc.show_in_slider;
+        }
+      });
+
       localCats.forEach(lc => {
         if (!delCatIds.includes(Number(lc.id)) && !serverCats.find(c => String(c.id) === String(lc.id))) {
-          serverCats.push(lc);
+          if (lc.show_in_slider !== 0 && lc.show_in_slider !== '0' && lc.show_in_slider !== false) {
+            serverCats.push(lc);
+          }
         }
       });
     } catch (e) {}
 
-    // Chỉ lọc các danh mục cha có trạng thái Hiển thị (show_in_slider = 1)
-    const parentCategories = serverCats.filter(cat => !cat.parent_id && (cat.show_in_slider === 1 || cat.show_in_slider === undefined));
+    // Chỉ lọc các danh mục cha có trạng thái Hiển thị (show_in_slider !== 0)
+    const parentCategories = serverCats.filter(cat => !cat.parent_id && cat.show_in_slider !== 0 && cat.show_in_slider !== '0' && cat.show_in_slider !== false);
     if (parentCategories.length === 0) {
       container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-medium">Chưa có danh mục nào.</div>`;
       return;
