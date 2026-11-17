@@ -2843,8 +2843,8 @@ function openQuoteContractModal(contactId) {
     buyerEmail: cleanVietnameseText(c.email || ''),
     // Hạng mục báo giá (items)
     items: initialItems,
-    vatPercent: 10,
-    quoteNotes: `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`,
+    vatPercent: 0,
+    quoteNotes: `- Bảng giá trên là giá niêm yết đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`,
     thankYouText: 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!',
     showTotal: true
   };
@@ -2867,7 +2867,7 @@ function loadSampleCncQuoteItems() {
     { id: 4, name: 'Gia công khoan cam', unit: 'Tấm', quantity: 1, price: 10000, note: '' },
     { id: 5, name: 'Gia công dán cạnh 18mm PVC', unit: 'm dài', quantity: 1, price: 4000, note: '' }
   ];
-  currentQuoteContract.quoteNotes = `- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`;
+  currentQuoteContract.quoteNotes = `- Bảng giá trên là giá niêm yết đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất`;
   currentQuoteContract.thankYouText = 'TRÂN TRỌNG CẢM ƠN QUÝ KHÁCH!';
   currentQuoteContract.showTotal = true;
   renderQuoteContractModal();
@@ -3059,6 +3059,25 @@ function addBlankQuoteItemAndClosePicker() {
   renderQuoteContractModal();
 }
 
+// Chuyển đổi chuỗi DataURI (base64) sang định dạng nhị phân Blob để tải file chuẩn 100%
+function dataUriToBlob(dataUri) {
+  try {
+    const parts = dataUri.split(',');
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : 'application/pdf';
+    const byteString = atob(parts[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mime });
+  } catch (e) {
+    console.warn('Lỗi khi convert dataUri sang Blob:', e);
+    return null;
+  }
+}
+
 async function submitSendQuoteContract() {
   if (!currentQuoteContract || !currentQuoteContract.contactId) {
     showToast('Không tìm thấy thông tin liên hệ để gửi báo giá!', 'error');
@@ -3090,42 +3109,82 @@ async function submitSendQuoteContract() {
     const printableEl = document.getElementById('quote-contract-printable');
 
     let pdfBase64 = '';
-    let pdfBlobUri = '';
+    let pdfBlob = null;
 
-    // Tạo file PDF chất lượng cao bằng html2pdf
-    if (typeof html2pdf !== 'undefined' && printableEl) {
+    // Tạo file PDF chất lượng cao bằng html2pdf (với tọa độ x:0, y:0 nằm chuẩn trong khung nhìn)
+    if (typeof html2pdf !== 'undefined') {
+      const renderContainer = document.createElement('div');
+      renderContainer.id = 'temp-pdf-render-box';
+      renderContainer.style.position = 'fixed';
+      renderContainer.style.top = '0';
+      renderContainer.style.left = '0';
+      renderContainer.style.width = '794px';
+      renderContainer.style.padding = '30px 36px';
+      renderContainer.style.background = '#ffffff';
+      renderContainer.style.color = '#000000';
+      renderContainer.style.zIndex = '-9999';
+      renderContainer.style.boxSizing = 'border-box';
+      renderContainer.style.fontFamily = currentContractFont === 'arial' ? "Arial, 'Helvetica Neue', Helvetica, sans-serif" : "'Times New Roman', Times, serif";
+      renderContainer.style.fontSize = '13pt';
+      renderContainer.style.lineHeight = '1.5';
+      renderContainer.innerHTML = buildQuoteHtml(currentQuoteContract);
+      document.body.appendChild(renderContainer);
+
       try {
-        const clone = printableEl.cloneNode(true);
-        clone.style.width = '800px';
-        clone.style.padding = '25px';
-        clone.style.background = '#ffffff';
-        clone.style.color = '#000000';
-        clone.style.position = 'fixed';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        document.body.appendChild(clone);
+        // Chờ tải ảnh nếu có trong renderContainer
+        const imgs = Array.from(renderContainer.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            setTimeout(resolve, 600);
+          });
+        }));
 
         const opt = {
           margin: [10, 10, 10, 10],
           filename: `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            letterRendering: true,
+            scrollX: 0,
+            scrollY: 0,
+            x: 0,
+            y: 0,
+            windowWidth: 800
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const pdfWorker = html2pdf().set(opt).from(clone);
+        const pdfWorker = html2pdf().set(opt).from(renderContainer);
         pdfBase64 = await pdfWorker.outputPdf('datauristring');
-        pdfBlobUri = await pdfWorker.outputPdf('bloburi');
-
-        document.body.removeChild(clone);
+        try {
+          pdfBlob = await pdfWorker.output('blob');
+        } catch (bErr) {
+          if (pdfBase64) {
+            pdfBlob = dataUriToBlob(pdfBase64);
+          }
+        }
       } catch (pdfErr) {
         console.warn('Lỗi khi render PDF qua html2pdf:', pdfErr);
+      } finally {
+        if (renderContainer.parentNode) {
+          renderContainer.parentNode.removeChild(renderContainer);
+        }
       }
     }
 
+    if (!pdfBlob && pdfBase64) {
+      pdfBlob = dataUriToBlob(pdfBase64);
+    }
+
+    // Giá trên sản phẩm là giá niêm yết đã bao gồm thuế, KHÔNG tính thêm VAT 10%
     const subtotal = (currentQuoteContract.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
-    const vatAmount = Math.round(subtotal * ((currentQuoteContract.vatPercent || 0) / 100));
-    const grandTotal = subtotal + vatAmount;
+    const grandTotal = subtotal;
 
     // 2. Gửi yêu cầu gửi email báo giá kèm PDF đến máy chủ
     const res = await fetch(`/api/admin/contacts/${contactId}/send-quote-email`, {
@@ -3168,10 +3227,19 @@ async function submitSendQuoteContract() {
       if (result.smtpConfigured && result.sent) {
         showToast(result.message || `Đã gửi báo giá kèm file PDF đến Gmail ${buyerEmail} thành công!`, 'success', 5000);
       } else {
-        // Nếu máy chủ chưa cấu hình SMTP: Tự động tải file PDF và mở Gmail Web soạn thư cho Admin
-        if (pdfBlobUri || pdfBase64) {
+        // Tải file PDF trực tiếp về máy tính người dùng (đảm bảo file có nội dung hoàn chỉnh 100%)
+        if (pdfBlob) {
+          const blobUrl = URL.createObjectURL(pdfBlob);
           const downloadLink = document.createElement('a');
-          downloadLink.href = pdfBlobUri || pdfBase64;
+          downloadLink.href = blobUrl;
+          downloadLink.download = `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        } else if (pdfBase64) {
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pdfBase64;
           downloadLink.download = `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
@@ -3183,7 +3251,7 @@ async function submitSendQuoteContract() {
         const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(buyerEmail)}&su=${safeSubject}&body=${safeBody}`;
         window.open(composeUrl, '_blank');
 
-        showToast(`Đã xuất PDF báo giá & mở Gmail gửi tới ${buyerEmail}! (Để hệ thống tự động gửi ngầm, hãy nhập Mật khẩu ứng dụng Gmail tại Cấu hình Website)`, 'info', 7000);
+        showToast(`Đã xuất PDF báo giá & mở Gmail gửi tới ${buyerEmail}! (Giá niêm yết chuẩn không tính thêm VAT)`, 'info', 7000);
       }
 
       closeQuoteContractModal();
@@ -3545,7 +3613,7 @@ function renderQuoteContractModal() {
 
         <div>
           <label class="block text-[11px] font-bold text-slate-600 mb-1">Nội dung Ghi chú (mỗi dòng một ý):</label>
-          <textarea id="qc-quote-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')}</textarea>
+          <textarea id="qc-quote-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none">${escapeHtml(q.quoteNotes || '- Bảng giá trên là giá niêm yết đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')}</textarea>
         </div>
       </div>
 
@@ -3576,21 +3644,18 @@ function renderQuoteContractModal() {
   }
 }
 
-function renderQuotePreviewHtml() {
-  const container = document.getElementById('quote-contract-printable');
-  if (!container || !currentQuoteContract) return;
-
-  const q = currentQuoteContract;
-  const subtotal = q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
-  const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
-  const grandTotal = subtotal + vatAmount;
+function buildQuoteHtml(q) {
+  if (!q) return '';
+  const subtotal = (q.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
+  const vatAmount = 0; // Giá trên sản phẩm là giá niêm yết đã bao gồm thuế VAT
+  const grandTotal = subtotal;
 
   let logoSrc = q.sellerLogo;
   if (!logoSrc || logoSrc.includes('/admin') || logoSrc === window.location.href) {
     logoSrc = websiteSettingsCache?.logo_url || '/uploads/img-1794390284769-958980201.png';
   }
 
-  container.innerHTML = `
+  return `
     <!-- KHỐI 1: HEADER LOGO + THÔNG TIN ĐƠN VỊ -->
     <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #334155; margin-bottom: 24px; padding-bottom: 14px;">
       <tr>
@@ -3651,7 +3716,7 @@ function renderQuotePreviewHtml() {
         </tr>
       </thead>
       <tbody>
-        ${q.items.map((it, idx) => `
+        ${(q.items || []).map((it, idx) => `
           <tr>
             <td style="border: 1px solid #334155; padding: 8px 6px; text-align: center;">${idx + 1}</td>
             <td style="border: 1px solid #334155; padding: 8px 12px; font-weight: 600;">${escapeHtml(cleanVietnameseText(it.name))}</td>
@@ -3672,7 +3737,7 @@ function renderQuotePreviewHtml() {
     <!-- KHỐI 5: GHI CHÚ -->
     <div style="margin-bottom: 18px; font-size: 13px; line-height: 1.7; color: #1e293b;">
       <div style="font-weight: bold; margin-bottom: 3px;">Ghi chú:</div>
-      <div style="white-space: pre-line; padding-left: 4px;">${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất'))}</div>
+      <div style="white-space: pre-line; padding-left: 4px;">${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên là giá niêm yết đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất'))}</div>
     </div>
 
     <!-- KHỐI 6: LỜI CẢM ƠN -->
@@ -3681,7 +3746,7 @@ function renderQuotePreviewHtml() {
     </div>
 
     <!-- KHỐI 7: BẢNG KÝ TÊN 2 BÊN -->
-    <table style="width: 100%; border: none; border-collapse: collapse; margin-top: 10px; margin-bottom: 25px;">
+    <table style="width: 100%; border-none; border-collapse: collapse; margin-top: 10px; margin-bottom: 25px;">
       <tr>
         <td style="width: 50%; border: none;"></td>
         <td style="width: 50%; border: none; text-align: center; font-style: italic; font-size: 13px; color: #334155; padding-bottom: 8px;">
@@ -3704,6 +3769,12 @@ function renderQuotePreviewHtml() {
       </tr>
     </table>
   `;
+}
+
+function renderQuotePreviewHtml() {
+  const container = document.getElementById('quote-contract-printable');
+  if (!container || !currentQuoteContract) return;
+  container.innerHTML = buildQuoteHtml(currentQuoteContract);
 }
 
 function printQuoteContract() {
@@ -3799,9 +3870,9 @@ function exportQuoteToWord() {
   if (!currentQuoteContract) return;
 
   const q = currentQuoteContract;
-  const subtotal = q.items.reduce((sum, it) => sum + (it.quantity * it.price), 0);
-  const vatAmount = Math.round(subtotal * (q.vatPercent / 100));
-  const grandTotal = subtotal + vatAmount;
+  const subtotal = (q.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
+  const vatAmount = 0; // Giá trên sản phẩm là giá niêm yết đã bao gồm thuế, không cộng VAT 10%
+  const grandTotal = subtotal;
 
   let rawLogo = q.sellerLogo;
   if (!rawLogo || rawLogo.includes('/admin')) {
@@ -3885,7 +3956,7 @@ function exportQuoteToWord() {
     <!-- PHẦN 5: GHI CHÚ -->
     <div style="margin-bottom: 14pt; font-size: 10.5pt; line-height: 1.5;">
       <strong>Ghi chú:</strong><br>
-      ${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')).replace(/\n/g, '<br>')}
+      ${escapeHtml(cleanVietnameseText(q.quoteNotes || '- Bảng giá trên là giá niêm yết đã bao gồm thuế VAT\n- Đơn báo giá trên có hiệu lực đến khi có thông báo mới nhất')).replace(/\n/g, '<br>')}
     </div>
 
     <!-- PHẦN 6: LỜI CẢM ƠN -->
