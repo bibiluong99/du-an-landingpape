@@ -1,4 +1,7 @@
 {
+  "_sequences": {
+    "contacts": 100
+  },
   "users": [
     {
       "id": 1,

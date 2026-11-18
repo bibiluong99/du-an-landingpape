@@ -764,6 +764,7 @@ function setupContactForm() {
     const fullname = document.getElementById('contact-fullname').value.trim();
     const phone = document.getElementById('contact-phone-input').value.trim();
     const email = document.getElementById('contact-email-input').value.trim();
+    const address = (document.getElementById('contact-address-input')?.value || '').trim();
     const message = document.getElementById('contact-message').value.trim();
     
     const typeRadio = document.querySelector('input[name="contact-type"]:checked');
@@ -785,7 +786,7 @@ function setupContactForm() {
       const res = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullname, phone, email, type, product_name, message })
+        body: JSON.stringify({ fullname, phone, email, address, type, product_name, message })
       });
 
       const result = await res.json();
@@ -793,11 +794,11 @@ function setupContactForm() {
         // Lưu liên hệ vào LocalStorage để đồng bộ với Admin
         try {
           const newContact = result.data || {
-            id: result.id || Date.now(),
+            id: result.id || (Date.now() % 1000000 + 100),
             fullname,
             phone,
             email,
-            address: '',
+            address,
             type,
             product_name,
             message,
@@ -811,6 +812,11 @@ function setupContactForm() {
             stored.unshift(newContact);
             localStorage.setItem('dienviet_persistent_contacts', JSON.stringify(stored));
           }
+
+          // Loại bỏ ID này khỏi danh sách đã xóa nếu từng bị kẹt trong quá khứ
+          const delIds = JSON.parse(localStorage.getItem('dienviet_deleted_contact_ids') || '[]');
+          const cleaned = delIds.filter(x => String(x) !== String(newContact.id));
+          localStorage.setItem('dienviet_deleted_contact_ids', JSON.stringify(cleaned));
 
           // Gọi sync-store ngầm để bảo đảm dữ liệu đồng bộ vĩnh viễn trên máy chủ
           fetch('/api/sync-store', {

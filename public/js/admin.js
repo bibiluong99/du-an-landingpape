@@ -47,6 +47,17 @@ function setLocalStore(key, val) {
   } catch (e) {}
 }
 
+// Tự động làm sạch các ID bị kẹt trong danh sách đã xóa để không vô tình chặn liên hệ mới
+try {
+  let initialDelContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+  if (Array.isArray(initialDelContactIds) && initialDelContactIds.length > 0) {
+    const cleaned = initialDelContactIds.filter(id => Number(id) !== 10 && Number(id) < 100);
+    if (cleaned.length !== initialDelContactIds.length) {
+      setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, cleaned);
+    }
+  }
+} catch (e) {}
+
 async function syncLocalStoreToServer() {
   const customCategories = getLocalStore(LOCAL_STORAGE_KEYS.CATEGORIES);
   const deletedCategoryIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CAT_IDS);
@@ -368,8 +379,7 @@ async function loadDashboard() {
     const badge = document.getElementById('badge-new-contacts');
     if (badge) {
       const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
-      const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
-      const localNewCount = localContacts.filter(c => !delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id)) && c.status === 'Mới').length;
+      const localNewCount = localContacts.filter(c => c.status === 'Mới').length;
       const count = Math.max(Number(s.newContacts) || 0, localNewCount);
       if (count > 0) {
         badge.textContent = count;
@@ -2327,19 +2337,27 @@ async function loadContacts() {
     let serverContacts = (result && result.success && Array.isArray(result.data)) ? result.data : [];
 
     const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
-    const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+    let delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+
+    // Loại bỏ ID 10 hoặc bất kỳ ID >= 100 khỏi danh sách đã xóa
+    if (delContactIds.some(id => Number(id) === 10 || Number(id) >= 100)) {
+      delContactIds = delContactIds.filter(id => Number(id) !== 10 && Number(id) < 100);
+      setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, delContactIds);
+    }
 
     // Hợp nhất server contacts và local contacts để bảo toàn 100% dữ liệu
     const map = new Map();
     serverContacts.forEach(c => {
-      if (!delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id))) {
+      const isDel = delContactIds.includes(Number(c.id)) || delContactIds.includes(String(c.id));
+      if (!isDel || c.status === 'Mới') {
         map.set(String(c.id), c);
       }
     });
 
     let needsSync = false;
     localContacts.forEach(c => {
-      if (!delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id))) {
+      const isDel = delContactIds.includes(Number(c.id)) || delContactIds.includes(String(c.id));
+      if (!isDel || c.status === 'Mới') {
         if (!map.has(String(c.id))) {
           map.set(String(c.id), c);
           needsSync = true;
@@ -2350,6 +2368,21 @@ async function loadContacts() {
         }
       }
     });
+
+    // Nếu có liên hệ 'Mới' mà ID trùng trong delContactIds thì tự động gỡ khỏi delContactIds
+    let cleanedDel = false;
+    map.forEach(c => {
+      if (c.status === 'Mới') {
+        const idx = delContactIds.findIndex(x => Number(x) === Number(c.id) || String(x) === String(c.id));
+        if (idx !== -1) {
+          delContactIds.splice(idx, 1);
+          cleanedDel = true;
+        }
+      }
+    });
+    if (cleanedDel) {
+      setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, delContactIds);
+    }
 
     contactsCache = Array.from(map.values());
     contactsCache.sort((a, b) => Number(b.id) - Number(a.id));
@@ -2366,8 +2399,11 @@ async function loadContacts() {
   } catch (err) {
     console.error('Lỗi khi tải liên hệ:', err);
     const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
-    const delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
-    contactsCache = localContacts.filter(c => !delContactIds.includes(Number(c.id)) && !delContactIds.includes(String(c.id)));
+    let delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
+    contactsCache = localContacts.filter(c => {
+      const isDel = delContactIds.includes(Number(c.id)) || delContactIds.includes(String(c.id));
+      return !isDel || c.status === 'Mới';
+    });
     contactsCache.sort((a, b) => Number(b.id) - Number(a.id));
     renderContactsTable();
   }

@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 // Nạp dữ liệu dự phòng từ db_fallback_data.json
 let fallbackData = {
+  _sequences: { contacts: 100 },
   users: [],
   categories: [],
   products: [],
@@ -618,19 +619,25 @@ function fallbackRun(sql, params = []) {
   }
 
   if (lower.startsWith('insert into contacts')) {
-    const newId = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
+    if (!fallbackData._sequences) fallbackData._sequences = {};
+    const maxExisting = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0);
+    const lastSeq = Number(fallbackData._sequences.contacts || 100);
+    const newId = Math.max(lastSeq, maxExisting, 100) + 1;
+    fallbackData._sequences.contacts = newId;
+
     const hasAddress = params.length >= 8;
     fallbackData.contacts.unshift({
       id: newId,
       fullname: params[0],
       phone: params[1],
-      email: params[2],
-      address: hasAddress ? params[3] : '',
+      email: params[2] || '',
+      address: hasAddress ? (params[3] || '') : '',
       type: hasAddress ? params[4] : params[3],
       product_name: hasAddress ? (params[5] || '') : (params[4] || ''),
       message: hasAddress ? (params[6] || '') : (params[5] || ''),
       ip_address: '127.0.0.1',
       status: hasAddress ? (params[7] || 'Mới') : (params[6] || 'Mới'),
+      quote_sent: 0,
       created_at: new Date().toISOString()
     });
     saveFallbackData();
@@ -862,6 +869,11 @@ const initDB = async () => {
     } catch (e) {
       // Đã có cột quote_sent
     }
+
+    try {
+      await run("INSERT OR IGNORE INTO sqlite_sequence (name, seq) VALUES ('contacts', 100)");
+      await run("UPDATE sqlite_sequence SET seq = 100 WHERE name = 'contacts' AND seq < 100");
+    } catch (e) {}
 
     // 6. Settings
     await run(`
@@ -1583,7 +1595,11 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
 
   // 7. Contacts (Đồng bộ danh sách liên hệ khách hàng)
   if (Array.isArray(customContacts) && customContacts.length > 0) {
+    if (!fallbackData._sequences) fallbackData._sequences = {};
     for (const c of customContacts) {
+      if (Number(c.id)) {
+        fallbackData._sequences.contacts = Math.max(Number(fallbackData._sequences.contacts || 100), Number(c.id));
+      }
       const exist = fallbackData.contacts.find(x => String(x.id) === String(c.id));
       if (!exist) {
         fallbackData.contacts.unshift(c);

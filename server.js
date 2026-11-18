@@ -787,8 +787,10 @@ app.post('/api/contacts', async (req, res) => {
       [fullname.trim(), phone.trim(), (email || '').trim(), (address || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới']
     );
 
+    const generatedId = (result && result.lastID && result.lastID > 0) ? result.lastID : (Date.now() % 1000000 + 100);
+
     const newContact = {
-      id: result.lastID,
+      id: generatedId,
       fullname: fullname.trim(),
       phone: phone.trim(),
       email: (email || '').trim(),
@@ -804,7 +806,7 @@ app.post('/api/contacts', async (req, res) => {
     res.json({
       success: true,
       message: 'Cảm ơn quý khách đã gửi thông tin! Chúng tôi sẽ phản hồi trong thời gian sớm nhất.',
-      id: result.lastID,
+      id: generatedId,
       data: newContact
     });
   } catch (error) {
