@@ -782,12 +782,15 @@ app.post('/api/contacts', async (req, res) => {
     let contactType = type && type.trim() !== '' ? type.trim() : 'Báo giá sản phẩm';
     if (contactType === 'Báo giá') contactType = 'Báo giá sản phẩm';
 
+    // Sử dụng ID timestamp độc nhất (Date.now()) để không bao giờ bị trùng lặp hay xung đột với ID đã xóa
+    const newId = Date.now();
+
     const result = await run(
-      'INSERT INTO contacts (fullname, phone, email, address, type, product_name, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [fullname.trim(), phone.trim(), (email || '').trim(), (address || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới']
+      'INSERT INTO contacts (id, fullname, phone, email, address, type, product_name, message, status, quote_sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [newId, fullname.trim(), phone.trim(), (email || '').trim(), (address || '').trim(), contactType, (product_name || '').trim(), message.trim(), 'Mới', 0]
     );
 
-    const generatedId = (result && result.lastID && result.lastID > 0) ? result.lastID : (Date.now() % 1000000 + 100);
+    const generatedId = (result && result.lastID && result.lastID > 0) ? result.lastID : newId;
 
     const newContact = {
       id: generatedId,
@@ -802,6 +805,11 @@ app.post('/api/contacts', async (req, res) => {
       quote_sent: 0,
       created_at: new Date().toISOString()
     };
+
+    // Đồng bộ trực tiếp vào fallbackData để các endpoint khác cùng instance đọc được ngay
+    try {
+      await syncStoreData({ customContacts: [newContact] });
+    } catch (sErr) {}
 
     res.json({
       success: true,

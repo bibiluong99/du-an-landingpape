@@ -794,7 +794,7 @@ function setupContactForm() {
         // Lưu liên hệ vào LocalStorage để đồng bộ với Admin
         try {
           const newContact = result.data || {
-            id: result.id || (Date.now() % 1000000 + 100),
+            id: result.id || Date.now(),
             fullname,
             phone,
             email,
@@ -807,16 +807,24 @@ function setupContactForm() {
             created_at: new Date().toISOString()
           };
           const stored = JSON.parse(localStorage.getItem('dienviet_persistent_contacts') || '[]');
-          const exists = stored.some(x => String(x.id) === String(newContact.id));
-          if (!exists) {
+          const idx = stored.findIndex(x => String(x.id) === String(newContact.id));
+          if (idx >= 0) {
+            stored[idx] = newContact;
+          } else {
             stored.unshift(newContact);
-            localStorage.setItem('dienviet_persistent_contacts', JSON.stringify(stored));
           }
+          localStorage.setItem('dienviet_persistent_contacts', JSON.stringify(stored));
 
           // Loại bỏ ID này khỏi danh sách đã xóa nếu từng bị kẹt trong quá khứ
           const delIds = JSON.parse(localStorage.getItem('dienviet_deleted_contact_ids') || '[]');
           const cleaned = delIds.filter(x => String(x) !== String(newContact.id));
           localStorage.setItem('dienviet_deleted_contact_ids', JSON.stringify(cleaned));
+
+          // Phát tín hiệu BroadcastChannel đến các tab Admin đang mở
+          try {
+            const bc = new BroadcastChannel('dienviet_contact_sync');
+            bc.postMessage({ type: 'NEW_CONTACT', contact: newContact });
+          } catch (bErr) {}
 
           // Gọi sync-store ngầm để bảo đảm dữ liệu đồng bộ vĩnh viễn trên máy chủ
           fetch('/api/sync-store', {

@@ -191,13 +191,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Lắng nghe sự kiện storage để đồng bộ tức thì giữa các tab khi khách hàng gửi liên hệ ở tab khác
   window.addEventListener('storage', (e) => {
     if (e.key === LOCAL_STORAGE_KEYS.CONTACTS) {
-      const activeSection = document.getElementById('tab-contacts');
-      if (activeSection && !activeSection.classList.contains('hidden')) {
-        loadContacts();
-      }
+      loadContacts();
       loadDashboard();
     }
   });
+
+  // Lắng nghe khi chuyển tab hoặc focus vào trang Admin để tự động làm mới danh sách liên hệ
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      loadContacts();
+      loadDashboard();
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    loadContacts();
+    loadDashboard();
+  });
+
+  // BroadcastChannel kết nối tức thì 0ms giữa Client (Landing/Contact) và Admin
+  try {
+    const contactSyncChannel = new BroadcastChannel('dienviet_contact_sync');
+    contactSyncChannel.onmessage = (event) => {
+      if (event.data && (event.data.type === 'NEW_CONTACT' || event.data.type === 'SYNC_CONTACTS')) {
+        loadContacts();
+        loadDashboard();
+      }
+    };
+  } catch (e) {}
 
   // Setup sidebar mobile toggle
   const toggleBtn = document.getElementById('toggle-sidebar-btn');
@@ -2339,28 +2360,26 @@ async function loadContacts() {
     const localContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, []);
     let delContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, []);
 
-    // Loại bỏ ID 10 hoặc bất kỳ ID >= 100 khỏi danh sách đã xóa
-    if (delContactIds.some(id => Number(id) === 10 || Number(id) >= 100)) {
-      delContactIds = delContactIds.filter(id => Number(id) !== 10 && Number(id) < 100);
-      setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, delContactIds);
-    }
+    // Loại bỏ hoàn toàn các ID liên hệ mới hoặc ID timestamp lớn khỏi danh sách đã xóa
+    delContactIds = delContactIds.filter(id => Number(id) < 1000000);
+    setLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS, delContactIds);
 
-    // Hợp nhất server contacts và local contacts để bảo toàn 100% dữ liệu
+    // Hợp nhất dữ liệu: Ưu tiên nạp LocalContacts trước để phản hồi khách hàng luôn xuất hiện tức thì
     const map = new Map();
-    serverContacts.forEach(c => {
+    localContacts.forEach(c => {
+      if (!c || !c.id) return;
       const isDel = delContactIds.includes(Number(c.id)) || delContactIds.includes(String(c.id));
       if (!isDel || c.status === 'Mới') {
         map.set(String(c.id), c);
       }
     });
 
-    let needsSync = false;
-    localContacts.forEach(c => {
+    serverContacts.forEach(c => {
+      if (!c || !c.id) return;
       const isDel = delContactIds.includes(Number(c.id)) || delContactIds.includes(String(c.id));
       if (!isDel || c.status === 'Mới') {
         if (!map.has(String(c.id))) {
           map.set(String(c.id), c);
-          needsSync = true;
         } else {
           const current = map.get(String(c.id));
           if (c.status && c.status !== current.status) current.status = c.status;
@@ -2390,7 +2409,7 @@ async function loadContacts() {
     // Lưu vào LocalStorage
     setLocalStore(LOCAL_STORAGE_KEYS.CONTACTS, contactsCache);
 
-    if (needsSync || delContactIds.length > 0) {
+    if (delContactIds.length > 0) {
       syncLocalStoreToServer();
     }
 
@@ -3150,113 +3169,214 @@ async function submitSendQuoteContract() {
     let pdfBase64 = '';
     let pdfBlob = null;
 
-    // Tạo file PDF chất lượng cao bằng html2pdf
-    if (typeof html2pdf !== 'undefined') {
-      const renderContainer = document.createElement('div');
-      renderContainer.id = 'temp-pdf-render-box';
-      renderContainer.style.position = 'fixed';
-      renderContainer.style.top = '0';
-      renderContainer.style.left = '0';
-      renderContainer.style.width = '794px';
-      renderContainer.style.minHeight = '1120px';
-      renderContainer.style.padding = '36px 40px';
-      renderContainer.style.backgroundColor = '#ffffff';
-      renderContainer.style.color = '#000000';
-      renderContainer.style.zIndex = '999999'; // Đặt zIndex cực cao để luôn nằm trên cùng, không bị che khuất
-      renderContainer.style.boxSizing = 'border-box';
-      renderContainer.style.fontFamily = currentContractFont === 'arial' ? "Arial, 'Helvetica Neue', Helvetica, sans-serif" : "'Times New Roman', Times, serif";
-      renderContainer.style.fontSize = '13pt';
-      renderContainer.style.lineHeight = '1.5';
-      renderContainer.innerHTML = buildQuoteHtml(currentQuoteContract);
-      document.body.appendChild(renderContainer);
+    // Lưu lại vị trí scroll hiện tại để không làm phiền người dùng
+    const originalScrollX = window.scrollX || window.pageXOffset || 0;
+    const originalScrollY = window.scrollY || window.pageYOffset || 0;
 
-      try {
-        // Chuyển đổi toàn bộ ảnh sang inline base64 data url để html2canvas không bị lỗi CORS hay Tainted
-        const imgs = Array.from(renderContainer.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => {
-          return new Promise(resolve => {
-            if (!img.src || img.src.startsWith('data:')) return resolve();
-            const tempImg = new Image();
-            tempImg.crossOrigin = 'anonymous';
-            tempImg.onload = () => {
-              try {
-                const canvas = document.createElement('canvas');
-                canvas.width = tempImg.naturalWidth || tempImg.width || 150;
-                canvas.height = tempImg.naturalHeight || tempImg.height || 80;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
-                img.src = canvas.toDataURL('image/png');
-              } catch (e) {}
-              resolve();
-            };
-            tempImg.onerror = () => {
-              img.style.display = 'none';
-              resolve();
-            };
-            tempImg.src = img.src;
-            setTimeout(resolve, 800);
-          });
-        }));
+    // GIAI ĐOẠN 1: Render PDF bằng html2canvas + jsPDF chuẩn tuyệt đối
+    const stage = document.createElement('div');
+    stage.id = 'direct-pdf-export-stage';
+    stage.style.cssText = `
+      position: absolute !important;
+      top: 0px !important;
+      left: 0px !important;
+      width: 794px !important;
+      min-height: 1120px !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      z-index: 9999999 !important;
+      padding: 36px 40px !important;
+      box-sizing: border-box !important;
+      font-family: ${currentContractFont === 'arial' ? "Arial, 'Helvetica Neue', Helvetica, sans-serif" : "'Times New Roman', Times, serif"} !important;
+      font-size: 13pt !important;
+      line-height: 1.5 !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    `;
+    stage.innerHTML = buildQuoteHtml(currentQuoteContract);
+    document.body.appendChild(stage);
 
-        const opt = {
-          margin: [10, 10, 10, 10],
-          filename: `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
-            letterRendering: true,
-            backgroundColor: '#ffffff'
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+    try {
+      // 1. Chuyển đổi toàn bộ ảnh trong văn bản sang inline Base64 data URL
+      const imgs = Array.from(stage.querySelectorAll('img'));
+      await Promise.all(imgs.map(img => {
+        return new Promise(resolve => {
+          if (!img.src || img.src.startsWith('data:')) return resolve();
+          const tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          tempImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = tempImg.naturalWidth || tempImg.width || 150;
+              canvas.height = tempImg.naturalHeight || tempImg.height || 80;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+              img.src = canvas.toDataURL('image/png');
+            } catch (e) {}
+            resolve();
+          };
+          tempImg.onerror = () => {
+            img.style.display = 'none';
+            resolve();
+          };
+          tempImg.src = img.src;
+          setTimeout(resolve, 800);
+        });
+      }));
 
-        const pdfWorker = html2pdf().set(opt).from(renderContainer);
-        pdfBase64 = await pdfWorker.outputPdf('datauristring');
-        try {
-          pdfBlob = await pdfWorker.output('blob');
-        } catch (bErr) {
-          if (pdfBase64) {
-            pdfBlob = dataUriToBlob(pdfBase64);
+      // Cuộn lên đầu trang tạm thời trong 1 tích tắc để html2canvas chụp đúng tọa độ 0,0
+      window.scrollTo(0, 0);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 200));
+
+      const stageWidth = stage.offsetWidth || 794;
+      const stageHeight = stage.offsetHeight || 1120;
+
+      if (typeof html2canvas !== 'undefined') {
+        const canvas = await html2canvas(stage, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
+          width: stageWidth,
+          height: stageHeight,
+          windowWidth: 1200,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        if (canvas && canvas.width > 100 && canvas.height > 100) {
+          const JsPdfConstructor = (window.jspdf && (window.jspdf.jsPDF || window.jspdf)) || window.jsPDF;
+          if (JsPdfConstructor) {
+            const pdfDoc = new JsPdfConstructor('p', 'mm', 'a4');
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdfDoc.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 5) {
+              position = heightLeft - imgHeight;
+              pdfDoc.addPage();
+              pdfDoc.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+              heightLeft -= pageHeight;
+            }
+
+            pdfBase64 = pdfDoc.output('datauristring');
+            if (pdfBase64) {
+              pdfBlob = dataUriToBlob(pdfBase64);
+            }
           }
         }
-      } catch (pdfErr) {
-        console.warn('Lỗi khi render PDF qua html2pdf:', pdfErr);
-      } finally {
-        if (renderContainer.parentNode) {
-          renderContainer.parentNode.removeChild(renderContainer);
-        }
+      }
+    } catch (renderErr) {
+      console.warn('Lỗi tại giai đoạn render canvas PDF:', renderErr);
+    } finally {
+      window.scrollTo(originalScrollX, originalScrollY);
+      if (stage.parentNode) {
+        stage.parentNode.removeChild(stage);
       }
     }
 
-    // Cơ chế Fallback an toàn: Nếu pdfBase64 bị ngắn hoặc chưa có (< 6000 ký tự - kích thước file trắng), render trực tiếp từ printableEl
-    if ((!pdfBase64 || pdfBase64.length < 6000) && typeof html2pdf !== 'undefined') {
+    // GIAI ĐOẠN 2: Nếu pdfBase64 chưa đủ dung lượng (> 20.000 ký tự), fallback qua html2pdf bundle
+    if ((!pdfBase64 || pdfBase64.length < 20000) && typeof html2pdf !== 'undefined') {
       try {
         switchQuoteTab('preview');
         renderQuotePreviewHtml();
+        await new Promise(r => setTimeout(r, 200));
         const printableEl = document.getElementById('quote-contract-printable');
         if (printableEl) {
           const optFallback = {
-            margin: [10, 10, 10, 10],
+            margin: [8, 8, 8, 8],
             filename: `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
+            image: { type: 'jpeg', quality: 0.95 },
             html2canvas: {
               scale: 2,
               useCORS: true,
-              backgroundColor: '#ffffff'
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              scrollX: 0,
+              scrollY: 0
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
           };
           const fallbackWorker = html2pdf().set(optFallback).from(printableEl);
           const fallbackData = await fallbackWorker.outputPdf('datauristring');
-          if (fallbackData && fallbackData.length > 5000) {
+          if (fallbackData && fallbackData.length > 20000) {
             pdfBase64 = fallbackData;
             pdfBlob = dataUriToBlob(fallbackData);
           }
         }
       } catch (eFallback) {
-        console.warn('Lỗi fallback render PDF:', eFallback);
+        console.warn('Lỗi fallback html2pdf:', eFallback);
+      }
+    }
+
+    // GIAI ĐOẠN 3: Fallback Vector trực tiếp bằng jsPDF (Đảm bảo 100% không bao giờ rỗng file)
+    if (!pdfBase64 || pdfBase64.length < 15000) {
+      try {
+        const JsPdfConstructor = (window.jspdf && (window.jspdf.jsPDF || window.jspdf)) || window.jsPDF;
+        if (JsPdfConstructor) {
+          const vDoc = new JsPdfConstructor('p', 'mm', 'a4');
+          vDoc.setFontSize(16);
+          vDoc.text(cleanVietnameseText(currentQuoteContract.sellerCompany || 'DIEN VIET'), 105, 18, { align: 'center' });
+          vDoc.setFontSize(12);
+          vDoc.text('BANG BAO GIA THIET BI DIEN', 105, 26, { align: 'center' });
+          if (currentQuoteContract.contractNo) {
+            vDoc.setFontSize(10);
+            vDoc.text(`So: ${cleanVietnameseText(currentQuoteContract.contractNo)}`, 105, 32, { align: 'center' });
+          }
+
+          vDoc.setFontSize(10);
+          vDoc.text(`Khach hang: ${cleanVietnameseText(currentQuoteContract.buyerRep || '')}`, 14, 42);
+          vDoc.text(`Dien thoai: ${cleanVietnameseText(currentQuoteContract.buyerPhone || '')}`, 14, 48);
+          vDoc.text(`Email: ${cleanVietnameseText(currentQuoteContract.buyerEmail || '')}`, 14, 54);
+          if (currentQuoteContract.buyerAddress) {
+            vDoc.text(`Dia chi: ${cleanVietnameseText(currentQuoteContract.buyerAddress)}`, 14, 60);
+          }
+
+          // Kẻ bảng hạng mục báo giá
+          let startY = 68;
+          vDoc.setFillColor(240, 240, 240);
+          vDoc.rect(14, startY, 182, 8, 'F');
+          vDoc.setFontSize(9);
+          vDoc.text('STT', 16, startY + 5.5);
+          vDoc.text('HANG MUC / SAN PHAM', 28, startY + 5.5);
+          vDoc.text('DVT', 115, startY + 5.5);
+          vDoc.text('SL', 130, startY + 5.5);
+          vDoc.text('DON GIA', 145, startY + 5.5);
+          vDoc.text('THANH TIEN', 170, startY + 5.5);
+
+          startY += 8;
+          (currentQuoteContract.items || []).forEach((it, idx) => {
+            vDoc.text(String(idx + 1), 16, startY + 6);
+            vDoc.text(cleanVietnameseText(it.name).substring(0, 42), 28, startY + 6);
+            vDoc.text(cleanVietnameseText(it.unit), 115, startY + 6);
+            vDoc.text(String(it.quantity), 130, startY + 6);
+            vDoc.text(formatVND(it.price).replace(/\s*₫/g, ''), 145, startY + 6);
+            vDoc.text(formatVND(it.quantity * it.price).replace(/\s*₫/g, ''), 170, startY + 6);
+            vDoc.line(14, startY + 8, 196, startY + 8);
+            startY += 8;
+          });
+
+          startY += 4;
+          const subTotalNum = (currentQuoteContract.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
+          vDoc.setFontSize(11);
+          vDoc.text(`TONG CONG: ${formatVND(subTotalNum)}`, 196, startY + 4, { align: 'right' });
+
+          pdfBase64 = vDoc.output('datauristring');
+          pdfBlob = dataUriToBlob(pdfBase64);
+        }
+      } catch (vErr) {
+        console.warn('Lỗi fallback vector PDF:', vErr);
       }
     }
 

@@ -620,26 +620,41 @@ function fallbackRun(sql, params = []) {
 
   if (lower.startsWith('insert into contacts')) {
     if (!fallbackData._sequences) fallbackData._sequences = {};
-    const maxExisting = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0);
-    const lastSeq = Number(fallbackData._sequences.contacts || 100);
-    const newId = Math.max(lastSeq, maxExisting, 100) + 1;
-    fallbackData._sequences.contacts = newId;
+    const hasExplicitId = lower.includes('(id,') || lower.includes('(id ,') || lower.includes('contacts (id');
+    let newId;
+    let actualParams;
 
-    const hasAddress = params.length >= 8;
-    fallbackData.contacts.unshift({
+    if (hasExplicitId) {
+      newId = Number(params[0]) || Date.now();
+      actualParams = params.slice(1);
+    } else {
+      const maxExisting = fallbackData.contacts.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0);
+      const lastSeq = Number(fallbackData._sequences.contacts || 100);
+      newId = Math.max(lastSeq, maxExisting, 100) + 1;
+      actualParams = params;
+    }
+    fallbackData._sequences.contacts = Math.max(Number(fallbackData._sequences.contacts || 100), newId);
+
+    const hasAddress = actualParams.length >= 8;
+    const newContactItem = {
       id: newId,
-      fullname: params[0],
-      phone: params[1],
-      email: params[2] || '',
-      address: hasAddress ? (params[3] || '') : '',
-      type: hasAddress ? params[4] : params[3],
-      product_name: hasAddress ? (params[5] || '') : (params[4] || ''),
-      message: hasAddress ? (params[6] || '') : (params[5] || ''),
+      fullname: actualParams[0],
+      phone: actualParams[1],
+      email: actualParams[2] || '',
+      address: hasAddress ? (actualParams[3] || '') : '',
+      type: hasAddress ? actualParams[4] : actualParams[3],
+      product_name: hasAddress ? (actualParams[5] || '') : (actualParams[4] || ''),
+      message: hasAddress ? (actualParams[6] || '') : (actualParams[5] || ''),
       ip_address: '127.0.0.1',
-      status: hasAddress ? (params[7] || 'Mới') : (params[6] || 'Mới'),
+      status: 'Mới',
       quote_sent: 0,
       created_at: new Date().toISOString()
-    });
+    };
+
+    const existIdx = fallbackData.contacts.findIndex(x => String(x.id) === String(newId));
+    if (existIdx >= 0) fallbackData.contacts[existIdx] = newContactItem;
+    else fallbackData.contacts.unshift(newContactItem);
+
     saveFallbackData();
     return { lastID: newId, changes: 1 };
   }
@@ -1636,12 +1651,18 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
   // 8. Deleted Contacts
   if (Array.isArray(deletedContactIds) && deletedContactIds.length > 0) {
     const before = fallbackData.contacts.length;
-    fallbackData.contacts = fallbackData.contacts.filter(c => !deletedContactIds.includes(Number(c.id)) && !deletedContactIds.includes(String(c.id)));
+    // Tuyệt đối không xóa bất kỳ liên hệ nào có trạng thái 'Mới' để không bao giờ làm mất liên hệ khách vừa tạo
+    fallbackData.contacts = fallbackData.contacts.filter(c => {
+      if (c.status === 'Mới') return true;
+      return !deletedContactIds.includes(Number(c.id)) && !deletedContactIds.includes(String(c.id));
+    });
     if (fallbackData.contacts.length !== before) updated = true;
 
     if (!useFallback && db) {
       try {
-        deletedContactIds.forEach(id => db.run(`DELETE FROM contacts WHERE id = ?`, [id]));
+        deletedContactIds.forEach(id => {
+          db.run("DELETE FROM contacts WHERE id = ? AND status != 'Mới'", [id]);
+        });
       } catch (e) {}
     }
   }
