@@ -3144,13 +3144,13 @@ async function submitSendQuoteContract() {
 
   try {
     // 1. Chuẩn bị nội dung render báo giá
+    syncQuoteEditInputsToState();
     renderQuotePreviewHtml();
-    const printableEl = document.getElementById('quote-contract-printable');
 
     let pdfBase64 = '';
     let pdfBlob = null;
 
-    // Tạo file PDF chất lượng cao bằng html2pdf (với tọa độ x:0, y:0 nằm chuẩn trong khung nhìn)
+    // Tạo file PDF chất lượng cao bằng html2pdf
     if (typeof html2pdf !== 'undefined') {
       const renderContainer = document.createElement('div');
       renderContainer.id = 'temp-pdf-render-box';
@@ -3158,10 +3158,11 @@ async function submitSendQuoteContract() {
       renderContainer.style.top = '0';
       renderContainer.style.left = '0';
       renderContainer.style.width = '794px';
-      renderContainer.style.padding = '30px 36px';
-      renderContainer.style.background = '#ffffff';
+      renderContainer.style.minHeight = '1120px';
+      renderContainer.style.padding = '36px 40px';
+      renderContainer.style.backgroundColor = '#ffffff';
       renderContainer.style.color = '#000000';
-      renderContainer.style.zIndex = '-9999';
+      renderContainer.style.zIndex = '999999'; // Đặt zIndex cực cao để luôn nằm trên cùng, không bị che khuất
       renderContainer.style.boxSizing = 'border-box';
       renderContainer.style.fontFamily = currentContractFont === 'arial' ? "Arial, 'Helvetica Neue', Helvetica, sans-serif" : "'Times New Roman', Times, serif";
       renderContainer.style.fontSize = '13pt';
@@ -3170,14 +3171,30 @@ async function submitSendQuoteContract() {
       document.body.appendChild(renderContainer);
 
       try {
-        // Chờ tải ảnh nếu có trong renderContainer
+        // Chuyển đổi toàn bộ ảnh sang inline base64 data url để html2canvas không bị lỗi CORS hay Tainted
         const imgs = Array.from(renderContainer.querySelectorAll('img'));
         await Promise.all(imgs.map(img => {
-          if (img.complete) return Promise.resolve();
           return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-            setTimeout(resolve, 600);
+            if (!img.src || img.src.startsWith('data:')) return resolve();
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            tempImg.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = tempImg.naturalWidth || tempImg.width || 150;
+                canvas.height = tempImg.naturalHeight || tempImg.height || 80;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+                img.src = canvas.toDataURL('image/png');
+              } catch (e) {}
+              resolve();
+            };
+            tempImg.onerror = () => {
+              img.style.display = 'none';
+              resolve();
+            };
+            tempImg.src = img.src;
+            setTimeout(resolve, 800);
           });
         }));
 
@@ -3188,13 +3205,9 @@ async function submitSendQuoteContract() {
           html2canvas: {
             scale: 2,
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             letterRendering: true,
-            scrollX: 0,
-            scrollY: 0,
-            x: 0,
-            y: 0,
-            windowWidth: 800
+            backgroundColor: '#ffffff'
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
@@ -3214,6 +3227,36 @@ async function submitSendQuoteContract() {
         if (renderContainer.parentNode) {
           renderContainer.parentNode.removeChild(renderContainer);
         }
+      }
+    }
+
+    // Cơ chế Fallback an toàn: Nếu pdfBase64 bị ngắn hoặc chưa có (< 6000 ký tự - kích thước file trắng), render trực tiếp từ printableEl
+    if ((!pdfBase64 || pdfBase64.length < 6000) && typeof html2pdf !== 'undefined') {
+      try {
+        switchQuoteTab('preview');
+        renderQuotePreviewHtml();
+        const printableEl = document.getElementById('quote-contract-printable');
+        if (printableEl) {
+          const optFallback = {
+            margin: [10, 10, 10, 10],
+            filename: `Bao_Gia_${currentQuoteContract.contractNo || 'Dien_Viet'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff'
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          const fallbackWorker = html2pdf().set(optFallback).from(printableEl);
+          const fallbackData = await fallbackWorker.outputPdf('datauristring');
+          if (fallbackData && fallbackData.length > 5000) {
+            pdfBase64 = fallbackData;
+            pdfBlob = dataUriToBlob(fallbackData);
+          }
+        }
+      } catch (eFallback) {
+        console.warn('Lỗi fallback render PDF:', eFallback);
       }
     }
 
