@@ -734,6 +734,16 @@
       "id": 26,
       "key": "quote_types",
       "value": "[{\"name\":\"Báo giá sản phẩm\",\"show_products\":true},{\"name\":\"Tư vấn kỹ thuật\",\"show_products\":false},{\"name\":\"Góp ý / Khiếu nại\",\"show_products\":false},{\"name\":\"Hủy đơn\",\"show_products\":false},{\"name\":\"Đổi trả\",\"show_products\":false}]"
+    },
+    {
+      "id": 27,
+      "key": "smtp_user",
+      "value": ""
+    },
+    {
+      "id": 28,
+      "key": "smtp_pass",
+      "value": ""
     }
   ],
   "contacts": [

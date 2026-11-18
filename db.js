@@ -923,7 +923,9 @@ const seedData = async () => {
       { name: 'Hỗ trợ bảo hành / Đổi trả', show_products: false },
       { name: 'Hợp tác đại lý / Dự án', show_products: true },
       { name: 'Góp ý / Khiếu nại', show_products: false }
-    ]) }
+    ]) },
+    { key: 'smtp_user', value: '' },
+    { key: 'smtp_pass', value: '' }
   ];
 
   for (const item of defaultSettings) {
@@ -1436,7 +1438,7 @@ const seedData = async () => {
   }
 };
 
-async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds, customContacts, deletedContactIds }) {
+async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds, customContacts, deletedContactIds, customSettings }) {
   let updated = false;
 
   // 1. Categories
@@ -1625,6 +1627,31 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
       try {
         deletedContactIds.forEach(id => db.run(`DELETE FROM contacts WHERE id = ?`, [id]));
       } catch (e) {}
+    }
+  }
+
+  // 9. Settings (Đồng bộ cấu hình website, SMTP & tài khoản Gmail)
+  if (customSettings && typeof customSettings === 'object' && Object.keys(customSettings).length > 0) {
+    for (const [key, value] of Object.entries(customSettings)) {
+      if (value === undefined || value === null) continue;
+      const strVal = String(value);
+      const exist = fallbackData.settings.find(x => x.key === key);
+      if (!exist) {
+        fallbackData.settings.push({ key, value: strVal });
+        updated = true;
+      } else if (exist.value !== strVal) {
+        exist.value = strVal;
+        updated = true;
+      }
+
+      if (!useFallback && db) {
+        try {
+          db.run(
+            `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`,
+            [key, strVal]
+          );
+        } catch (e) {}
+      }
     }
   }
 

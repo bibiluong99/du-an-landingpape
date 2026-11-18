@@ -772,14 +772,15 @@ app.post('/api/contacts', async (req, res) => {
   try {
     const { fullname, phone, email, address, type, product_name, message } = req.body;
 
-    if (!fullname || !phone || !email || !message) {
+    if (!fullname || !phone || !message) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng điền đầy đủ: Họ tên, Số điện thoại, Email và Nội dung lời nhắn!'
+        message: 'Vui lòng điền đầy đủ: Họ tên, Số điện thoại và Nội dung lời nhắn!'
       });
     }
 
-    const contactType = type && type.trim() !== '' ? type.trim() : 'Báo giá sản phẩm';
+    let contactType = type && type.trim() !== '' ? type.trim() : 'Báo giá sản phẩm';
+    if (contactType === 'Báo giá') contactType = 'Báo giá sản phẩm';
 
     const result = await run(
       'INSERT INTO contacts (fullname, phone, email, address, type, product_name, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -1596,7 +1597,14 @@ app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
         contacts = contacts.filter(c => c.status === status);
       }
       if (type && type !== 'all') {
-        contacts = contacts.filter(c => c.type === type || (c.type && c.type.includes(type)));
+        const filterType = type.toLowerCase().trim();
+        contacts = contacts.filter(c => {
+          if (!c.type) return false;
+          const ct = c.type.toLowerCase().trim();
+          if (ct === filterType || ct.includes(filterType) || filterType.includes(ct)) return true;
+          if (filterType.includes('báo giá') && ct.includes('báo giá')) return true;
+          return false;
+        });
       }
     }
 
@@ -1641,7 +1649,7 @@ app.put('/api/admin/contacts/:id/quote-sent', requireAdmin, async (req, res) => 
 app.post('/api/admin/contacts/:id/send-quote-email', requireAdmin, async (req, res) => {
   try {
     const contactId = req.params.id;
-    const { pdfBase64, contractNo, buyerEmail, buyerName, quoteTotal, notes, companyName } = req.body;
+    const { pdfBase64, contractNo, buyerEmail, buyerName, quoteTotal, notes, companyName, smtpUser: reqSmtpUser, smtpPass: reqSmtpPass } = req.body;
 
     const contact = await get('SELECT * FROM contacts WHERE id = ?', [contactId]);
     if (!contact) {
@@ -1653,18 +1661,26 @@ app.post('/api/admin/contacts/:id/send-quote-email', requireAdmin, async (req, r
       return res.status(400).json({ success: false, message: 'Khách hàng không có địa chỉ email!' });
     }
 
-    // Lấy cấu hình SMTP từ settings hoặc biến môi trường
+    // Lấy cấu hình SMTP từ settings hoặc biến môi trường hoặc từ request body
     const smtpUserRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_user']);
     const smtpPassRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_pass']);
     const smtpHostRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_host']);
     const smtpPortRow = await get('SELECT value FROM settings WHERE key = ?', ['smtp_port']);
     const companyNameRow = await get('SELECT value FROM settings WHERE key = ?', ['company_name']);
 
-    const smtpUser = (smtpUserRow && smtpUserRow.value ? smtpUserRow.value : '').trim() || process.env.SMTP_USER || process.env.GMAIL_USER || '';
-    const smtpPass = (smtpPassRow && smtpPassRow.value ? smtpPassRow.value : '').trim() || process.env.SMTP_PASS || process.env.GMAIL_PASS || '';
+    const smtpUser = ((reqSmtpUser && reqSmtpUser.trim()) || (smtpUserRow && smtpUserRow.value ? smtpUserRow.value : '')).trim() || process.env.SMTP_USER || process.env.GMAIL_USER || '';
+    const smtpPass = ((reqSmtpPass && reqSmtpPass.trim()) || (smtpPassRow && smtpPassRow.value ? smtpPassRow.value : '')).trim() || process.env.SMTP_PASS || process.env.GMAIL_PASS || '';
     const smtpHost = (smtpHostRow && smtpHostRow.value ? smtpHostRow.value : '').trim() || process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpPort = Number((smtpPortRow && smtpPortRow.value) || process.env.SMTP_PORT || 465);
     const firmName = companyName || (companyNameRow && companyNameRow.value) || 'Điện Việt';
+
+    // Tự động lưu cấu hình SMTP nếu được gửi kèm
+    if (reqSmtpUser && reqSmtpPass) {
+      try {
+        await run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['smtp_user', reqSmtpUser.trim()]);
+        await run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['smtp_pass', reqSmtpPass.trim()]);
+      } catch (e) {}
+    }
 
     // Cập nhật trạng thái liên hệ sang "Đang xử lý" và quote_sent = 1
     const newStatus = contact.status === 'Mới' ? 'Đang xử lý' : contact.status;

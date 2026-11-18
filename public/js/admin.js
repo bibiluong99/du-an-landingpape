@@ -28,7 +28,8 @@ const LOCAL_STORAGE_KEYS = {
   BLOGS: 'dienviet_persistent_blogs',
   DELETED_BLOG_IDS: 'dienviet_deleted_blog_ids',
   CONTACTS: 'dienviet_persistent_contacts',
-  DELETED_CONTACT_IDS: 'dienviet_deleted_contact_ids'
+  DELETED_CONTACT_IDS: 'dienviet_deleted_contact_ids',
+  SETTINGS: 'dienviet_persistent_settings'
 };
 
 function getLocalStore(key, defaultVal = []) {
@@ -55,11 +56,13 @@ async function syncLocalStoreToServer() {
   const deletedBlogIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_BLOG_IDS);
   const customContacts = getLocalStore(LOCAL_STORAGE_KEYS.CONTACTS);
   const deletedContactIds = getLocalStore(LOCAL_STORAGE_KEYS.DELETED_CONTACT_IDS);
+  const customSettings = getLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, {});
 
   if (customCategories.length === 0 && customProducts.length === 0 &&
       deletedCategoryIds.length === 0 && deletedProductIds.length === 0 &&
       customBlogs.length === 0 && deletedBlogIds.length === 0 &&
-      customContacts.length === 0 && deletedContactIds.length === 0) {
+      customContacts.length === 0 && deletedContactIds.length === 0 &&
+      Object.keys(customSettings).length === 0) {
     return;
   }
 
@@ -75,7 +78,8 @@ async function syncLocalStoreToServer() {
         customBlogs,
         deletedBlogIds,
         customContacts,
-        deletedContactIds
+        deletedContactIds,
+        customSettings
       })
     });
   } catch (e) {
@@ -2317,16 +2321,8 @@ async function loadContacts() {
   tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-lg text-[#c8102e]"></i> Đang tải phản hồi khách hàng...</td></tr>`;
 
   try {
-    const params = new URLSearchParams();
-    if (currentContactTypeFilter && currentContactTypeFilter !== 'all') {
-      params.append('type', currentContactTypeFilter);
-    }
-    if (currentContactStatusFilter && currentContactStatusFilter !== 'all') {
-      params.append('status', currentContactStatusFilter);
-    }
-
-    const queryString = params.toString() ? `?${params.toString()}` : '';
-    const res = await fetch(`/api/admin/contacts${queryString}`, { headers: getAuthHeaders() });
+    // Luôn lấy toàn bộ danh sách từ server để kết hợp với LocalStorage, không bị cắt bớt danh sách
+    const res = await fetch('/api/admin/contacts', { headers: getAuthHeaders() });
     const result = await res.json();
     let serverContacts = (result && result.success && Array.isArray(result.data)) ? result.data : [];
 
@@ -2402,7 +2398,14 @@ function renderContactsTable() {
     filtered = filtered.filter(c => c.status === currentContactStatusFilter);
   }
   if (currentContactTypeFilter && currentContactTypeFilter !== 'all') {
-    filtered = filtered.filter(c => c.type === currentContactTypeFilter || (c.type && c.type.includes(currentContactTypeFilter)));
+    const filter = currentContactTypeFilter.toLowerCase().trim();
+    filtered = filtered.filter(c => {
+      if (!c.type) return false;
+      const t = c.type.toLowerCase().trim();
+      if (t === filter || t.includes(filter) || filter.includes(t)) return true;
+      if (filter.includes('báo giá') && t.includes('báo giá')) return true;
+      return false;
+    });
   }
 
   if (filtered.length === 0) {
@@ -3186,6 +3189,10 @@ async function submitSendQuoteContract() {
     const subtotal = (currentQuoteContract.items || []).reduce((sum, it) => sum + (it.quantity * it.price), 0);
     const grandTotal = subtotal;
 
+    const localSettings = getLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, {});
+    const activeSmtpUser = (websiteSettingsCache?.smtp_user || localSettings.smtp_user || document.getElementById('set-smtp-user')?.value || '').trim();
+    const activeSmtpPass = (websiteSettingsCache?.smtp_pass || localSettings.smtp_pass || document.getElementById('set-smtp-pass')?.value || '').trim();
+
     // 2. Gửi yêu cầu gửi email báo giá kèm PDF đến máy chủ
     const res = await fetch(`/api/admin/contacts/${contactId}/send-quote-email`, {
       method: 'POST',
@@ -3200,7 +3207,9 @@ async function submitSendQuoteContract() {
         buyerName: currentQuoteContract.buyerRep,
         quoteTotal: formatVND(grandTotal),
         notes: currentQuoteContract.quoteNotes,
-        companyName: currentQuoteContract.sellerCompany
+        companyName: currentQuoteContract.sellerCompany,
+        smtpUser: activeSmtpUser,
+        smtpPass: activeSmtpPass
       })
     });
 
@@ -4130,41 +4139,59 @@ function switchSettingsSubTab(tabName) {
   });
 }
 
+function applySettingsToAdminForm(s) {
+  if (!s || typeof s !== 'object') return;
+  if (s.company_name !== undefined && document.getElementById('set-company-name')) document.getElementById('set-company-name').value = s.company_name;
+  if (s.company_slogan !== undefined && document.getElementById('set-company-slogan')) document.getElementById('set-company-slogan').value = s.company_slogan;
+  if (s.phone !== undefined && document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone;
+  if (s.email !== undefined && document.getElementById('set-email')) document.getElementById('set-email').value = s.email;
+  if (s.address !== undefined && document.getElementById('set-address')) document.getElementById('set-address').value = s.address;
+  if (s.zalo_link !== undefined && document.getElementById('set-zalo')) document.getElementById('set-zalo').value = s.zalo_link;
+  if (s.facebook_link !== undefined && document.getElementById('set-fb')) document.getElementById('set-fb').value = s.facebook_link;
+  if (s.shopee_link !== undefined && document.getElementById('set-shopee')) document.getElementById('set-shopee').value = s.shopee_link;
+  if (s.maps_embed !== undefined && document.getElementById('set-maps')) document.getElementById('set-maps').value = s.maps_embed;
+  if (s.working_hours !== undefined && document.getElementById('set-working-hours')) document.getElementById('set-working-hours').value = s.working_hours;
+  if (s.smtp_user !== undefined && document.getElementById('set-smtp-user')) document.getElementById('set-smtp-user').value = s.smtp_user;
+  if (s.smtp_pass !== undefined && document.getElementById('set-smtp-pass')) document.getElementById('set-smtp-pass').value = s.smtp_pass;
+  
+  // Logo
+  const logoInput = document.getElementById('set-logo-url');
+  if (logoInput && s.logo_url !== undefined) logoInput.value = s.logo_url || '';
+  if (s.logo_url !== undefined) updateLogoPreview(s.logo_url || '');
+
+  // Giới thiệu, Giá trị cốt lõi & Tại sao nên chọn
+  if (s.about_title !== undefined && document.getElementById('set-about-title')) document.getElementById('set-about-title').value = s.about_title;
+  if (s.about_history !== undefined && document.getElementById('set-about-history')) document.getElementById('set-about-history').value = s.about_history;
+  if (s.about_mission !== undefined && document.getElementById('set-about-mission')) document.getElementById('set-about-mission').value = s.about_mission;
+  if (s.about_values !== undefined && document.getElementById('set-about-values')) document.getElementById('set-about-values').value = s.about_values;
+  if (s.about_why_choose !== undefined && document.getElementById('set-about-why')) document.getElementById('set-about-why').value = s.about_why_choose;
+
+  if (s.quote_types) loadQuoteTypesSettings(s.quote_types);
+}
+
 async function loadSettings() {
+  // 1. Nạp tức thì từ LocalStorage để giao diện hiển thị ngay không bị mất sau khi F5
+  const localSettings = getLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, {});
+  websiteSettingsCache = { ...websiteSettingsCache, ...localSettings };
+  applySettingsToAdminForm(localSettings);
+
   try {
     const res = await fetch('/api/settings');
     const result = await res.json();
-    if (!result.success) return;
+    const serverSettings = (result && result.success && result.data) ? result.data : {};
 
-    const s = result.data;
-    websiteSettingsCache = s;
-    if (s.company_name && document.getElementById('set-company-name')) document.getElementById('set-company-name').value = s.company_name;
-    if (s.company_slogan && document.getElementById('set-company-slogan')) document.getElementById('set-company-slogan').value = s.company_slogan;
-    if (s.phone && document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone;
-    if (s.email && document.getElementById('set-email')) document.getElementById('set-email').value = s.email;
-    if (s.address && document.getElementById('set-address')) document.getElementById('set-address').value = s.address;
-    if (s.zalo_link && document.getElementById('set-zalo')) document.getElementById('set-zalo').value = s.zalo_link;
-    if (s.facebook_link && document.getElementById('set-fb')) document.getElementById('set-fb').value = s.facebook_link;
-    if (s.shopee_link && document.getElementById('set-shopee')) document.getElementById('set-shopee').value = s.shopee_link;
-    if (s.maps_embed && document.getElementById('set-maps')) document.getElementById('set-maps').value = s.maps_embed;
-    if (s.working_hours && document.getElementById('set-working-hours')) document.getElementById('set-working-hours').value = s.working_hours;
-    if (s.smtp_user && document.getElementById('set-smtp-user')) document.getElementById('set-smtp-user').value = s.smtp_user;
-    if (s.smtp_pass && document.getElementById('set-smtp-pass')) document.getElementById('set-smtp-pass').value = s.smtp_pass;
-    
-    // Logo
-    const logoInput = document.getElementById('set-logo-url');
-    if (logoInput) logoInput.value = s.logo_url || '';
-    updateLogoPreview(s.logo_url || '');
+    // Hợp nhất dữ liệu: LocalStorage bảo vệ các trường như smtp_user, smtp_pass khi serverless cold-start
+    const merged = { ...serverSettings, ...localSettings };
+    Object.keys(serverSettings).forEach(k => {
+      if (serverSettings[k] && !localSettings[k]) {
+        merged[k] = serverSettings[k];
+      }
+    });
 
-    // Giới thiệu, Giá trị cốt lõi & Tại sao nên chọn
-    if (s.about_title && document.getElementById('set-about-title')) document.getElementById('set-about-title').value = s.about_title;
-    if (s.about_history && document.getElementById('set-about-history')) document.getElementById('set-about-history').value = s.about_history;
-    if (s.about_mission && document.getElementById('set-about-mission')) document.getElementById('set-about-mission').value = s.about_mission;
-    if (s.about_values && document.getElementById('set-about-values')) document.getElementById('set-about-values').value = s.about_values;
-    if (s.about_why_choose && document.getElementById('set-about-why')) document.getElementById('set-about-why').value = s.about_why_choose;
-
-    // Tải và hiển thị cấu hình Loại Báo Giá / Liên Hệ
-    loadQuoteTypesSettings(s.quote_types);
+    websiteSettingsCache = merged;
+    setLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, merged);
+    setLocalStore('dienviet_cached_settings', merged);
+    applySettingsToAdminForm(merged);
 
     // Tải và hiển thị preview Banner các trang
     const bannerConfigs = [
@@ -4176,15 +4203,20 @@ async function loadSettings() {
     ];
 
     bannerConfigs.forEach(b => {
-      const bannerVal = s[b.key] || b.defaultSrc;
+      const bannerVal = merged[b.key] || b.defaultSrc;
       const inputEl = document.getElementById(b.inputId);
       const prevEl = document.getElementById(b.previewId);
       if (inputEl) inputEl.value = bannerVal;
       if (prevEl) prevEl.src = bannerVal;
     });
 
+    // Nếu local có smtp_user hoặc smtp_pass mà server chưa có thì tự động đồng bộ lên server
+    if ((merged.smtp_user && !serverSettings.smtp_user) || (merged.smtp_pass && !serverSettings.smtp_pass)) {
+      syncLocalStoreToServer();
+    }
   } catch (err) {
     console.error('Lỗi khi tải settings:', err);
+    applySettingsToAdminForm(localSettings);
   }
 }
 
@@ -4282,6 +4314,13 @@ async function saveBusinessSettings() {
     smtp_pass: document.getElementById('set-smtp-pass')?.value.trim() || ''
   };
 
+  // Lưu ngay lập tức vào LocalStorage để bảo toàn vĩnh viễn khi F5
+  const localSettings = getLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, {});
+  const mergedLocal = { ...localSettings, ...payload };
+  setLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, mergedLocal);
+  setLocalStore('dienviet_cached_settings', mergedLocal);
+  websiteSettingsCache = mergedLocal;
+
   try {
     const res = await fetch('/api/admin/settings', {
       method: 'PUT',
@@ -4290,12 +4329,13 @@ async function saveBusinessSettings() {
     });
     const result = await res.json();
     if (result.success) {
-      showToast('Đã lưu thông tin thành công!', 'success');
+      showToast('Đã lưu thông tin và cấu hình Gmail thành công!', 'success');
+      syncLocalStoreToServer();
     } else {
       showToast(result.message || 'Lỗi lưu thông tin!', 'error');
     }
   } catch (err) {
-    showToast('Lỗi kết nối máy chủ!', 'error');
+    showToast('Đã lưu cấu hình vào bộ nhớ trình duyệt!', 'info');
   }
 }
 
@@ -4320,6 +4360,12 @@ async function saveAboutSettings() {
     about_why_choose: why
   };
 
+  const localSettings = getLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, {});
+  const mergedLocal = { ...localSettings, ...payload };
+  setLocalStore(LOCAL_STORAGE_KEYS.SETTINGS, mergedLocal);
+  setLocalStore('dienviet_cached_settings', mergedLocal);
+  websiteSettingsCache = mergedLocal;
+
   try {
     const res = await fetch('/api/admin/settings', {
       method: 'PUT',
@@ -4329,11 +4375,12 @@ async function saveAboutSettings() {
     const result = await res.json();
     if (result.success) {
       showToast('Đã lưu thông tin thành công!', 'success');
+      syncLocalStoreToServer();
     } else {
       showToast(result.message || 'Lỗi lưu dữ liệu!', 'error');
     }
   } catch (err) {
-    showToast('Lỗi kết nối máy chủ!', 'error');
+    showToast('Đã lưu vào bộ nhớ trình duyệt!', 'info');
   }
 }
 

@@ -767,7 +767,8 @@ function setupContactForm() {
     const message = document.getElementById('contact-message').value.trim();
     
     const typeRadio = document.querySelector('input[name="contact-type"]:checked');
-    const type = typeRadio ? typeRadio.value : 'Báo giá';
+    let type = typeRadio ? typeRadio.value : 'Báo giá sản phẩm';
+    if (type === 'Báo giá') type = 'Báo giá sản phẩm';
     const product_name = (document.getElementById('contact-product-name')?.value || '').trim();
 
     if (!fullname || !phone || !message) {
@@ -810,6 +811,13 @@ function setupContactForm() {
             stored.unshift(newContact);
             localStorage.setItem('dienviet_persistent_contacts', JSON.stringify(stored));
           }
+
+          // Gọi sync-store ngầm để bảo đảm dữ liệu đồng bộ vĩnh viễn trên máy chủ
+          fetch('/api/sync-store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customContacts: [newContact] })
+          }).catch(() => {});
         } catch (e) {}
 
         showToast(result.message || 'Gửi liên hệ thành công!', 'success');
@@ -977,7 +985,7 @@ function requestQuoteForProduct(productName, productImg = '') {
 
   openContactModal();
 
-  const quoteRadio = document.querySelector('input[name="contact-type"][value="Báo giá"]');
+  const quoteRadio = document.querySelector('input[name="contact-type"][value="Báo giá sản phẩm"]') || document.querySelector('input[name="contact-type"][value="Báo giá"]');
   if (quoteRadio) {
     quoteRadio.checked = true;
     const quoteContainer = document.getElementById('quote-product-container');
