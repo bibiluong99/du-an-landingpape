@@ -3,25 +3,27 @@
   "cleanUrls": true,
   "functions": {
     "api/index.js": {
-      "includeFiles": "{db_fallback_data.json,database.sqlite}"
+      "includeFiles": "{db_fallback_data.json,public/*.html}"
     }
   },
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
+    { "source": "/", "destination": "/api/index.js" },
+    { "source": "/robots.txt", "destination": "/api/index.js" },
+    { "source": "/sitemap.xml", "destination": "/api/index.js" },
     { "source": "/api", "destination": "/api/index.js" },
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/uploads/(.*)", "destination": "/api/index.js" },
-    { "source": "/products", "destination": "/products.html" },
-    { "source": "/product-detail", "destination": "/product-detail.html" },
-    { "source": "/about", "destination": "/about.html" },
-    { "source": "/blogs", "destination": "/blogs.html" },
-    { "source": "/blog-detail", "destination": "/blog-detail.html" },
-    { "source": "/contact", "destination": "/contact.html" },
-    { "source": "/huong-dan-bao-gia", "destination": "/huong-dan-bao-gia.html" },
-    { "source": "/dieu-khoan-su-dung", "destination": "/dieu-khoan-su-dung.html" },
-    { "source": "/chinh-sach-bao-hanh", "destination": "/chinh-sach-bao-hanh.html" },
-    { "source": "/chinh-sach-bao-mat", "destination": "/chinh-sach-bao-mat.html" },
-    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/products", "destination": "/api/index.js" },
+    { "source": "/product-detail", "destination": "/api/index.js" },
+    { "source": "/about", "destination": "/api/index.js" },
+    { "source": "/blogs", "destination": "/api/index.js" },
+    { "source": "/blog-detail", "destination": "/api/index.js" },
+    { "source": "/contact", "destination": "/api/index.js" },
+    { "source": "/huong-dan-bao-gia", "destination": "/api/index.js" },
+    { "source": "/dieu-khoan-su-dung", "destination": "/api/index.js" },
+    { "source": "/chinh-sach-bao-hanh", "destination": "/api/index.js" },
+    { "source": "/chinh-sach-bao-mat", "destination": "/api/index.js" },
+    { "source": "/admin", "destination": "/api/index.js" },
     { "source": "/login", "destination": "/login.html" }
   ]
 }
