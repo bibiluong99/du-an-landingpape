@@ -3,6 +3,17 @@
 // TONE MÀU ĐỎ & TRẮNG CHUẨN THIẾT KẾ ĐIỆN VIỆT
 // ========================================================
 
+// Helper Escape HTML tránh XSS
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function formatVND(amount) {
   if (!amount && amount !== 0) return '0 ₫';
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -649,18 +660,26 @@ function renderQuoteProductDropdown(products) {
     return;
   }
 
-  dropdown.innerHTML = products.map(p => `
-    <div onclick="selectQuoteProduct('${p.name.replace(/'/g, "\\'")}', '${p.image || ''}')" class="p-3 hover:bg-red-50 flex items-center justify-between cursor-pointer transition">
+  dropdown.innerHTML = products.map((p, idx) => `
+    <div data-quote-idx="${idx}" class="quote-dropdown-item p-3 hover:bg-red-50 flex items-center justify-between cursor-pointer transition">
       <div class="flex items-center space-x-3">
-        <img src="${p.image || '/images/mockup_assets/prod-cadivi-25.png'}" alt="${p.name}" class="w-9 h-9 object-contain rounded-lg border border-slate-200 bg-white p-0.5 shrink-0">
+        <img src="${escapeHtml(p.image || '/images/mockup_assets/prod-cadivi-25.png')}" alt="${escapeHtml(p.name)}" class="w-9 h-9 object-contain rounded-lg border border-slate-200 bg-white p-0.5 shrink-0">
         <div>
-          <span class="block text-xs font-bold text-slate-900 hover:text-brand-600 line-clamp-1">${p.name}</span>
-          <span class="text-[10px] text-slate-400">${p.category_name || 'Thiết bị điện'}</span>
+          <span class="block text-xs font-bold text-slate-900 hover:text-brand-600 line-clamp-1">${escapeHtml(p.name)}</span>
+          <span class="text-[10px] text-slate-400">${escapeHtml(p.category_name || 'Thiết bị điện')}</span>
         </div>
       </div>
       <span class="text-xs font-black text-brand-600 shrink-0 ml-2">${formatVND(p.price)}</span>
     </div>
   `).join('');
+
+  dropdown.querySelectorAll('.quote-dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const i = Number(item.getAttribute('data-quote-idx'));
+      const prod = products[i];
+      if (prod) selectQuoteProduct(prod.name, prod.image || '');
+    });
+  });
 }
 
 function setupQuoteProductFilter() {
@@ -825,13 +844,6 @@ function setupContactForm() {
             const bc = new BroadcastChannel('dienviet_contact_sync');
             bc.postMessage({ type: 'NEW_CONTACT', contact: newContact });
           } catch (bErr) {}
-
-          // Gọi sync-store ngầm để bảo đảm dữ liệu đồng bộ vĩnh viễn trên máy chủ
-          fetch('/api/sync-store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ customContacts: [newContact] })
-          }).catch(() => {});
         } catch (e) {}
 
         showToast(result.message || 'Gửi liên hệ thành công!', 'success');

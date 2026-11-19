@@ -1405,13 +1405,6 @@
               const bc = new BroadcastChannel('dienviet_contact_sync');
               bc.postMessage({ type: 'NEW_CONTACT', contact: newContact });
             } catch (bErr) {}
-
-            // Đồng bộ ngầm với máy chủ để bảo đảm dữ liệu tồn tại vĩnh viễn
-            fetch('/api/sync-store', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ customContacts: [newContact] })
-            }).catch(() => {});
           } catch (e) {}
 
           const successMsg = result.message || 'Cảm ơn bạn! Yêu cầu liên hệ đã được gửi thành công.';

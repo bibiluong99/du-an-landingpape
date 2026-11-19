@@ -52,12 +52,15 @@ async function loadBlogDetail(id) {
       blogData = foundLocal;
       console.log('Đã nạp bài viết từ bộ nhớ cục bộ (localStorage):', blogData.title);
 
-      // Đồng bộ ngầm lên serverless store
-      fetch('/api/sync-store', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customBlogs: localBlogs, deletedBlogIds: delIds })
-      }).catch(() => {});
+      // Đồng bộ ngầm lên serverless store nếu đang có phiên Admin
+      const adminToken = localStorage.getItem('admin_token');
+      if (adminToken) {
+        fetch('/api/admin/sync-store', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ customBlogs: localBlogs, deletedBlogIds: delIds })
+        }).catch(() => {});
+      }
     }
   }
 

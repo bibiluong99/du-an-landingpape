@@ -696,27 +696,27 @@
     {
       "id": 18,
       "key": "banner_home",
-      "value": "/uploads/img-1794235408826-819537408.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020851/dienviet/banners/n27vloqr96wqd5hvqhpr.jpg"
     },
     {
       "id": 19,
       "key": "banner_about",
-      "value": "/uploads/img-1794551168449-607137263.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020855/dienviet/banners/lfjjbcoylmldhpqhgern.jpg"
     },
     {
       "id": 20,
       "key": "banner_products",
-      "value": "/uploads/img-1794496357789-554195068.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020853/dienviet/banners/bsemrbicl5chnct2zmwq.jpg"
     },
     {
       "id": 21,
       "key": "banner_blogs",
-      "value": "/uploads/img-1794551366840-930848186.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020857/dienviet/banners/k7nfbjyoqjsd3nad8hbd.jpg"
     },
     {
       "id": 22,
       "key": "banner_contact",
-      "value": "/uploads/img-1794551137554-998049514.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020854/dienviet/banners/rx6eknvolfzmmvznxogp.jpg"
     },
     {
       "id": 23,
@@ -731,7 +731,7 @@
     {
       "id": 25,
       "key": "logo_url",
-      "value": "/uploads/img-1794390284769-958980201.png"
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020852/dienviet/banners/uekynpwe2ftlyhsakaip.jpg"
     },
     {
       "id": 26,
@@ -747,6 +747,30 @@
       "id": 28,
       "key": "smtp_pass",
       "value": ""
+    },
+    {
+      "key": "/uploads/img-1794235408826-819537408.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020851/dienviet/banners/n27vloqr96wqd5hvqhpr.jpg"
+    },
+    {
+      "key": "/uploads/img-1794390284769-958980201.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020852/dienviet/banners/uekynpwe2ftlyhsakaip.jpg"
+    },
+    {
+      "key": "/uploads/img-1794496357789-554195068.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020853/dienviet/banners/bsemrbicl5chnct2zmwq.jpg"
+    },
+    {
+      "key": "/uploads/img-1794551137554-998049514.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020854/dienviet/banners/rx6eknvolfzmmvznxogp.jpg"
+    },
+    {
+      "key": "/uploads/img-1794551168449-607137263.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020855/dienviet/banners/lfjjbcoylmldhpqhgern.jpg"
+    },
+    {
+      "key": "/uploads/img-1794551366840-930848186.png",
+      "value": "https://res.cloudinary.com/dg1ix1quo/image/upload/v1795020857/dienviet/banners/k7nfbjyoqjsd3nad8hbd.jpg"
     }
   ],
   "contacts": [
@@ -768,7 +792,7 @@
       "fullname": "Test 01",
       "phone": "0987654321",
       "email": "aaa@gmail.com",
-      "address": "",
+      "address": null,
       "type": "Báo giá sản phẩm",
       "product_name": "Dây điện mềm 0.75mm² (Loại SP: Dây điện đôi mềm)",
       "message": "Nhận báo giá",
@@ -781,7 +805,7 @@
       "fullname": "Test 012",
       "phone": "09876543321",
       "email": "aaaa@gmail.com",
-      "address": "",
+      "address": null,
       "type": "Báo giá sản phẩm",
       "product_name": "Dây điện mềm 0.75mm², Dây điện LS 1.5mm², Dây điện CVV 3x1.5mm², Dây điện Cadivi 2.5mm² (Loại SP: Dây điện)",
       "message": "Bao gia",

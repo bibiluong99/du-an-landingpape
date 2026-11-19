@@ -82,11 +82,12 @@ async function fetchBlogs() {
     allBlogs = serverBlogs;
     renderBlogs();
 
-    // Đồng bộ nền lên serverless store nếu có bài viết cục bộ
-    if (localBlogs.length > 0) {
-      fetch('/api/sync-store', {
+    // Đồng bộ nền lên serverless store nếu có bài viết cục bộ và đang có phiên Admin
+    const adminToken = localStorage.getItem('admin_token');
+    if (localBlogs.length > 0 && adminToken) {
+      fetch('/api/admin/sync-store', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
         body: JSON.stringify({ customBlogs: localBlogs, deletedBlogIds: delIds })
       }).catch(() => {});
     }

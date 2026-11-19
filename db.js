@@ -1,6 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+try {
+  require('dotenv').config();
+} catch (e) {}
 
 // Nạp dữ liệu dự phòng từ db_fallback_data.json
 let fallbackData = {
@@ -45,54 +48,70 @@ try {
   }
 }
 
-// Thử khởi tạo SQLite nếu môi trường hỗ trợ
+// Thử khởi tạo Turso Cloud DB (ưu tiên số 1) hoặc SQLite cục bộ
+let tursoClient = null;
 let sqlite3 = null;
 let db = null;
 let useFallback = false;
 
-try {
-  sqlite3 = require('sqlite3').verbose();
-  let DB_PATH = path.join(__dirname, 'database.sqlite');
-  if (!fs.existsSync(DB_PATH)) {
-    DB_PATH = path.join(process.cwd(), 'database.sqlite');
+if (process.env.TURSO_DATABASE_URL) {
+  try {
+    const { createClient } = require('@libsql/client');
+    tursoClient = createClient({
+      url: process.env.TURSO_DATABASE_URL.trim(),
+      authToken: (process.env.TURSO_AUTH_TOKEN || '').trim()
+    });
+    console.log('🌐 Đã kết nối Turso Cloud Database (LibSQL):', process.env.TURSO_DATABASE_URL);
+  } catch (err) {
+    console.warn('Lỗi khởi tạo Turso Client, chuyển sang SQLite/Fallback:', err.message);
   }
+}
 
-  // Xử lý môi trường Serverless trên Vercel (thư mục gốc là read-only)
-  if (process.env.VERCEL) {
-    const os = require('os');
-    const tmpDir = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
-    try {
-      if (!fs.existsSync(tmpDir)) {
-        fs.mkdirSync(tmpDir, { recursive: true });
-      }
-    } catch (e) {}
-
-    const tmpDbPath = path.join(tmpDir, 'database.sqlite');
-    try {
-      if (!fs.existsSync(tmpDbPath) && fs.existsSync(DB_PATH)) {
-        fs.copyFileSync(DB_PATH, tmpDbPath);
-        console.log('Đã copy database.sqlite sang /tmp để SQLite có quyền đọc ghi trên Vercel.');
-      }
-      if (fs.existsSync(tmpDbPath)) {
-        DB_PATH = tmpDbPath;
-      }
-    } catch (err) {
-      console.warn('Lưu ý copy database sang /tmp:', err.message);
+if (!tursoClient) {
+  try {
+    sqlite3 = require('sqlite3').verbose();
+    let DB_PATH = path.join(__dirname, 'database.sqlite');
+    if (!fs.existsSync(DB_PATH)) {
+      DB_PATH = path.join(process.cwd(), 'database.sqlite');
     }
+
+    // Xử lý môi trường Serverless trên Vercel (thư mục gốc là read-only)
+    if (process.env.VERCEL) {
+      const os = require('os');
+      const tmpDir = process.env.TMPDIR || (process.platform === 'win32' ? os.tmpdir() : '/tmp');
+      try {
+        if (!fs.existsSync(tmpDir)) {
+          fs.mkdirSync(tmpDir, { recursive: true });
+        }
+      } catch (e) {}
+
+      const tmpDbPath = path.join(tmpDir, 'database.sqlite');
+      try {
+        if (!fs.existsSync(tmpDbPath) && fs.existsSync(DB_PATH)) {
+          fs.copyFileSync(DB_PATH, tmpDbPath);
+          console.log('Đã copy database.sqlite sang /tmp để SQLite có quyền đọc ghi trên Vercel.');
+        }
+        if (fs.existsSync(tmpDbPath)) {
+          DB_PATH = tmpDbPath;
+        }
+      } catch (err) {
+        console.warn('Lưu ý copy database sang /tmp:', err.message);
+      }
+    }
+
+    const openMode = (sqlite3.OPEN_READWRITE || 0x00000002) | (sqlite3.OPEN_CREATE || 0x00000004);
+    db = new sqlite3.Database(DB_PATH, openMode, (err) => {
+      if (err) {
+        console.warn('Lỗi kết nối SQLite, tự động chuyển sang Fallback Store:', err.message);
+        useFallback = true;
+      } else {
+        console.log('Đã kết nối thành công cơ sở dữ liệu SQLite tại:', DB_PATH);
+      }
+    });
+  } catch (err) {
+    console.warn('sqlite3 native module không khả dụng, sử dụng Fallback Store:', err.message);
+    useFallback = true;
   }
-
-  const openMode = (sqlite3.OPEN_READWRITE || 0x00000002) | (sqlite3.OPEN_CREATE || 0x00000004);
-  db = new sqlite3.Database(DB_PATH, openMode, (err) => {
-    if (err) {
-      console.warn('Lỗi kết nối SQLite, tự động chuyển sang Fallback Store:', err.message);
-      useFallback = true;
-    } else {
-      console.log('Đã kết nối thành công cơ sở dữ liệu SQLite tại:', DB_PATH);
-    }
-  });
-} catch (err) {
-  console.warn('sqlite3 native module không khả dụng, sử dụng Fallback Store:', err.message);
-  useFallback = true;
 }
 
 // ==========================================
@@ -273,6 +292,12 @@ function fallbackQuery(sql, params = []) {
         category_name: cat ? cat.name : ''
       };
     });
+    // 0. Xử lý SELECT id, price FROM products WHERE id IN (...) cho batch-adjust-price
+    if (lower.includes('where id in (') || lower.includes('where p.id in (')) {
+      const idSet = new Set(params.map(x => String(x)));
+      return list.filter(p => idSet.has(String(p.id)));
+    }
+
     if (lower.includes('where id = ?') || lower.includes('where p.id = ?')) {
       const found = list.find(p => String(p.id) === String(params[0]));
       return found ? [found] : [];
@@ -291,8 +316,8 @@ function fallbackQuery(sql, params = []) {
       list = list.filter(p => p.is_active !== 0 && p.is_active !== '0' && p.is_active !== false);
     }
 
-    // Lọc theo show_in_slider của danh mục nếu câu truy vấn công khai yêu cầu
-    if (lower.includes('show_in_slider = 1') || (!lower.includes('from products p left join') && !lower.includes('select p.* from products p order by p.id desc'))) {
+    // Lọc theo show_in_slider của danh mục chỉ khi câu truy vấn công khai yêu cầu show_in_slider = 1
+    if (lower.includes('show_in_slider = 1')) {
       const activeParentIds = new Set(
         fallbackData.categories.filter(c => !c.parent_id && c.show_in_slider !== 0 && c.show_in_slider !== '0' && c.show_in_slider !== false).map(c => String(c.id))
       );
@@ -317,14 +342,32 @@ function fallbackQuery(sql, params = []) {
     }
 
     if (lower.includes('like ?')) {
-      const term = String(params[0] || '').replace(/%/g, '').toLowerCase();
+      const likeParam = params.find(p => typeof p === 'string' && p.includes('%'));
+      const term = String(likeParam || '').replace(/%/g, '').toLowerCase();
       if (term) {
         list = list.filter(p => (p.name && p.name.toLowerCase().includes(term)) || (p.short_desc && p.short_desc.toLowerCase().includes(term)));
       }
     }
+
+    // Sắp xếp (Sorting)
+    if (lower.includes('order by p.price asc') || lower.includes('order by price asc')) {
+      list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    } else if (lower.includes('order by p.price desc') || lower.includes('order by price desc')) {
+      list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    } else if (lower.includes('order by p.id asc') || lower.includes('order by id asc')) {
+      list.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+    } else if (lower.includes('order by p.id desc') || lower.includes('order by id desc')) {
+      list.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    }
+
+    const offsetMatch = lower.match(/offset\s+(\d+)/);
+    const offset = offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
     const limitMatch = lower.match(/limit\s+(\d+)/);
     if (limitMatch) {
-      list = list.slice(0, parseInt(limitMatch[1]));
+      const lim = parseInt(limitMatch[1], 10);
+      list = list.slice(offset, offset + lim);
+    } else if (offset > 0) {
+      list = list.slice(offset);
     }
     return list;
   }
@@ -471,21 +514,20 @@ function fallbackRun(sql, params = []) {
     const id = params[params.length - 1];
     const p = fallbackData.products.find(x => String(x.id) === String(id));
     if (p) {
-      p.category_id = Number(params[0]);
+      p.category_id = params[0] ? Number(params[0]) : null;
       p.name = params[1];
-      p.slug = params[2];
-      p.price = Number(params[3]);
-      p.original_price = Number(params[4]);
-      if (params[5]) p.image = params[5];
-      if (params[6]) p.images = params[6];
-      p.short_desc = params[7];
-      p.description = params[8];
-      p.specs = params[9];
-      p.applications = params[10];
-      p.warranty_policy = params[11];
-      p.is_new = Number(params[12]);
-      p.is_promo = Number(params[13]);
-      p.stock = Number(params[14]);
+      p.price = Number(params[2]);
+      p.original_price = params[3] !== null && params[3] !== undefined ? Number(params[3]) : null;
+      if (params[4]) p.image = params[4];
+      if (params[5] !== undefined) p.images = params[5];
+      p.short_desc = params[6];
+      p.description = params[7];
+      p.specs = params[8];
+      p.applications = params[9];
+      p.warranty_policy = params[10];
+      p.is_new = Number(params[11]);
+      p.is_promo = Number(params[12]);
+      p.is_active = params[13] !== undefined ? Number(params[13]) : 1;
     }
     saveFallbackData();
     return { lastID: 0, changes: 1 };
@@ -527,22 +569,22 @@ function fallbackRun(sql, params = []) {
     const newId = fallbackData.products.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1;
     const newProd = {
       id: newId,
-      category_id: Number(params[0]),
+      category_id: params[0] ? Number(params[0]) : null,
       name: params[1],
       slug: params[2],
-      price: Number(params[3]),
-      original_price: Number(params[4]),
-      image: params[5],
-      images: params[6],
-      short_desc: params[7],
-      description: params[8],
-      specs: params[9],
-      applications: params[10],
-      warranty_policy: params[11],
-      is_new: Number(params[12]),
-      is_promo: Number(params[13]),
+      price: Number(params[3]) || 0,
+      original_price: params[4] !== null && params[4] !== undefined ? Number(params[4]) : null,
+      image: params[5] || '',
+      images: params[6] || null,
+      short_desc: params[7] || '',
+      description: params[8] || '',
+      specs: params[9] || '',
+      applications: params[10] || '',
+      warranty_policy: params[11] || '',
+      is_new: Number(params[12]) || 0,
+      is_promo: Number(params[13]) || 0,
       is_active: (params[14] !== undefined) ? Number(params[14]) : 1,
-      stock: Number(params[15]),
+      stock: params[15] !== undefined && params[15] !== null ? Number(params[15]) : null,
       created_at: new Date().toISOString()
     };
     fallbackData.products.unshift(newProd);
@@ -565,9 +607,12 @@ function fallbackRun(sql, params = []) {
       b.title = params[0];
       b.summary = params[1] || '';
       b.content = params[2];
-      if (params[3]) b.image = params[3];
+      if (params[3] !== undefined && params[3] !== null) b.image = params[3];
       if (params[4]) b.author = params[4];
       if (params[5]) b.category = params[5];
+      if (params.length >= 8 && params[6]) {
+        b.created_at = params[6];
+      }
     }
     saveFallbackData();
     return { lastID: 0, changes: 1 };
@@ -679,7 +724,7 @@ function fallbackRun(sql, params = []) {
     return { lastID: 0, changes: 1 };
   }
 
-  if (lower.startsWith('insert into settings')) {
+  if (lower.startsWith('insert into settings') || lower.startsWith('insert or replace into settings')) {
     const [key, val] = params;
     const item = fallbackData.settings.find(x => x.key === key);
     if (item) item.value = String(val);
@@ -691,8 +736,20 @@ function fallbackRun(sql, params = []) {
   return { lastID: 1, changes: 1 };
 }
 
-// Helper wrap SQLite callback thành Promise kèm Fallback an toàn
-const query = (sql, params = []) => {
+// Helper chuẩn hóa tham số cho LibSQL / Turso (không nhận undefined)
+const sanitizeArgs = (params = []) => params.map(p => (p === undefined ? null : p));
+
+// Helper wrap Turso / SQLite callback thành Promise kèm Fallback an toàn
+const query = async (sql, params = []) => {
+  if (tursoClient) {
+    try {
+      const rs = await tursoClient.execute({ sql, args: sanitizeArgs(params) });
+      return rs.rows.map(r => ({ ...r }));
+    } catch (err) {
+      console.warn('Turso query lỗi, dùng Fallback:', err.message);
+      return fallbackQuery(sql, params);
+    }
+  }
   if (!useFallback && db) {
     return new Promise((resolve) => {
       db.all(sql, params, (err, rows) => {
@@ -704,10 +761,19 @@ const query = (sql, params = []) => {
       });
     });
   }
-  return Promise.resolve(fallbackQuery(sql, params));
+  return fallbackQuery(sql, params);
 };
 
-const get = (sql, params = []) => {
+const get = async (sql, params = []) => {
+  if (tursoClient) {
+    try {
+      const rs = await tursoClient.execute({ sql, args: sanitizeArgs(params) });
+      return rs.rows.length > 0 ? { ...rs.rows[0] } : null;
+    } catch (err) {
+      console.warn('Turso get lỗi, dùng Fallback:', err.message);
+      return fallbackGet(sql, params);
+    }
+  }
   if (!useFallback && db) {
     return new Promise((resolve) => {
       db.get(sql, params, (err, row) => {
@@ -719,10 +785,25 @@ const get = (sql, params = []) => {
       });
     });
   }
-  return Promise.resolve(fallbackGet(sql, params));
+  return fallbackGet(sql, params);
 };
 
-const run = (sql, params = []) => {
+const run = async (sql, params = []) => {
+  if (tursoClient) {
+    try {
+      const rs = await tursoClient.execute({ sql, args: sanitizeArgs(params) });
+      try { fallbackRun(sql, params); } catch (e) {}
+      return {
+        lastID: rs.lastInsertRowid ? Number(rs.lastInsertRowid) : 1,
+        changes: rs.rowsAffected || 0
+      };
+    } catch (err) {
+      if (!sql.includes('ALTER TABLE')) {
+        console.warn('Turso run lỗi, dùng Fallback:', err.message);
+      }
+      return fallbackRun(sql, params);
+    }
+  }
   if (!useFallback && db) {
     return new Promise((resolve) => {
       db.run(sql, params, function (err) {
@@ -737,7 +818,7 @@ const run = (sql, params = []) => {
       });
     });
   }
-  return Promise.resolve(fallbackRun(sql, params));
+  return fallbackRun(sql, params);
 };
 
 // Hàm băm mật khẩu chuẩn SHA256 kèm salt
@@ -747,7 +828,7 @@ const hashPassword = (password) => {
 
 // Khởi tạo bảng và dữ liệu mẫu
 const initDB = async () => {
-  if (useFallback || !db) {
+  if (!tursoClient && (useFallback || !db)) {
     console.log('Chạy chế độ Fallback Data Store (không cần khởi tạo bảng SQLite)');
     return;
   }
@@ -844,9 +925,17 @@ const initDB = async () => {
         content TEXT,
         image TEXT,
         author VARCHAR(100) DEFAULT 'Ban Biên Tập',
+        category VARCHAR(100) DEFAULT 'Tin công ty',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Tự động bổ sung cột category nếu bảng blogs đã tồn tại từ trước
+    try {
+      await run("ALTER TABLE blogs ADD COLUMN category VARCHAR(100) DEFAULT 'Tin công ty'");
+    } catch (e) {
+      // Đã có cột category
+    }
 
     // 5. Contacts
     await run(`
@@ -1387,25 +1476,28 @@ const seedData = async () => {
   if (blogCount.count === 0) {
     const sampleBlogs = [
       {
-        title: 'Xu Hướng Tai Nghe Không Dây Chống Ồn Chủ Động Trong Năm 2026',
-        summary: 'Khám phá sự bùng nổ của trí tuệ nhân tạo tích hợp trong chip xử lý âm thanh, giúp lọc ồn thông minh theo ngữ cảnh môi trường sống.',
-        content: '<p>Trong kỷ nguyên công nghệ hiện đại, tai nghe chống ồn chủ động (ANC) không chỉ đơn thuần là triệt tiêu tiếng ồn máy bay hay tiếng tàu xe, mà đã thông minh hơn nhờ sự hỗ trợ của thuật toán AI thời gian thực.</p><p>Các mẫu tai nghe thế hệ mới có thể phân biệt chính xác giọng nói của người đối diện để kích hoạt chế độ xuyên âm tự động, cũng như tùy biến áp suất âm phù hợp với thính lực của từng cá nhân.</p>',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-        author: 'Nguyễn Minh Tuấn'
+        title: 'Hướng dẫn chọn dây cáp điện Cadivi phù hợp công suất cho gia đình',
+        summary: 'Cách tính toán tiết diện dây dẫn điện chuẩn kỹ thuật giúp hệ thống điện vận hành an toàn, tiết kiệm và chống quá tải.',
+        content: '<p>Việc lựa chọn đúng tiết diện dây dẫn điện theo công suất phụ tải là yếu tố quyết định đến độ an toàn chống chạm chập cháy nổ cho mọi công trình dân dụng và công nghiệp.</p><p>Đối với mạch chiếu sáng thông thường, nên chọn dây đơn ruột đồng CV 1.5mm². Với mạch ổ cắm tổng và các thiết bị công suất lớn như điều hòa, bình nóng lạnh, bếp từ, cần sử dụng dây từ 2.5mm² đến 4.0mm² chính hãng Cadivi.</p>',
+        image: '/images/blog-chon-day-dien.jpg',
+        author: 'Kỹ Sư Điện Việt',
+        category: 'Kiến thức sản phẩm'
       },
       {
-        title: 'Top 5 Tiêu Chí Chọn Mua Đồng Hồ Thông Minh Cho Người Yêu Thể Thao',
-        summary: 'Độ chính xác cảm biến GPS, thời lượng pin thực tế và khả năng kháng nước chuẩn 5ATM là những yếu tố tiên quyết cần cân nhắc.',
-        content: '<p>Một chiếc Smartwatch thể thao tốt không chỉ là món phụ kiện thời trang bắt mắt mà còn là một huấn luyện viên ảo đắc lực trên cổ tay của bạn.</p><p>Khi lựa chọn, người dùng nên chú trọng vào: Hệ thống định vị đa vệ tinh (GPS, GLONASS, Galileo), màn hình hiển thị rõ nét dưới trời nắng gắt và cảm biến đo chỉ số phục hồi cơ bắp HRV.</p>',
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-        author: 'Trần Hải Đăng'
+        title: 'Hướng dẫn chọn Aptomat (MCB, MCCB, RCBO) chống giật an toàn',
+        summary: 'Lựa chọn thiết bị đóng cắt bảo vệ quá tải, ngắn mạch và chống dòng rò phù hợp với từng nhánh tải trong nhà.',
+        content: '<p>Aptomat là thiết bị bảo vệ cốt lõi trong mọi tủ điện. Bên cạnh MCB bảo vệ quá tải và ngắn mạch, mỗi gia đình nên lắp đặt thêm cầu dao chống dòng rò RCBO (dòng cắt rò 30mA) cho bình nước nóng và các khu vực ẩm ướt.</p>',
+        image: '/images/blog-aptomat-guide.jpg',
+        author: 'Ban Biên Tập',
+        category: 'Kiến thức sản phẩm'
       },
       {
-        title: 'Cách Tối Ưu Bàn Làm Việc Đạt Chuẩn Công Thái Học Giảm Đau Lưng Cổ',
-        summary: 'Bí quyết setup bàn làm việc tối giản, khoa học kết hợp ghế công thái học, bàn phím cơ và giá đỡ màn hình chuẩn khoa học.',
-        content: '<p>Ngồi làm việc liên tục 8-10 tiếng mỗi ngày trước máy tính là nguyên nhân hàng đầu dẫn đến các bệnh về cột sống và hội chứng ống cổ tay.</p><p>Bằng cách điều chỉnh tầm mắt vuông góc với 1/3 trên của màn hình, sử dụng chuột nghiêng 57 độ và bàn phím cơ đệm tay, bạn sẽ giảm tải đáng kể căng thẳng lên các nhóm cơ.</p>',
-        image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=800&q=80',
-        author: 'Lê Hoàng Yến'
+        title: 'Giải pháp chiếu sáng đèn LED tiết kiệm 60% điện năng cho công trình',
+        summary: 'Ứng dụng công nghệ chip LED hiệu suất cao giúp tối ưu quang thông, bảo vệ thị lực và giảm đáng kể chi phí tiền điện.',
+        content: '<p>Chuyển đổi từ bóng đèn huỳnh quang truyền thống sang hệ thống đèn LED Downlight âm trần và đèn tuýp LED T8 giúp tiết kiệm đến 60% điện năng tiêu thụ và nâng tuổi thọ chiếu sáng lên tới 30.000 giờ.</p>',
+        image: '/images/blog-den-led.jpg',
+        author: 'Kỹ Sư Năng Lượng',
+        category: 'Công nghệ & Xu hướng'
       }
     ];
 
@@ -1418,8 +1510,8 @@ const seedData = async () => {
         .replace(/^-+|-+$/g, '');
 
       await run(
-        'INSERT INTO blogs (title, slug, summary, content, image, author) VALUES (?, ?, ?, ?, ?, ?)',
-        [blog.title, slug, blog.summary, blog.content, blog.image, blog.author]
+        'INSERT INTO blogs (title, slug, summary, content, image, author, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [blog.title, slug, blog.summary, blog.content, blog.image, blog.author, blog.category]
       );
     }
     console.log('Đã tạo các bài viết blog mẫu thành công!');
@@ -1431,34 +1523,19 @@ const seedData = async () => {
     const sampleContacts = [
       {
         fullname: 'Nguyễn Văn Hùng',
-        phone: '0912.345.678',
+        phone: '0912345678',
         email: 'hung.nguyen@vietcorp.com',
-        type: 'Báo giá',
-        message: 'Tôi muốn nhận báo giá sỉ cho 20 bộ bàn phím cơ RED-Knight và 20 chuột ErgoMaster Pro cho văn phòng công ty tại TP.HCM. Xin vui lòng gửi bảng giá chiết khấu.',
+        type: 'Báo giá sản phẩm',
+        product_name: 'Dây điện đơn ruột đồng Cadivi CV 1.5 mm² (Cu/PVC), Dây điện đơn Cadivi CV 2.5 mm² ruột đồng dẫn điện (Cu/PVC)',
+        message: 'Tôi muốn nhận báo giá đại lý cho 50 cuộn dây điện Cadivi 1.5mm² và 2.5mm² cho dự án tòa nhà văn phòng. Xin vui lòng gửi bảng giá chiết khấu.',
         status: 'Mới'
-      },
-      {
-        fullname: 'Trần Thị Thu Thảo',
-        phone: '0908.776.543',
-        email: 'thuthao92@gmail.com',
-        type: 'Khiếu nại',
-        message: 'Đơn hàng tai nghe RED-ANC Pro Ultra của tôi nhận sáng nay bị móp hộp bên ngoài do vận chuyển. Nhờ trung tâm hỗ trợ đổi sản phẩm mới giúp tôi.',
-        status: 'Mới'
-      },
-      {
-        fullname: 'Phạm Minh Đức',
-        phone: '0977.888.999',
-        email: 'ducpm.tech@gmail.com',
-        type: 'Báo giá',
-        message: 'Bên mình có nhu cầu lắp đặt hệ thống 5 máy lọc không khí PureAir X5 cho showroom. Xin tư vấn chi phí và chính sách bảo hành doanh nghiệp.',
-        status: 'Đã xử lý'
       }
     ];
 
     for (const c of sampleContacts) {
       await run(
-        'INSERT INTO contacts (fullname, phone, email, type, message, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [c.fullname, c.phone, c.email, c.type, c.message, c.status]
+        'INSERT INTO contacts (fullname, phone, email, type, product_name, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [c.fullname, c.phone, c.email, c.type, c.product_name, c.message, c.status]
       );
     }
     console.log('Đã tạo liên hệ mẫu thành công!');
@@ -1467,6 +1544,7 @@ const seedData = async () => {
 
 async function syncStoreData({ customCategories, customProducts, deletedCategoryIds, deletedProductIds, customBlogs, deletedBlogIds, customContacts, deletedContactIds, customSettings }) {
   let updated = false;
+  const hasActiveDB = Boolean(tursoClient || (!useFallback && db));
 
   // 1. Categories
   if (Array.isArray(customCategories) && customCategories.length > 0) {
@@ -1480,9 +1558,9 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
         updated = true;
       }
 
-      if (!useFallback && db) {
+      if (hasActiveDB) {
         try {
-          db.run(
+          await run(
             `INSERT OR REPLACE INTO categories (id, name, slug, description, image, show_in_slider, sort_order, parent_id, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [cat.id, cat.name, cat.slug || '', cat.description || '', cat.image || '', cat.show_in_slider ? 1 : 0, cat.sort_order || 0, cat.parent_id || null, cat.created_at || new Date().toISOString()]
@@ -1498,10 +1576,10 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
     fallbackData.categories = fallbackData.categories.filter(c => !deletedCategoryIds.includes(Number(c.id)) && !deletedCategoryIds.includes(String(c.id)));
     if (fallbackData.categories.length !== before) updated = true;
 
-    if (!useFallback && db) {
-      try {
-        deletedCategoryIds.forEach(id => db.run(`DELETE FROM categories WHERE id = ?`, [id]));
-      } catch (e) {}
+    if (hasActiveDB) {
+      for (const id of deletedCategoryIds) {
+        try { await run(`DELETE FROM categories WHERE id = ?`, [id]); } catch (e) {}
+      }
     }
   }
 
@@ -1517,9 +1595,9 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
         updated = true;
       }
 
-      if (!useFallback && db) {
+      if (hasActiveDB) {
         try {
-          db.run(
+          await run(
             `INSERT OR REPLACE INTO products (id, category_id, name, slug, price, original_price, image, images, short_desc, description, specs, applications, warranty_policy, is_new, is_promo, is_active, stock, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -1554,10 +1632,10 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
     fallbackData.products = fallbackData.products.filter(p => !deletedProductIds.includes(Number(p.id)) && !deletedProductIds.includes(String(p.id)));
     if (fallbackData.products.length !== before) updated = true;
 
-    if (!useFallback && db) {
-      try {
-        deletedProductIds.forEach(id => db.run(`DELETE FROM products WHERE id = ?`, [id]));
-      } catch (e) {}
+    if (hasActiveDB) {
+      for (const id of deletedProductIds) {
+        try { await run(`DELETE FROM products WHERE id = ?`, [id]); } catch (e) {}
+      }
     }
   }
 
@@ -1573,9 +1651,9 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
         updated = true;
       }
 
-      if (!useFallback && db) {
+      if (hasActiveDB) {
         try {
-          db.run(
+          await run(
             `INSERT OR REPLACE INTO blogs (id, title, slug, summary, content, image, author, category, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -1601,10 +1679,10 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
     fallbackData.blogs = fallbackData.blogs.filter(b => !deletedBlogIds.includes(Number(b.id)) && !deletedBlogIds.includes(String(b.id)));
     if (fallbackData.blogs.length !== before) updated = true;
 
-    if (!useFallback && db) {
-      try {
-        deletedBlogIds.forEach(id => db.run(`DELETE FROM blogs WHERE id = ?`, [id]));
-      } catch (e) {}
+    if (hasActiveDB) {
+      for (const id of deletedBlogIds) {
+        try { await run(`DELETE FROM blogs WHERE id = ?`, [id]); } catch (e) {}
+      }
     }
   }
 
@@ -1624,9 +1702,9 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
         updated = true;
       }
 
-      if (!useFallback && db) {
+      if (hasActiveDB) {
         try {
-          db.run(
+          await run(
             `INSERT OR REPLACE INTO contacts (id, fullname, phone, email, address, type, product_name, message, status, quote_sent, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -1651,19 +1729,15 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
   // 8. Deleted Contacts
   if (Array.isArray(deletedContactIds) && deletedContactIds.length > 0) {
     const before = fallbackData.contacts.length;
-    // Tuyệt đối không xóa bất kỳ liên hệ nào có trạng thái 'Mới' để không bao giờ làm mất liên hệ khách vừa tạo
     fallbackData.contacts = fallbackData.contacts.filter(c => {
-      if (c.status === 'Mới') return true;
       return !deletedContactIds.includes(Number(c.id)) && !deletedContactIds.includes(String(c.id));
     });
     if (fallbackData.contacts.length !== before) updated = true;
 
-    if (!useFallback && db) {
-      try {
-        deletedContactIds.forEach(id => {
-          db.run("DELETE FROM contacts WHERE id = ? AND status != 'Mới'", [id]);
-        });
-      } catch (e) {}
+    if (hasActiveDB) {
+      for (const id of deletedContactIds) {
+        try { await run("DELETE FROM contacts WHERE id = ?", [id]); } catch (e) {}
+      }
     }
   }
 
@@ -1681,9 +1755,9 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
         updated = true;
       }
 
-      if (!useFallback && db) {
+      if (hasActiveDB) {
         try {
-          db.run(
+          await run(
             `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`,
             [key, strVal]
           );
@@ -1701,6 +1775,7 @@ async function syncStoreData({ customCategories, customProducts, deletedCategory
 
 module.exports = {
   db,
+  tursoClient,
   query,
   get,
   run,
